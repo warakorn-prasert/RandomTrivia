@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Random Trivia</string>
+    <string name="developer_full_name">Warakorn Mukdaprasert</string>
+    <string name="developer_github">github.com/warakorn-prasert</string>
+    <string name="developer_linkedin">linkedin.com/in/warakorn-mukdaprasert</string>
+    <string name="trivia_by_company">PIXELTAIL GAMES LLC.</string>
+    <string name="trivia_by_website">opentdb.com</string>
+</resources>
