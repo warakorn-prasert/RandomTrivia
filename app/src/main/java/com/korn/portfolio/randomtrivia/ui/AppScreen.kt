@@ -42,9 +42,7 @@ fun AppScreen() {
                     CategoryScreen(paddingValues)
                 }
                 composable(Route.QUESTION.route) {
-                    Box(Modifier.fillMaxSize().padding(paddingValues), Alignment.Center) {
-                        Text("Not implemented")
-                    }
+                    QuestionScreen(paddingValues)
                 }
                 composable(Route.GAME.route) {
                     Box(Modifier.fillMaxSize().padding(paddingValues), Alignment.Center) {
