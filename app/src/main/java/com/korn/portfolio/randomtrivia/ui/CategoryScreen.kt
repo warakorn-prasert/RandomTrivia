@@ -250,7 +250,7 @@ private fun CategoryUpdateDialog(
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            updateAction(Category(name.value, easy.intValue, medium.intValue, hard.intValue, downloadable.value))
+                            updateAction(Category(name.value, easy.intValue, medium.intValue, hard.intValue, downloadable.value, category.id))
                             expanded.value = false
                         },
                         content = { Icon(Icons.Default.Done, null) }
