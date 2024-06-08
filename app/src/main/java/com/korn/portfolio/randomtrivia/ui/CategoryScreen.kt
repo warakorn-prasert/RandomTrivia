@@ -149,20 +149,18 @@ private fun CategoryCard(
     ) {
         Column(Modifier.padding(8.dp).height(IntrinsicSize.Min)) {
             Row {
-                Column {
+                Column(Modifier.weight(1f)) {
                     Text(title, fontWeight = FontWeight.Bold)
                     Text(hint)
                 }
-                Spacer(Modifier.weight(1f))
                 ToggleArrowIcon(expanded)
             }
             if (expanded) {
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 Row {
-                    Column(Modifier.padding(4.dp)) {
+                    Column(Modifier.weight(1f).padding(4.dp)) {
                         bullets.forEach { Text("- $it") }
                     }
-                    Spacer(Modifier.weight(1f))
                     Column {
                         Icon(
                             imageVector = Icons.Default.Edit,
@@ -182,6 +180,26 @@ private fun CategoryCard(
                 }
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun CategoryCardPreview() {
+    val category = Category("Name", 1, 2, 3, false, 0)
+    Column {
+        Row {
+            CategoryCard(category = category, updateAction = {}, deleteAction = {})
+            Spacer(Modifier.width(4.dp))
+            CategoryCard(
+                category = category,
+                defaultExpanded = true,
+                updateAction = {},
+                deleteAction = {})
+        }
+        Spacer(Modifier.height(4.dp))
+        val overflowText = "overflow.............................................................."
+        CategoryCard(category = category.copy(name = overflowText), updateAction = {}, deleteAction = {})
     }
 }
 
