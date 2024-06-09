@@ -1,8 +1,11 @@
+@file:Suppress("FunctionName")
+
 package com.korn.portfolio.randomtrivia.ui
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,6 +23,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,11 +34,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,27 +48,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.model.Category
+import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
 
-private fun List<Category>.filterByTitle(filterWord: String): List<Category> {
-    return filter { it.name.lowercase().contains(filterWord.lowercase()) }
+private fun List<CategoryWithQuestions>.filterByTitle(filterWord: String): List<CategoryWithQuestions> {
+    return filter { it.category.name.lowercase().contains(filterWord.lowercase()) }
 }
 
 @Composable
 fun CategoryScreen(paddingValues: PaddingValues) {
     val triviaViewModel: TriviaViewModel = viewModel(factory = TriviaViewModel.Factory)
-    val categories by triviaViewModel.categories.collectAsState(emptyList())
+    val categories by triviaViewModel.categoriesWithQuestions.collectAsState(emptyList())
     val filterWord = remember { mutableStateOf("") }
-    Scaffold(
-        modifier = Modifier.fillMaxSize().padding(paddingValues),
+    Scaffold(Modifier.fillMaxSize().padding(paddingValues),
         topBar = {
             CategoryTopAppBar(filterWord,
                 triviaViewModel::insertCategories, triviaViewModel::deleteAllCategories
             )
         },
         content = { contentPaddingValues ->
-            CategoryCards(contentPaddingValues, categories, filterWord,
-                triviaViewModel::updateCategories, triviaViewModel:: deleteCategories
-            )
+            if (categories.isEmpty()) {
+                AddMockData(contentPaddingValues, triviaViewModel::insertMockData)
+            } else {
+                CategoryCards(
+                    contentPaddingValues, categories, filterWord,
+                    triviaViewModel::updateCategories, triviaViewModel::deleteCategories
+                )
+            }
         }
     )
 }
@@ -106,18 +113,39 @@ private fun CategoryTopAppBarPreview() {
 }
 
 @Composable
+private fun AddMockData(
+    paddingValues: PaddingValues,
+    insertMockAction: () -> Unit,
+) {
+    Column(Modifier.fillMaxSize().padding(paddingValues),
+        Arrangement.SpaceEvenly, Alignment.CenterHorizontally
+    ) {
+        Text("Empty.")
+        Button(insertMockAction) {
+            Text("Add mock data")
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AddMockDataPreview() {
+    AddMockData(PaddingValues()) {}
+}
+
+@Composable
 private fun CategoryCards(
     paddingValues: PaddingValues,
-    categories: List<Category>,
+    categories: List<CategoryWithQuestions>,
     filterWord: MutableState<String>,
     updateAction: (Category) -> Unit,
     deleteAction: (Category) -> Unit
 ) {
     LazyColumn(Modifier.fillMaxSize().padding(paddingValues)) {
-        items(categories.filterByTitle(filterWord.value), key = { it.id }) {
+        items(categories.filterByTitle(filterWord.value), key = { it.category.id }) {
             val expanded = remember { mutableStateOf(false) }
             if (expanded.value) {
-                CategoryUpdateDialog(expanded, it, updateAction)
+                CategoryUpdateDialog(expanded, it.category, updateAction)
             }
             CategoryCard(Modifier.padding(8.dp), it,
                 updateAction = { expanded.value = true },
@@ -127,20 +155,31 @@ private fun CategoryCards(
     }
 }
 
+@SuppressLint("UnrememberedMutableState")
+@Preview(showBackground = true)
+@Composable
+private fun CategoryCardsPreview() {
+    val mockData = listOf(
+        mockCategoryWithQuestions1.copy(category = mockCategory1.copy(id = 0)),
+        mockCategoryWithQuestions2.copy(category = mockCategory1.copy(id = 1)))
+    val filterWord = mutableStateOf("")
+    CategoryCards(PaddingValues(), mockData, filterWord, {}, {})
+}
+
 @Composable
 private fun CategoryCard(
     modifier: Modifier = Modifier,
-    category: Category,
+    category: CategoryWithQuestions,
     defaultExpanded: Boolean = false,
     updateAction: (Category) -> Unit,
     deleteAction: (Category) -> Unit
 ) {
     var expanded by remember { mutableStateOf(defaultExpanded) }
-    val title = category.name
+    val title = category.category.name
     val hint = with(category) { "${easy + medium + hard} questions" }
     val bullets = with(category) { listOf(
-        "id : $id", "$easy Easy", "$medium Medium", "$hard Hard",
-        "Downloadable : $downloadable"
+        "id : ${this.category.id}", "$easy Easy", "$medium Medium", "$hard Hard",
+        "Downloadable : ${this.category.downloadable}"
     ) }
     Card(modifier
         .width(IntrinsicSize.Max)
@@ -165,7 +204,7 @@ private fun CategoryCard(
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = null,
-                            modifier = Modifier.clickable { updateAction(category) }
+                            modifier = Modifier.clickable { updateAction(category.category) }
                         )
                         Spacer(Modifier.weight(1f))
                         Icon(
@@ -173,7 +212,7 @@ private fun CategoryCard(
                             contentDescription = null,
                             modifier = Modifier.clickable {
                                 expanded = false
-                                deleteAction(category)
+                                deleteAction(category.category)
                             }
                         )
                     }
@@ -186,20 +225,27 @@ private fun CategoryCard(
 @Preview
 @Composable
 private fun CategoryCardPreview() {
-    val category = Category("Name", 1, 2, 3, false, 0)
     Column {
         Row {
-            CategoryCard(category = category, updateAction = {}, deleteAction = {})
+            CategoryCard(
+                category = mockCategoryWithQuestions1,
+                updateAction = {},
+                deleteAction = {}
+            )
             Spacer(Modifier.width(4.dp))
             CategoryCard(
-                category = category,
+                category = mockCategoryWithQuestions1,
                 defaultExpanded = true,
                 updateAction = {},
-                deleteAction = {})
+                deleteAction = {}
+            )
         }
         Spacer(Modifier.height(4.dp))
-        val overflowText = "overflow.............................................................."
-        CategoryCard(category = category.copy(name = overflowText), updateAction = {}, deleteAction = {})
+        CategoryCard(
+            category = mockCategoryOverflowText,
+            updateAction = {},
+            deleteAction = {}
+        )
     }
 }
 
@@ -211,11 +257,8 @@ private fun CategoryInsertDialog(expanded: MutableState<Boolean>, insertAction: 
                 Text("New Category", fontWeight = FontWeight.Bold)
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 val name = remember { mutableStateOf("") }
-                val easy = remember { mutableIntStateOf(0) }
-                val medium = remember { mutableIntStateOf(0) }
-                val hard = remember { mutableIntStateOf(0) }
                 val downloadable = remember { mutableStateOf(false) }
-                CategoryEditor(name, easy, medium, hard, downloadable)
+                CategoryEditor(name, downloadable)
                 Row {
                     IconButton(
                         onClick = { expanded.value = false },
@@ -224,7 +267,7 @@ private fun CategoryInsertDialog(expanded: MutableState<Boolean>, insertAction: 
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            insertAction(Category(name.value, easy.intValue, medium.intValue, hard.intValue, downloadable.value))
+                            insertAction(Category(name.value, downloadable.value))
                             expanded.value = false
                         },
                         content = { Icon(Icons.Default.Done, null) }
@@ -255,11 +298,8 @@ private fun CategoryUpdateDialog(
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 Text("id : ${category.id}")
                 val name = remember { mutableStateOf(category.name) }
-                val easy = remember { mutableIntStateOf(category.easy) }
-                val medium = remember { mutableIntStateOf(category.medium) }
-                val hard = remember { mutableIntStateOf(category.hard) }
                 val downloadable = remember { mutableStateOf(category.downloadable) }
-                CategoryEditor(name, easy, medium, hard, downloadable)
+                CategoryEditor(name, downloadable)
                 Row {
                     IconButton(
                         onClick = { expanded.value = false },
@@ -268,7 +308,7 @@ private fun CategoryUpdateDialog(
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            updateAction(Category(name.value, easy.intValue, medium.intValue, hard.intValue, downloadable.value, category.id))
+                            updateAction(Category(name.value, downloadable.value, category.id))
                             expanded.value = false
                         },
                         content = { Icon(Icons.Default.Done, null) }
@@ -284,37 +324,15 @@ private fun CategoryUpdateDialog(
 @Composable
 private fun CategoryUpdateDialogPreview() {
     val expanded = mutableStateOf(true)
-    val category = Category("Name", 1, 2, 3, false, 0)
-    CategoryUpdateDialog(expanded, category, {})
+    CategoryUpdateDialog(expanded, mockCategory1) {}
 }
 
 @Composable
-private fun CategoryEditor(
-    name: MutableState<String>,
-    easy: MutableIntState,
-    medium: MutableIntState,
-    hard: MutableIntState,
-    downloadable: MutableState<Boolean>,
-) {
+private fun CategoryEditor(name: MutableState<String>, downloadable: MutableState<Boolean>) {
     Column {
         PlainTextField(
             name.value, { name.value = it },
             leadingIcon = { Text("Name") },
-        )
-        PlainTextField(
-            easy.intValue.toString(), { easy.intValue = it.toIntOrNull() ?: 0 },
-            numberOnly = true,
-            leadingIcon = { Text("Easy") },
-        )
-        PlainTextField(
-            medium.intValue.toString(), { medium.intValue = it.toIntOrNull() ?: 0 },
-            numberOnly = true,
-            leadingIcon = { Text("Medium") },
-        )
-        PlainTextField(
-            hard.intValue.toString(), { hard.intValue = it.toIntOrNull() ?: 0 },
-            numberOnly = true,
-            leadingIcon = { Text("Hard") },
         )
         Row(Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Downloadable")

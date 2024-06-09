@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package com.korn.portfolio.randomtrivia.ui
 
 import androidx.compose.foundation.BorderStroke
@@ -106,7 +108,9 @@ fun <T> CustomDropdown(
     Card(modifier.wrapContentSize().clickable { expanded = !expanded },
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Row(Modifier.padding(4.dp).padding(start = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.padding(4.dp).padding(start = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(toString(selection.value))
             ToggleArrowIcon(expanded)
         }

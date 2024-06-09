@@ -1,8 +1,8 @@
+@file:Suppress("FunctionName")
+
 package com.korn.portfolio.randomtrivia.ui
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.BottomAppBar
@@ -12,7 +12,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,8 +32,7 @@ private enum class Route(val icon: ImageVector) {
 @Composable
 fun AppScreen() {
     val navController = rememberNavController()
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
+    Scaffold(Modifier.fillMaxSize(),
         bottomBar = { CustomBottomBar(navController) },
         content = { paddingValues ->
             NavHost(navController, Route.CATEGORY.route) {
@@ -45,9 +43,7 @@ fun AppScreen() {
                     QuestionScreen(paddingValues)
                 }
                 composable(Route.GAME.route) {
-                    Box(Modifier.fillMaxSize().padding(paddingValues), Alignment.Center) {
-                        Text("Not implemented")
-                    }
+                    GameScreen(paddingValues)
                 }
             }
         }

@@ -20,11 +20,22 @@ class TriviaViewModel(
     private val categoryDao: CategoryDao,
     private val questionDao: QuestionDao
 ) : ViewModel() {
-    val categories: Flow<List<Category>>
-        get() = categoryDao.getAll()
-
     val categoriesWithQuestions: Flow<List<CategoryWithQuestions>>
         get() = categoryDao.getCategoriesWithQuestions()
+
+    fun insertMockData() {
+        viewModelScope.launch {
+            suspend fun insert(data: CategoryWithQuestions) {
+                categoryDao.insert(data.category)
+                val id = categoryDao.getLatest().id
+                data.questions.forEach {
+                    questionDao.insert(it.copy(categoryId = id))
+                }
+            }
+            insert(mockCategoryWithQuestions1)
+            insert(mockCategoryWithQuestions2)
+        }
+    }
 
     fun insertCategories(vararg category: Category) {
         viewModelScope.launch {

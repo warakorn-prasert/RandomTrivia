@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package com.korn.portfolio.randomtrivia.ui
 
 import android.annotation.SuppressLint
@@ -44,7 +46,7 @@ import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
 import com.korn.portfolio.randomtrivia.model.Difficulty
 import com.korn.portfolio.randomtrivia.model.Question
 
-fun nonBlankListOf(vararg values: String): List<String> {
+private fun nonBlankListOf(vararg values: String): List<String> {
     return mutableListOf<String>().apply {
         values.forEach {
             if (it.isNotBlank()) add(it)
@@ -73,7 +75,9 @@ private fun CategoryWithQuestionsCards(
 ) {
     LazyColumn(Modifier.fillMaxSize().padding(paddingValues)) {
         items(categories, key = { it.category.id }) {
-            CategoryWithQuestionsCard(Modifier.padding(8.dp), it, insertAction, updateAction, deleteAction, deleteAllAction)
+            CategoryWithQuestionsCard(Modifier.padding(8.dp), it,
+                insertAction, updateAction, deleteAction, deleteAllAction
+            )
         }
     }
 }
@@ -108,14 +112,15 @@ private fun CategoryWithQuestionsCard(
         }
         if (expanded) {
             if (category.questions.isEmpty()) {
-                Text("Empty", Modifier.align(Alignment.CenterHorizontally), fontStyle = FontStyle.Italic)
+                Text("Empty", Modifier.align(Alignment.CenterHorizontally),
+                    fontStyle = FontStyle.Italic
+                )
             }
             category.questions.forEachIndexed { idx, question ->
                 val showUpdateDialog = remember { mutableStateOf(false) }
                 if (showUpdateDialog.value) {
                     QuestionUpdateDialog(showUpdateDialog, category.category, question, updateAction)
                 }
-
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 Row {
                     Column {
@@ -149,17 +154,10 @@ private fun CategoryWithQuestionsCard(
 @Preview(showBackground = true)
 @Composable
 private fun CategoryWithQuestionsCardPreview() {
-    val category = CategoryWithQuestions(
-        Category("Name", 1, 2, 3, false),
-        listOf(
-            Question("Question1", Difficulty.EASY, 0, "C", listOf("I1", "I2", "I3", "I4")),
-            Question("Question2", Difficulty.MEDIUM, 0, "C", listOf("I1", "I2", "I3", "I4")),
-        )
-    )
     Column {
         Row {
             CategoryWithQuestionsCard(
-                category = category,
+                category = mockCategoryWithQuestions1,
                 insertAction = {},
                 updateAction = {},
                 deleteAction = {},
@@ -167,7 +165,7 @@ private fun CategoryWithQuestionsCardPreview() {
             )
             Spacer(Modifier.width(4.dp))
             CategoryWithQuestionsCard(
-                category = category,
+                category = mockCategoryWithQuestions1,
                 insertAction = {},
                 updateAction = {},
                 deleteAction = {},
@@ -176,16 +174,15 @@ private fun CategoryWithQuestionsCardPreview() {
             )
         }
         CategoryWithQuestionsCard(
-            category = category.copy(category = category.category.copy(name = "Empty"), questions = emptyList()),
+            category = mockCategoryEmpty,
             insertAction = {},
             updateAction = {},
             deleteAction = {},
             deleteAllAction = {},
             defaultExpanded = true
         )
-        val overflowText = "Overflow................................................................"
         CategoryWithQuestionsCard(
-            category = category.copy(category = category.category.copy(name = overflowText)),
+            category = mockCategoryOverflowText,
             insertAction = {},
             updateAction = {},
             deleteAction = {},
@@ -213,7 +210,9 @@ private fun QuestionInsertDialog(
                 val incorrectAnswer2 = remember { mutableStateOf("") }
                 val incorrectAnswer3 = remember { mutableStateOf("") }
                 val incorrectAnswer4 = remember { mutableStateOf("") }
-                QuestionEditor(question, difficulty, correctAnswer, incorrectAnswer1, incorrectAnswer2, incorrectAnswer3, incorrectAnswer4)
+                QuestionEditor(question, difficulty, correctAnswer,
+                    incorrectAnswer1, incorrectAnswer2, incorrectAnswer3, incorrectAnswer4
+                )
                 Row {
                     IconButton(
                         onClick = { show.value = false },
@@ -222,7 +221,16 @@ private fun QuestionInsertDialog(
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            insertAction(Question(question.value, difficulty.value, category.id, correctAnswer.value, nonBlankListOf(incorrectAnswer1.value, incorrectAnswer2.value, incorrectAnswer3.value, incorrectAnswer4.value)))
+                            insertAction(Question(
+                                question.value,
+                                difficulty.value,
+                                category.id,
+                                correctAnswer.value,
+                                nonBlankListOf(
+                                    incorrectAnswer1.value, incorrectAnswer2.value,
+                                    incorrectAnswer3.value, incorrectAnswer4.value
+                                )
+                            ))
                             show.value = false
                         },
                         content = { Icon(Icons.Default.Done, null) }
@@ -237,8 +245,7 @@ private fun QuestionInsertDialog(
 @Preview
 @Composable
 private fun QuestionInsertDialogPreview() {
-    val category = Category("Category name", 1, 2, 3, false)
-    QuestionInsertDialog(mutableStateOf(true), category, {})
+    QuestionInsertDialog(mutableStateOf(true), mockCategory1) {}
 }
 
 @Composable
@@ -277,7 +284,9 @@ private fun QuestionUpdateDialog(
                         question.incorrectAnswers[3]
                     else ""
                 ) }
-                QuestionEditor(questionText, difficulty, correctAnswer, incorrectAnswer1, incorrectAnswer2, incorrectAnswer3, incorrectAnswer4)
+                QuestionEditor(questionText, difficulty, correctAnswer,
+                    incorrectAnswer1, incorrectAnswer2, incorrectAnswer3, incorrectAnswer4
+                )
                 Row {
                     IconButton(
                         onClick = { show.value = false },
@@ -286,7 +295,18 @@ private fun QuestionUpdateDialog(
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            updateAction(Question(questionText.value, difficulty.value, category.id, correctAnswer.value, nonBlankListOf(incorrectAnswer1.value, incorrectAnswer2.value, incorrectAnswer3.value, incorrectAnswer4.value), question.id))
+                            updateAction(Question(
+                                questionText.value,
+                                difficulty.value,
+                                category.id,
+                                correctAnswer.value,
+                                nonBlankListOf(
+                                    incorrectAnswer1.value,
+                                    incorrectAnswer2.value,
+                                    incorrectAnswer3.value,
+                                    incorrectAnswer4.value),
+                                question.id
+                            ))
                             show.value = false
                         },
                         content = { Icon(Icons.Default.Done, null) }
@@ -301,10 +321,7 @@ private fun QuestionUpdateDialog(
 @Preview
 @Composable
 private fun QuestionUpdateDialogPreview() {
-    val category = Category("Category name", 1, 2, 3, false)
-    val question  =Question("Question1", Difficulty.EASY, 0, "C", listOf("I1", "I2", "I3", "I4"))
-
-    QuestionUpdateDialog(mutableStateOf(true), category, question, {})
+    QuestionUpdateDialog(mutableStateOf(true), mockCategory1, mockQuestion12) {}
 }
 
 @Composable
