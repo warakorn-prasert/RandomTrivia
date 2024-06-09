@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +47,7 @@ import com.korn.portfolio.randomtrivia.model.Category
 import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
 import com.korn.portfolio.randomtrivia.model.Difficulty
 import com.korn.portfolio.randomtrivia.model.Question
+import java.util.UUID
 
 private fun nonBlankListOf(vararg values: String): List<String> {
     return mutableListOf<String>().apply {
@@ -58,7 +61,9 @@ private fun nonBlankListOf(vararg values: String): List<String> {
 fun QuestionScreen(paddingValues: PaddingValues) {
     val triviaViewModel: TriviaViewModel = viewModel(factory = TriviaViewModel.Factory)
     val categories by triviaViewModel.categoriesWithQuestions.collectAsState(emptyList())
-    CategoryWithQuestionsCards(paddingValues, categories,
+    val uncategorizedQuestions by triviaViewModel.uncategorizedQuestions.collectAsState(emptyList())
+    CategoryWithQuestionsCards(
+        paddingValues, categories, uncategorizedQuestions,
         triviaViewModel::insertQuestions, triviaViewModel::updateQuestions,
         triviaViewModel::deleteQuestions, triviaViewModel::deleteByCategory
     )
@@ -68,16 +73,40 @@ fun QuestionScreen(paddingValues: PaddingValues) {
 private fun CategoryWithQuestionsCards(
     paddingValues: PaddingValues,
     categories: List<CategoryWithQuestions>,
+    uncategorizedQuestions: List<Question>,
     insertAction: (Question) -> Unit,
     updateAction: (Question) -> Unit,
     deleteAction: (Question) -> Unit,
-    deleteAllAction: (Int) -> Unit,
+    deleteByCategoryAction: (UUID?) -> Unit,
 ) {
-    LazyColumn(Modifier.fillMaxSize().padding(paddingValues)) {
-        items(categories, key = { it.category.id }) {
-            CategoryWithQuestionsCard(Modifier.padding(8.dp), it,
-                insertAction, updateAction, deleteAction, deleteAllAction
+    LazyColumn(Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 12.dp)) {
+        item {
+            HorizontalDividerWithText(
+                "With Categories (${categories.fold(0) { acc, it -> acc + it.questions.size  }})",
+                Modifier.fillMaxWidth().padding(vertical = 12.dp)
             )
+        }
+        items(categories, key = { it.category.id }) {
+            CategoryWithQuestionsCard(
+                Modifier.padding(8.dp), it,
+                insertAction, updateAction, deleteAction, deleteByCategoryAction
+            )
+        }
+        item {
+            Column {
+                HorizontalDividerWithText(
+                    "Uncategorized (${uncategorizedQuestions.size})",
+                    Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                )
+                if (uncategorizedQuestions.isNotEmpty()) {
+                    IconButton({ deleteByCategoryAction(null) }) {
+                        Icon(Icons.Default.Delete, null)
+                    }
+                }
+            }
+        }
+        items(uncategorizedQuestions.size, key = { uncategorizedQuestions[it].id }) {
+            UncategorizedQuestion(it + 1, uncategorizedQuestions[it], Modifier.padding(8.dp))
         }
     }
 }
@@ -89,7 +118,7 @@ private fun CategoryWithQuestionsCard(
     insertAction: (Question) -> Unit,
     updateAction: (Question) -> Unit,
     deleteAction: (Question) -> Unit,
-    deleteAllAction: (Int) -> Unit,
+    deleteByCategoryAction: (UUID) -> Unit,
     defaultExpanded: Boolean = false
 ) {
     Column(modifier.animateContentSize().width(IntrinsicSize.Max)) {
@@ -105,7 +134,9 @@ private fun CategoryWithQuestionsCard(
                 IconButton({ showInsertDialog.value = true }) {
                     Icon(Icons.Default.Add, null)
                 }
-                IconButton({ deleteAllAction(category.category.id) }) {
+                IconButton({
+                    deleteByCategoryAction(category.category.id)
+                }) {
                     Icon(Icons.Default.Delete, null)
                 }
             }
@@ -134,16 +165,7 @@ private fun CategoryWithQuestionsCard(
                     Column {
                         Text("${idx + 1}. ${question.question}")
                         Text("(${question.difficulty})")
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Done, null)
-                            Text(question.correctAnswer)
-                        }
-                        question.incorrectAnswers.forEach {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Close, null)
-                                Text(it)
-                            }
-                        }
+                        QuestionChoices(question.correctAnswer, question.incorrectAnswers)
                     }
                 }
             }
@@ -161,7 +183,7 @@ private fun CategoryWithQuestionsCardPreview() {
                 insertAction = {},
                 updateAction = {},
                 deleteAction = {},
-                deleteAllAction = {}
+                deleteByCategoryAction = {}
             )
             Spacer(Modifier.width(4.dp))
             CategoryWithQuestionsCard(
@@ -169,7 +191,7 @@ private fun CategoryWithQuestionsCardPreview() {
                 insertAction = {},
                 updateAction = {},
                 deleteAction = {},
-                deleteAllAction = {},
+                deleteByCategoryAction = {},
                 defaultExpanded = true
             )
         }
@@ -178,7 +200,7 @@ private fun CategoryWithQuestionsCardPreview() {
             insertAction = {},
             updateAction = {},
             deleteAction = {},
-            deleteAllAction = {},
+            deleteByCategoryAction = {},
             defaultExpanded = true
         )
         CategoryWithQuestionsCard(
@@ -186,8 +208,37 @@ private fun CategoryWithQuestionsCardPreview() {
             insertAction = {},
             updateAction = {},
             deleteAction = {},
-            deleteAllAction = {}
+            deleteByCategoryAction = {}
         )
+    }
+}
+
+@Composable
+private fun UncategorizedQuestion(idx: Int, question: Question, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        var expanded by remember { mutableStateOf(false) }
+        Column(Modifier.animateContentSize().clickable { expanded = !expanded }) {
+            Text("$idx. (${question.difficulty}) ${question.question}")
+            if (expanded) {
+                QuestionChoices(question.correctAnswer, question.incorrectAnswers)
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuestionChoices(correctAnswer: String, incorrectAnswers: List<String>) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Done, null)
+            Text(correctAnswer)
+        }
+        incorrectAnswers.forEach {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Close, null)
+                Text(it)
+            }
+        }
     }
 }
 
@@ -293,12 +344,18 @@ private fun QuestionUpdateDialog(
                         content = { Icon(Icons.Default.Close, null) }
                     )
                     Spacer(Modifier.weight(1f))
+                    var uncategorized by remember { mutableStateOf(false) }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Checkbox(uncategorized, { uncategorized = it })
+                        Text("Uncategorize")
+                    }
+                    Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
                             updateAction(Question(
                                 questionText.value,
                                 difficulty.value,
-                                category.id,
+                                if (uncategorized) null else category.id,
                                 correctAnswer.value,
                                 nonBlankListOf(
                                     incorrectAnswer1.value,

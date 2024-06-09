@@ -15,6 +15,7 @@ import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
 import com.korn.portfolio.randomtrivia.model.Question
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class TriviaViewModel(
     private val categoryDao: CategoryDao,
@@ -23,13 +24,19 @@ class TriviaViewModel(
     val categoriesWithQuestions: Flow<List<CategoryWithQuestions>>
         get() = categoryDao.getCategoriesWithQuestions()
 
+    val uncategorizedQuestions: Flow<List<Question>>
+        get() = questionDao.getUncategorized()
+
     fun insertMockData() {
         viewModelScope.launch {
             suspend fun insert(data: CategoryWithQuestions) {
-                categoryDao.insert(data.category)
-                val id = categoryDao.getLatest().id
+                val newCategory = data.category.copy(id = UUID.randomUUID())
+                categoryDao.insert(newCategory)
                 data.questions.forEach {
-                    questionDao.insert(it.copy(categoryId = id))
+                    questionDao.insert(it.copy(
+                        id = UUID.randomUUID(),
+                        categoryId = newCategory.id
+                    ))
                 }
             }
             insert(mockCategoryWithQuestions1)
@@ -79,9 +86,13 @@ class TriviaViewModel(
         }
     }
 
-    fun deleteByCategory(categoryId: Int) {
+    fun deleteByCategory(categoryId: UUID?) {
         viewModelScope.launch {
-            questionDao.deleteByCategory(categoryId)
+            if (categoryId == null) {
+                questionDao.deleteUncategorized()
+            } else {
+                questionDao.deleteByCategory(categoryId)
+            }
         }
     }
 

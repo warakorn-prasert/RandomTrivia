@@ -11,21 +11,21 @@ val mockCategory2 = Category("Category 2", true)
 val mockQuestion11 = Question(
     question = "What is 1 + 1?",
     difficulty = Difficulty.EASY,
-    categoryId = 0,
+    categoryId = mockCategory1.id,
     correctAnswer = "2",
     incorrectAnswers = listOf("1", "3", "4")
 )
 val mockQuestion12 = Question(
     question = "Where are we?",
     difficulty = Difficulty.MEDIUM,
-    categoryId = 0,
+    categoryId = mockCategory1.id,
     correctAnswer = "Earth",
     incorrectAnswers = listOf("Moon", "Sun")
 )
 val mockQuestion21 = Question(
     question = "What are we?",
     difficulty = Difficulty.HARD,
-    categoryId = 1,
+    categoryId = mockCategory2.id,
     correctAnswer = "Humans",
     incorrectAnswers = listOf("Cats", "Dogs", "Fish")
 )

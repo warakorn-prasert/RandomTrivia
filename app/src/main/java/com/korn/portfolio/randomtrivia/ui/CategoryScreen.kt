@@ -159,9 +159,7 @@ private fun CategoryCards(
 @Preview(showBackground = true)
 @Composable
 private fun CategoryCardsPreview() {
-    val mockData = listOf(
-        mockCategoryWithQuestions1.copy(category = mockCategory1.copy(id = 0)),
-        mockCategoryWithQuestions2.copy(category = mockCategory1.copy(id = 1)))
+    val mockData = listOf(mockCategoryWithQuestions1, mockCategoryWithQuestions2)
     val filterWord = mutableStateOf("")
     CategoryCards(PaddingValues(), mockData, filterWord, {}, {})
 }

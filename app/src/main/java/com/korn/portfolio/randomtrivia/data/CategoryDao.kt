@@ -15,9 +15,6 @@ interface CategoryDao : BaseDao<Category> {
     @Query("DELETE FROM Category")
     suspend fun deleteAll()
 
-    @Query("SELECT * FROM Category ORDER BY id DESC LIMIT 1")
-    suspend fun getLatest(): Category
-
     @Transaction
     @Query("SELECT * FROM Category")
     fun getCategoriesWithQuestions(): Flow<List<CategoryWithQuestions>>
