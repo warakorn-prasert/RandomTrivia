@@ -6,10 +6,12 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.korn.portfolio.randomtrivia.model.Category
+import com.korn.portfolio.randomtrivia.model.GameAnswer
+import com.korn.portfolio.randomtrivia.model.GameDetail
 import com.korn.portfolio.randomtrivia.model.Question
 
 @Database(
-    entities = [Category::class, Question::class],
+    entities = [Category::class, Question::class, GameDetail::class, GameAnswer::class],
     version = 1,
     exportSchema = false
 )
@@ -17,6 +19,7 @@ import com.korn.portfolio.randomtrivia.model.Question
 abstract class TriviaDatabase : RoomDatabase() {
     abstract fun categoryDao() : CategoryDao
     abstract fun questionDao() : QuestionDao
+    abstract fun gameDao() : GameDao
 
     companion object {
         @Volatile
