@@ -66,7 +66,8 @@ val mockCategoryOverflowText: CategoryWithQuestions
 private fun Question.toGameAnswer(gameId: UUID) = GameAnswer(
     gameId = gameId,
     questionId = id,
-    answer = "Answer of $question"
+    answer = "Answer of $question",
+    categoryId = categoryId
 )
 
 val mockGameDetail: GameDetail

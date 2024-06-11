@@ -47,7 +47,7 @@ fun GameScreen(paddingValues: PaddingValues) {
                     Text(it.detail.timeStamp)
                     HorizontalDivider()
                     it.questions.forEachIndexed { idx, it ->
-                        Text("${idx + 1}. (${it.question.category?.id}) ${it.question.question.question}")
+                        Text("${idx + 1}. (${it.category?.id}) ${it.question.question}")
                     }
                 }
             }

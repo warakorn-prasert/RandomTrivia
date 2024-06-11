@@ -5,12 +5,15 @@ import androidx.room.Relation
 
 data class GameQuestion(
     @Relation(
-        entity = Question::class,
         parentColumn = "questionId",
         entityColumn = "id"
     )
-    val question: QuestionAndCategory,
+    val question: Question,
     @Embedded
-    val answer: GameAnswer
-    // TODO : Split `QuestionAndCategory`
+    val answer: GameAnswer,
+    @Relation(
+        parentColumn = "categoryId",
+        entityColumn = "id"
+    )
+    val category: Category?,
 )

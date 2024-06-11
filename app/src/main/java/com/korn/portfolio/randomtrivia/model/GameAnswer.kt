@@ -20,13 +20,21 @@ import java.util.UUID
             childColumns = arrayOf("questionId"),
             onUpdate = ForeignKey.CASCADE,
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = Category::class,
+            parentColumns = arrayOf("id"),
+            childColumns = arrayOf("categoryId"),
+            onUpdate = ForeignKey.CASCADE,
+            onDelete = ForeignKey.SET_NULL
         )
     ],
-    indices = [Index("gameId"), Index("questionId")],
+    indices = [Index("gameId"), Index("questionId"), Index("categoryId")],
     primaryKeys = ["gameId", "questionId"]
 )
 data class GameAnswer(
     val gameId: UUID,
     val questionId: UUID,
     val answer: String,
+    val categoryId: UUID?  // Redundant to questionId, but less nested class.
 )
