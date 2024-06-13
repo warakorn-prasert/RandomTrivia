@@ -18,7 +18,8 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+rootProject.name = "RandomTrivia"
 
-rootProject.name = "Random Trivia"
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include(":app")
 include(":database")
