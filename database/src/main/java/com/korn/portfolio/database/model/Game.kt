@@ -1,7 +1,9 @@
-package com.korn.portfolio.randomtrivia.model
+package com.korn.portfolio.database.model
 
 import androidx.room.Embedded
 import androidx.room.Relation
+import com.korn.portfolio.database.model.entity.GameAnswer
+import com.korn.portfolio.database.model.entity.GameDetail
 
 data class Game(
     @Embedded

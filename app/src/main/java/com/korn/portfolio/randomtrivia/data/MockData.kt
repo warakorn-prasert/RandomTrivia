@@ -1,13 +1,13 @@
-package com.korn.portfolio.randomtrivia.ui
+package com.korn.portfolio.randomtrivia.data
 
-import com.korn.portfolio.randomtrivia.model.Category
-import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
-import com.korn.portfolio.randomtrivia.model.Difficulty
-import com.korn.portfolio.randomtrivia.model.Game
-import com.korn.portfolio.randomtrivia.model.GameAnswer
-import com.korn.portfolio.randomtrivia.model.GameDetail
-import com.korn.portfolio.randomtrivia.model.GameQuestion
-import com.korn.portfolio.randomtrivia.model.Question
+import com.korn.portfolio.database.model.entity.Category
+import com.korn.portfolio.database.model.CategoryWithQuestions
+import com.korn.portfolio.database.model.Difficulty
+import com.korn.portfolio.database.model.Game
+import com.korn.portfolio.database.model.entity.GameAnswer
+import com.korn.portfolio.database.model.entity.GameDetail
+import com.korn.portfolio.database.model.GameQuestion
+import com.korn.portfolio.database.model.entity.Question
 import java.util.Date
 import java.util.UUID
 
@@ -66,12 +66,13 @@ val mockCategoryOverflowText: CategoryWithQuestions
         )
     )
 
-private fun Question.toGameAnswer(gameId: UUID) = GameAnswer(
-    gameId = gameId,
-    questionId = id,
-    answer = "Answer of $question",
-    categoryId = categoryId
-)
+private fun Question.toGameAnswer(gameId: UUID) =
+    GameAnswer(
+        gameId = gameId,
+        questionId = id,
+        answer = "Answer of $question",
+        categoryId = categoryId
+    )
 
 val mockGameDetail: GameDetail
     get() = GameDetail(
@@ -88,7 +89,10 @@ data class MockData(
     val question21: Question = mockQuestion21.copy(categoryId = category2.id)
 
     val categoriesWithQuestions: List<CategoryWithQuestions> = listOf(
-        CategoryWithQuestions(category1, listOf(question11, question12)),
+        CategoryWithQuestions(
+            category1,
+            listOf(question11, question12)
+        ),
         CategoryWithQuestions(category2, listOf(question21))
     )
 
@@ -97,9 +101,12 @@ data class MockData(
     val qameAnswer12: GameAnswer = question12.toGameAnswer(gameDetail.gameId)
     val qameAnswer21: GameAnswer = question21.toGameAnswer(gameDetail.gameId)
 
-    val gameQuestion11 = GameQuestion(question11, qameAnswer11, category1)
-    val gameQuestion12 = GameQuestion(question12, qameAnswer12, category1)
-    val gameQuestion21 = GameQuestion(question21, qameAnswer21, category2)
+    val gameQuestion11 =
+        GameQuestion(question11, qameAnswer11, category1)
+    val gameQuestion12 =
+        GameQuestion(question12, qameAnswer12, category1)
+    val gameQuestion21 =
+        GameQuestion(question21, qameAnswer21, category2)
     val gameQuestions: List<GameQuestion> = listOf(gameQuestion11, gameQuestion12, gameQuestion21)
 }
 

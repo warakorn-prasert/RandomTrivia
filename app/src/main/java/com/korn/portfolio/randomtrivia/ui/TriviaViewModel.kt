@@ -7,17 +7,18 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.korn.portfolio.randomtrivia.data.CategoryDao
-import com.korn.portfolio.randomtrivia.data.GameDao
-import com.korn.portfolio.randomtrivia.data.QuestionDao
-import com.korn.portfolio.randomtrivia.data.TriviaDatabase
-import com.korn.portfolio.randomtrivia.model.Category
-import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
-import com.korn.portfolio.randomtrivia.model.Game
-import com.korn.portfolio.randomtrivia.model.GameAnswer
-import com.korn.portfolio.randomtrivia.model.GameDetail
-import com.korn.portfolio.randomtrivia.model.GameOption
-import com.korn.portfolio.randomtrivia.model.Question
+import com.korn.portfolio.database.dao.CategoryDao
+import com.korn.portfolio.database.dao.GameDao
+import com.korn.portfolio.database.dao.QuestionDao
+import com.korn.portfolio.database.TriviaDatabase
+import com.korn.portfolio.database.model.entity.Category
+import com.korn.portfolio.database.model.CategoryWithQuestions
+import com.korn.portfolio.database.model.Game
+import com.korn.portfolio.database.model.entity.GameAnswer
+import com.korn.portfolio.database.model.entity.GameDetail
+import com.korn.portfolio.database.model.GameOption
+import com.korn.portfolio.database.model.entity.Question
+import com.korn.portfolio.randomtrivia.data.MockData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -67,7 +68,10 @@ class TriviaViewModel(
 
     fun insertGame(options: List<GameOption>) {
         viewModelScope.launch {
-            val gameDetail = GameDetail(timestamp = Date(), totalTimeSecond = 1234)
+            val gameDetail = GameDetail(
+                timestamp = Date(),
+                totalTimeSecond = 1234
+            )
             val gameAnswers = mutableListOf<GameAnswer>()
             options.forEach { option ->
                 val questions = questionDao.getBy(

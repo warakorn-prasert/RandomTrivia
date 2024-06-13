@@ -1,4 +1,4 @@
-package com.korn.portfolio.randomtrivia.model
+package com.korn.portfolio.database.model
 
 enum class Difficulty {
     EASY,

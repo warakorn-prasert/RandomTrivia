@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Random Trivia"
 include(":app")
+include(":database")

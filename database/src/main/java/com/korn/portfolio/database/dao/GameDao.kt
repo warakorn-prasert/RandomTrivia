@@ -1,4 +1,4 @@
-package com.korn.portfolio.randomtrivia.data
+package com.korn.portfolio.database.dao
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -6,9 +6,9 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import com.korn.portfolio.randomtrivia.model.Game
-import com.korn.portfolio.randomtrivia.model.GameAnswer
-import com.korn.portfolio.randomtrivia.model.GameDetail
+import com.korn.portfolio.database.model.Game
+import com.korn.portfolio.database.model.entity.GameAnswer
+import com.korn.portfolio.database.model.entity.GameDetail
 import kotlinx.coroutines.flow.Flow
 
 @Dao

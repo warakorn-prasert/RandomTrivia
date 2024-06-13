@@ -48,14 +48,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.korn.portfolio.randomtrivia.model.Category
-import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
-import com.korn.portfolio.randomtrivia.model.Difficulty
-import com.korn.portfolio.randomtrivia.model.Game
-import com.korn.portfolio.randomtrivia.model.GameAnswer
-import com.korn.portfolio.randomtrivia.model.GameOption
-import com.korn.portfolio.randomtrivia.model.GameQuestion
-import com.korn.portfolio.randomtrivia.model.Question
+import com.korn.portfolio.database.model.entity.Category
+import com.korn.portfolio.database.model.CategoryWithQuestions
+import com.korn.portfolio.database.model.Difficulty
+import com.korn.portfolio.database.model.Game
+import com.korn.portfolio.database.model.entity.GameAnswer
+import com.korn.portfolio.database.model.GameOption
+import com.korn.portfolio.database.model.GameQuestion
+import com.korn.portfolio.database.model.entity.Question
+import com.korn.portfolio.randomtrivia.data.MockData
+import com.korn.portfolio.randomtrivia.data.mockGame
 import java.util.Date
 
 private fun Date.toFormattedString(): String = String.format("%tY-%<tm-%<td %<tH:%<tM:%<tS", this)
@@ -115,11 +117,13 @@ private fun CategoryWithQuestions.toGameOptions(): List<GameOption> {
         // If found, add 1 to amount
         if (idx >= 0) options[idx] = options[idx].copy(amount = options[idx].amount + 1)
         // Else, add new option
-        else options.add(GameOption(
-            category = category.copy(),
-            difficulty = question.difficulty,
-            amount = 1
-        ))
+        else options.add(
+            GameOption(
+                category = category.copy(),
+                difficulty = question.difficulty,
+                amount = 1
+            )
+        )
     }
     return options
 }

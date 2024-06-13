@@ -1,9 +1,10 @@
-package com.korn.portfolio.randomtrivia.model
+package com.korn.portfolio.database.model.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.korn.portfolio.database.model.Difficulty
 import java.util.UUID
 
 @Entity(

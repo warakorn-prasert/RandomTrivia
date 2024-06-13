@@ -43,10 +43,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.korn.portfolio.randomtrivia.model.Category
-import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
-import com.korn.portfolio.randomtrivia.model.Difficulty
-import com.korn.portfolio.randomtrivia.model.Question
+import com.korn.portfolio.database.model.entity.Category
+import com.korn.portfolio.database.model.CategoryWithQuestions
+import com.korn.portfolio.database.model.Difficulty
+import com.korn.portfolio.database.model.entity.Question
+import com.korn.portfolio.randomtrivia.data.mockCategory1
+import com.korn.portfolio.randomtrivia.data.mockCategoryEmpty
+import com.korn.portfolio.randomtrivia.data.mockCategoryOverflowText
+import com.korn.portfolio.randomtrivia.data.mockCategoryWithQuestions1
+import com.korn.portfolio.randomtrivia.data.mockQuestion12
 import java.util.UUID
 
 private fun nonBlankListOf(vararg values: String): List<String> {
@@ -272,16 +277,18 @@ private fun QuestionInsertDialog(
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            insertAction(Question(
-                                question.value,
-                                difficulty.value,
-                                category.id,
-                                correctAnswer.value,
-                                nonBlankListOf(
-                                    incorrectAnswer1.value, incorrectAnswer2.value,
-                                    incorrectAnswer3.value, incorrectAnswer4.value
+                            insertAction(
+                                Question(
+                                    question.value,
+                                    difficulty.value,
+                                    category.id,
+                                    correctAnswer.value,
+                                    nonBlankListOf(
+                                        incorrectAnswer1.value, incorrectAnswer2.value,
+                                        incorrectAnswer3.value, incorrectAnswer4.value
+                                    )
                                 )
-                            ))
+                            )
                             show.value = false
                         },
                         content = { Icon(Icons.Default.Done, null) }
@@ -352,18 +359,21 @@ private fun QuestionUpdateDialog(
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            updateAction(Question(
-                                questionText.value,
-                                difficulty.value,
-                                if (uncategorized) null else category.id,
-                                correctAnswer.value,
-                                nonBlankListOf(
-                                    incorrectAnswer1.value,
-                                    incorrectAnswer2.value,
-                                    incorrectAnswer3.value,
-                                    incorrectAnswer4.value),
-                                question.id
-                            ))
+                            updateAction(
+                                Question(
+                                    questionText.value,
+                                    difficulty.value,
+                                    if (uncategorized) null else category.id,
+                                    correctAnswer.value,
+                                    nonBlankListOf(
+                                        incorrectAnswer1.value,
+                                        incorrectAnswer2.value,
+                                        incorrectAnswer3.value,
+                                        incorrectAnswer4.value
+                                    ),
+                                    question.id
+                                )
+                            )
                             show.value = false
                         },
                         content = { Icon(Icons.Default.Done, null) }

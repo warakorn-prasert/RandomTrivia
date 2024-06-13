@@ -1,10 +1,10 @@
-package com.korn.portfolio.randomtrivia.data
+package com.korn.portfolio.database.dao
 
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
-import com.korn.portfolio.randomtrivia.model.Category
-import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
+import com.korn.portfolio.database.model.CategoryWithQuestions
+import com.korn.portfolio.database.model.entity.Category
 import kotlinx.coroutines.flow.Flow
 
 @Dao

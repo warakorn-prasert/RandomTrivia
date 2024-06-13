@@ -1,9 +1,9 @@
-package com.korn.portfolio.randomtrivia.data
+package com.korn.portfolio.database.dao
 
 import androidx.room.Dao
 import androidx.room.Query
-import com.korn.portfolio.randomtrivia.model.Difficulty
-import com.korn.portfolio.randomtrivia.model.Question
+import com.korn.portfolio.database.model.Difficulty
+import com.korn.portfolio.database.model.entity.Question
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 

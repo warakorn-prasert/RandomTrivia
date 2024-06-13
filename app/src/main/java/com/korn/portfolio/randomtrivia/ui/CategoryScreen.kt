@@ -47,8 +47,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.korn.portfolio.randomtrivia.model.Category
-import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
+import com.korn.portfolio.database.model.entity.Category
+import com.korn.portfolio.database.model.CategoryWithQuestions
+import com.korn.portfolio.randomtrivia.data.mockCategory1
+import com.korn.portfolio.randomtrivia.data.mockCategoryOverflowText
+import com.korn.portfolio.randomtrivia.data.mockCategoryWithQuestions1
+import com.korn.portfolio.randomtrivia.data.mockCategoryWithQuestions2
 
 private fun List<CategoryWithQuestions>.filterByTitle(filterWord: String): List<CategoryWithQuestions> {
     return filter { it.category.name.lowercase().contains(filterWord.lowercase()) }
@@ -265,7 +269,12 @@ private fun CategoryInsertDialog(expanded: MutableState<Boolean>, insertAction: 
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            insertAction(Category(name.value, downloadable.value))
+                            insertAction(
+                                Category(
+                                    name.value,
+                                    downloadable.value
+                                )
+                            )
                             expanded.value = false
                         },
                         content = { Icon(Icons.Default.Done, null) }
@@ -306,7 +315,13 @@ private fun CategoryUpdateDialog(
                     Spacer(Modifier.weight(1f))
                     IconButton(
                         onClick = {
-                            updateAction(Category(name.value, downloadable.value, category.id))
+                            updateAction(
+                                Category(
+                                    name.value,
+                                    downloadable.value,
+                                    category.id
+                                )
+                            )
                             expanded.value = false
                         },
                         content = { Icon(Icons.Default.Done, null) }
