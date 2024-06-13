@@ -30,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -101,7 +100,8 @@ private fun PlainTextFieldPreview() {
 
 @Composable
 fun <T> CustomDropdown(
-    selection: MutableState<T>,
+    value: T,
+    onValueChange: (T) -> Unit,
     options: List<T>,
     modifier: Modifier = Modifier,
     toString: (T) -> String
@@ -113,7 +113,7 @@ fun <T> CustomDropdown(
         Row(Modifier.padding(4.dp).padding(start = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(toString(selection.value))
+            Text(toString(value))
             ToggleArrowIcon(expanded)
         }
         DropdownMenu(
@@ -124,7 +124,7 @@ fun <T> CustomDropdown(
                     DropdownMenuItem(
                         text = { Text(toString(it)) },
                         onClick = {
-                            selection.value = it
+                            onValueChange(it)
                             expanded = false
                         }
                     )

@@ -15,7 +15,7 @@ import com.korn.portfolio.randomtrivia.model.Question
     version = 1,
     exportSchema = false
 )
-@TypeConverters(StringListConverters::class)
+@TypeConverters(StringListConverters::class, DateConverters::class)
 abstract class TriviaDatabase : RoomDatabase() {
     abstract fun categoryDao() : CategoryDao
     abstract fun questionDao() : QuestionDao

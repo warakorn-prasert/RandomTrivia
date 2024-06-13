@@ -3,9 +3,12 @@ package com.korn.portfolio.randomtrivia.ui
 import com.korn.portfolio.randomtrivia.model.Category
 import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
 import com.korn.portfolio.randomtrivia.model.Difficulty
+import com.korn.portfolio.randomtrivia.model.Game
 import com.korn.portfolio.randomtrivia.model.GameAnswer
 import com.korn.portfolio.randomtrivia.model.GameDetail
+import com.korn.portfolio.randomtrivia.model.GameQuestion
 import com.korn.portfolio.randomtrivia.model.Question
+import java.util.Date
 import java.util.UUID
 
 val mockCategory1: Category
@@ -72,7 +75,7 @@ private fun Question.toGameAnswer(gameId: UUID) = GameAnswer(
 
 val mockGameDetail: GameDetail
     get() = GameDetail(
-        timeStamp = "TimeStamp 1",
+        timestamp = Date(),
         totalTimeSecond = 1234
     )
 
@@ -84,8 +87,25 @@ data class MockData(
     val question12: Question = mockQuestion12.copy(categoryId = category1.id)
     val question21: Question = mockQuestion21.copy(categoryId = category2.id)
 
+    val categoriesWithQuestions: List<CategoryWithQuestions> = listOf(
+        CategoryWithQuestions(category1, listOf(question11, question12)),
+        CategoryWithQuestions(category2, listOf(question21))
+    )
+
     val gameDetail: GameDetail = mockGameDetail
     val qameAnswer11: GameAnswer = question11.toGameAnswer(gameDetail.gameId)
     val qameAnswer12: GameAnswer = question12.toGameAnswer(gameDetail.gameId)
     val qameAnswer21: GameAnswer = question21.toGameAnswer(gameDetail.gameId)
+
+    val gameQuestion11 = GameQuestion(question11, qameAnswer11, category1)
+    val gameQuestion12 = GameQuestion(question12, qameAnswer12, category1)
+    val gameQuestion21 = GameQuestion(question21, qameAnswer21, category2)
+    val gameQuestions: List<GameQuestion> = listOf(gameQuestion11, gameQuestion12, gameQuestion21)
+}
+
+val mockGame: Game = with(MockData()) {
+    Game(
+        detail = gameDetail,
+        questions = gameQuestions
+    )
 }

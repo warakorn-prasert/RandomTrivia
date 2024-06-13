@@ -14,9 +14,13 @@ import com.korn.portfolio.randomtrivia.data.TriviaDatabase
 import com.korn.portfolio.randomtrivia.model.Category
 import com.korn.portfolio.randomtrivia.model.CategoryWithQuestions
 import com.korn.portfolio.randomtrivia.model.Game
+import com.korn.portfolio.randomtrivia.model.GameAnswer
+import com.korn.portfolio.randomtrivia.model.GameDetail
+import com.korn.portfolio.randomtrivia.model.GameOption
 import com.korn.portfolio.randomtrivia.model.Question
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import java.util.Date
 import java.util.UUID
 
 class TriviaViewModel(
@@ -41,7 +45,7 @@ class TriviaViewModel(
                 questionDao.insert(question11)
                 questionDao.insert(question12)
                 questionDao.insert(question21)
-                gameDao.insertDetail(gameDetail)
+                gameDao.insert(gameDetail)
                 gameDao.insertAnswer(qameAnswer11)
                 gameDao.insertAnswer(qameAnswer12)
                 gameDao.insertAnswer(qameAnswer21)
@@ -61,6 +65,31 @@ class TriviaViewModel(
         }
     }
 
+    fun insertGame(options: List<GameOption>) {
+        viewModelScope.launch {
+            val gameDetail = GameDetail(timestamp = Date(), totalTimeSecond = 1234)
+            val gameAnswers = mutableListOf<GameAnswer>()
+            options.forEach { option ->
+                val questions = questionDao.getBy(
+                    categoryId = option.category.id,
+                    difficulty = option.difficulty,
+                    amount = option.amount
+                )
+                val answers = questions.map { question ->
+                    GameAnswer(
+                        gameId = gameDetail.gameId,
+                        questionId = question.id,
+                        answer = "(Not answered)",
+                        categoryId = option.category.id
+                    )
+                }
+                answers.forEach(gameAnswers::add)
+            }
+            gameDao.insert(gameDetail)
+            gameDao.insertAnswer(*gameAnswers.toTypedArray())
+        }
+    }
+
     fun updateCategories(vararg category: Category) {
         viewModelScope.launch {
             categoryDao.update(*category)
@@ -70,6 +99,12 @@ class TriviaViewModel(
     fun updateQuestions(vararg question: Question) {
         viewModelScope.launch {
             questionDao.update(*question)
+        }
+    }
+
+    fun updateAnswer(vararg answer: GameAnswer) {
+        viewModelScope.launch {
+            gameDao.updateAnswer(*answer)
         }
     }
 
@@ -85,6 +120,17 @@ class TriviaViewModel(
         }
     }
 
+    fun deleteGames(vararg games: Game) {
+        viewModelScope.launch {
+            games.forEach { game ->
+                gameDao.delete(game.detail)
+                game.questions.forEach { question ->
+                    gameDao.deleteAnswer(question.answer)
+                }
+            }
+        }
+    }
+
     fun deleteAllCategories() {
         viewModelScope.launch {
             categoryDao.deleteAll()
@@ -93,8 +139,7 @@ class TriviaViewModel(
 
     fun deleteAllGames() {
         viewModelScope.launch {
-            gameDao.deleteAllDetails()
-            gameDao.deleteAllAnswers()
+            gameDao.deleteAll()
         }
     }
 

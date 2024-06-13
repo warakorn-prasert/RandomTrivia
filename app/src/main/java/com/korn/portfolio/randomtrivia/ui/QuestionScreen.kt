@@ -399,7 +399,8 @@ private fun QuestionEditor(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Difficulty", Modifier.padding(end = 4.dp))
             CustomDropdown(
-                selection = difficulty,
+                value = difficulty.value,
+                onValueChange = { difficulty.value = it },
                 options = Difficulty.entries,
                 toString = { it.name }
             )
