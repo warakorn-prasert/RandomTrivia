@@ -9,9 +9,6 @@ import java.util.UUID
 
 @Dao
 interface QuestionDao : BaseDao<Question> {
-    @Query("SELECT * FROM Question")
-    fun getAll(): Flow<List<Question>>
-
     @Query("SELECT * FROM Question WHERE categoryId IS NULL")
     fun getUncategorized(): Flow<List<Question>>
 
