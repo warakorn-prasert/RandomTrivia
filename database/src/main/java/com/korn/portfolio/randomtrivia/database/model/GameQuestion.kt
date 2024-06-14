@@ -1,10 +1,10 @@
-package com.korn.portfolio.database.model
+package com.korn.portfolio.randomtrivia.database.model
 
 import androidx.room.Embedded
 import androidx.room.Relation
-import com.korn.portfolio.database.model.entity.Category
-import com.korn.portfolio.database.model.entity.GameAnswer
-import com.korn.portfolio.database.model.entity.Question
+import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.database.model.entity.GameAnswer
+import com.korn.portfolio.randomtrivia.database.model.entity.Question
 
 data class GameQuestion(
     @Relation(

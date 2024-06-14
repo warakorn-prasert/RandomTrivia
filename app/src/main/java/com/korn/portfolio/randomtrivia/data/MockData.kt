@@ -1,13 +1,13 @@
 package com.korn.portfolio.randomtrivia.data
 
-import com.korn.portfolio.database.model.entity.Category
-import com.korn.portfolio.database.model.CategoryWithQuestions
-import com.korn.portfolio.database.model.Difficulty
-import com.korn.portfolio.database.model.Game
-import com.korn.portfolio.database.model.entity.GameAnswer
-import com.korn.portfolio.database.model.entity.GameDetail
-import com.korn.portfolio.database.model.GameQuestion
-import com.korn.portfolio.database.model.entity.Question
+import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.database.model.CategoryWithQuestions
+import com.korn.portfolio.randomtrivia.database.model.Difficulty
+import com.korn.portfolio.randomtrivia.database.model.Game
+import com.korn.portfolio.randomtrivia.database.model.entity.GameAnswer
+import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
+import com.korn.portfolio.randomtrivia.database.model.GameQuestion
+import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import java.util.Date
 import java.util.UUID
 

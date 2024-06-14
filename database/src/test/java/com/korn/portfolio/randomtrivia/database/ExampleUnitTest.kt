@@ -1,4 +1,4 @@
-package com.korn.portfolio.database
+package com.korn.portfolio.randomtrivia.database
 
 import org.junit.Test
 

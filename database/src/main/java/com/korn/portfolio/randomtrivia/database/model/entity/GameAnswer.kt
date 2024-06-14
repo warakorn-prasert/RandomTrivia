@@ -1,4 +1,4 @@
-package com.korn.portfolio.database.model.entity
+package com.korn.portfolio.randomtrivia.database.model.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey

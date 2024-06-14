@@ -1,4 +1,4 @@
-package com.korn.portfolio.database.dao
+package com.korn.portfolio.randomtrivia.database.dao
 
 import androidx.room.Delete
 import androidx.room.Insert

@@ -10,7 +10,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.korn.portfolio.database"
+    namespace = "com.korn.portfolio.randomtrivia.database"
     compileSdk = 34
 
     defaultConfig {

@@ -1,16 +1,19 @@
-package com.korn.portfolio.database
+package com.korn.portfolio.randomtrivia.database
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.korn.portfolio.database.converter.DateConverters
-import com.korn.portfolio.database.converter.StringListConverters
-import com.korn.portfolio.database.model.entity.Category
-import com.korn.portfolio.database.model.entity.GameAnswer
-import com.korn.portfolio.database.model.entity.GameDetail
-import com.korn.portfolio.database.model.entity.Question
+import com.korn.portfolio.randomtrivia.database.converter.DateConverters
+import com.korn.portfolio.randomtrivia.database.converter.StringListConverters
+import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.database.model.entity.GameAnswer
+import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
+import com.korn.portfolio.randomtrivia.database.model.entity.Question
+import com.korn.portfolio.randomtrivia.database.dao.CategoryDao
+import com.korn.portfolio.randomtrivia.database.dao.GameDao
+import com.korn.portfolio.randomtrivia.database.dao.QuestionDao
 
 @Database(
     entities = [Category::class, Question::class, GameDetail::class, GameAnswer::class],
@@ -19,9 +22,9 @@ import com.korn.portfolio.database.model.entity.Question
 )
 @TypeConverters(StringListConverters::class, DateConverters::class)
 abstract class TriviaDatabase : RoomDatabase() {
-    abstract fun categoryDao() : com.korn.portfolio.database.dao.CategoryDao
-    abstract fun questionDao() : com.korn.portfolio.database.dao.QuestionDao
-    abstract fun gameDao() : com.korn.portfolio.database.dao.GameDao
+    abstract fun categoryDao() : CategoryDao
+    abstract fun questionDao() : QuestionDao
+    abstract fun gameDao() : GameDao
 
     companion object {
         @Volatile

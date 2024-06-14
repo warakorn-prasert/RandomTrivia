@@ -1,4 +1,4 @@
-package com.korn.portfolio.database.converter
+package com.korn.portfolio.randomtrivia.database.converter
 
 import androidx.room.TypeConverter
 import kotlinx.serialization.encodeToString
