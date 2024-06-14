@@ -22,3 +22,4 @@ rootProject.name = "RandomTrivia"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include(":app")
+include(":database")
