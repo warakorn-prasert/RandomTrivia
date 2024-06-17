@@ -32,6 +32,7 @@ android {
 
 dependencies {
 
+    implementation(libs.androidx.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp.logging)
     implementation(libs.retrofit.core)

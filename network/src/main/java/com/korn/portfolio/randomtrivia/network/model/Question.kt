@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Question(
     val type: String,
-    val difficulty: String,
+    val difficulty: Difficulty,
     val category: String,
     val question: String,
     @SerialName("correct_answer")

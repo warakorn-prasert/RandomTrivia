@@ -1,5 +1,7 @@
 package com.korn.portfolio.randomtrivia.network
 
+import com.korn.portfolio.randomtrivia.network.model.Difficulty
+import com.korn.portfolio.randomtrivia.network.model.Type
 import com.korn.portfolio.randomtrivia.network.model.response.FetchCategories
 import com.korn.portfolio.randomtrivia.network.model.response.FetchNewSession
 import com.korn.portfolio.randomtrivia.network.model.response.FetchOverall
@@ -28,9 +30,9 @@ interface TriviaApiService {
     @GET("api.php")
     suspend fun getQuestions(
         @Query("amount") amount: Int,
-        @Query("category") categoryId: Int,
-        @Query("difficulty") difficulty: String,
-        @Query("type") type: String,
-        @Query("token") token: String
+        @Query("category") categoryId: Int?,
+        @Query("difficulty") difficulty: Difficulty?,
+        @Query("type") type: Type?,
+        @Query("token") token: String?
     ): FetchQuestions
 }
