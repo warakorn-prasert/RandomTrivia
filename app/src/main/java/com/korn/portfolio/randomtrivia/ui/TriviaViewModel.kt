@@ -48,6 +48,8 @@ class TriviaViewModel(private val triviaApiClient: TriviaApiClient) : ViewModel(
         private set
     var questionCounts: ViewModelData<Map<Category, QuestionCount>> by mutableStateOf(ViewModelData(emptyMap(), UiState.Success))
         private set
+    var token: ViewModelData<String?> by mutableStateOf(ViewModelData(null, UiState.Success))
+        private set
     var questions: ViewModelData<List<Question>> by mutableStateOf(ViewModelData(emptyList(), UiState.Success))
         private set
 
@@ -79,11 +81,28 @@ class TriviaViewModel(private val triviaApiClient: TriviaApiClient) : ViewModel(
         }
     }
 
-    fun getQuestions(amount: Int, categoryId: Int?, difficulty: Difficulty?, type: Type?, token: String?) {
+    fun getToken() {
+        viewModelScope.launch {
+            token = token with UiState.Loading
+            token = try {
+                val newToken = triviaApiClient.getToken()
+                    .takeIf { it.responseCode == ResponseCode.SUCCESS }?.token
+                token with UiState.Success with newToken
+            } catch (e: Exception) {
+                token with UiState.Error(e) with null
+            }
+        }
+    }
+
+    fun clearToken() {
+        token = token with null
+    }
+
+    fun getQuestions(amount: Int, categoryId: Int?, difficulty: Difficulty?, type: Type?) {
         viewModelScope.launch {
             questions = questions with UiState.Loading
             questions = try {
-                triviaApiClient.getQuestions(amount, categoryId, difficulty, type, token)
+                triviaApiClient.getQuestions(amount, categoryId, difficulty, type, token.data)
                     .let { (responseCode, data) ->
                         if (responseCode != ResponseCode.SUCCESS)
                             throw ResponseCodeException(responseCode)
@@ -100,7 +119,6 @@ class TriviaViewModel(private val triviaApiClient: TriviaApiClient) : ViewModel(
             questions = questions with emptyList()
         }
     }
-
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

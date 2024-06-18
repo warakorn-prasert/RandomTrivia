@@ -110,11 +110,7 @@ fun AppScreen() {
             LaunchedEffect(questionCounts.uiState) {
                 val uiState = questionCounts.uiState
                 if (uiState is UiState.Error) {
-                    var message = "Couldn't load category detail"
-                    if (uiState.error is ResponseCodeException) {
-                        message += " (${uiState.error.message})"
-                    }
-                    showSnackbar(message)
+                    showSnackbar("Couldn't load category detail (${uiState.error.message})")
                 }
             }
             HeaderText("${categories.data.size} Categories, ${categories.data.values.sum()} Question(s)") {
@@ -167,15 +163,34 @@ fun AppScreen() {
                 }
             }
 
+            val token = triviaViewModel.token
+            LaunchedEffect(token.uiState) {
+                val uiState = token.uiState
+                if (uiState is UiState.Error) {
+                    showSnackbar("Couldn't renew token (${uiState.error.message})")
+                }
+            }
+            val tokenShort = token.data?.substring(0, 5)?.let { "$it..." }
+            val enableTokenAction = token.uiState !is UiState.Loading
+                    && triviaViewModel.questions.uiState !is UiState.Loading
+            HeaderText("Token ($tokenShort)") {
+                IconButton(
+                    onClick = triviaViewModel::clearToken,
+                    enabled = enableTokenAction && token.data != null,
+                    content = { Icon(Icons.Default.Delete, null) }
+                )
+                IconButton(
+                    onClick = triviaViewModel::getToken,
+                    enabled = enableTokenAction,
+                    content = { Icon(Icons.Default.Refresh, null) }
+                )
+            }
+
             val questions = triviaViewModel.questions
             LaunchedEffect(questions.uiState) {
                 val uiState = questions.uiState
                 if (uiState is UiState.Error) {
-                    var message = "Couldn't get questions"
-                    if (uiState.error is ResponseCodeException) {
-                        message += " (${uiState.error.message})"
-                    }
-                    showSnackbar(message)
+                    showSnackbar("Couldn't get questions (${uiState.error.message})")
                 }
             }
             HeaderText("${questions.data.size} Question(s)") {
@@ -347,8 +362,7 @@ private fun InsertQuestionDialog(
     categories: Set<Category>,
     questionCounts: ViewModelData<Map<Category, QuestionCount>>,
     getQuestionCount: (categoryId: Int) -> Unit,
-    getQuestions: (amount: Int, categoryId: Int?, difficulty: Difficulty?,
-        type: Type?, token: String?) -> Unit
+    getQuestions: (amount: Int, categoryId: Int?, difficulty: Difficulty?, type: Type?) -> Unit
 ) {
     val randomCategory = Category(id = -1, name = "random")
     var category by remember { mutableStateOf(randomCategory) }
@@ -434,8 +448,7 @@ private fun InsertQuestionDialog(
                                 amount,
                                 category.takeUnless { it == randomCategory }?.id,
                                 difficulty.takeUnless { it == Difficulty.RANDOM },
-                                type.takeUnless { it == Type.RANDOM },
-                                null
+                                type.takeUnless { it == Type.RANDOM }
                             )
                             show.value = false
                         },

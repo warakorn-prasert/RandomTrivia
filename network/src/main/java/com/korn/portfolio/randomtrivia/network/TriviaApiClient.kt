@@ -6,6 +6,7 @@ import com.korn.portfolio.randomtrivia.network.model.Category
 import com.korn.portfolio.randomtrivia.network.model.Difficulty
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.network.model.Type
+import com.korn.portfolio.randomtrivia.network.model.response.FetchNewSession
 import com.korn.portfolio.randomtrivia.network.model.response.FetchQuestions
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -14,6 +15,10 @@ import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 
 class TriviaApiClient(private val triviaApiService: TriviaApiService) {
+    suspend fun getToken(): FetchNewSession {
+        return triviaApiService.getNewSession()
+    }
+
     suspend fun getCategories(): Map<Category, Int> {
         val categories = triviaApiService.getCategories().categories
         val totalQuestions = triviaApiService.getOverall().categories
