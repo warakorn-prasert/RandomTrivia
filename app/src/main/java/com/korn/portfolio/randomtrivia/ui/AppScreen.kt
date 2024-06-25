@@ -366,7 +366,7 @@ private fun InsertQuestionDialog(
 ) {
     var category by remember { mutableStateOf<Category?>(null) }
     var difficulty by remember { mutableStateOf<Difficulty?>(null) }
-    var type by remember { mutableStateOf(Type.RANDOM) }
+    var type by remember { mutableStateOf<Type?>(null) }
     var amount by remember { mutableIntStateOf(1) }
 
     var maxAmount by remember { mutableIntStateOf(50) }
@@ -420,13 +420,13 @@ private fun InsertQuestionDialog(
                     value = category,
                     onValueChange = { category = it },
                     options = categories + null,
-                    toString = { "${it?.id ?: ""} ${it?.name ?: "Random"}" }
+                    toString = { "${it?.id ?: ""}${it?.name ?: "Random"}" }
                 )
                 CustomDropdown(
                     value = type,
                     onValueChange = { type = it },
-                    options = Type.entries,
-                    toString = { it.name.lowercase() }
+                    options = Type.entries + null,
+                    toString = { it?.name?.lowercase() ?: "Random" }
                 )
                 if (category == null || questionCounts.data.containsKey(category)) {
                     CustomDropdown(
@@ -445,12 +445,7 @@ private fun InsertQuestionDialog(
                     )
                     IconButton(
                         onClick = {
-                            getQuestions(
-                                amount,
-                                category.takeUnless { it == null }?.id,
-                                difficulty.takeUnless { it == null },
-                                type.takeUnless { it == Type.RANDOM }
-                            )
+                            getQuestions(amount, category?.id, difficulty, type)
                             show.value = false
                         },
                         modifier = Modifier.align(Alignment.CenterHorizontally),
