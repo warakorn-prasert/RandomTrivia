@@ -2,7 +2,6 @@ package com.korn.portfolio.randomtrivia.network.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 
 @Serializable
 enum class Difficulty {
@@ -11,10 +10,7 @@ enum class Difficulty {
     @SerialName("medium")
     MEDIUM,
     @SerialName("hard")
-    HARD,
-    @Transient
-    @SerialName("random")
-    RANDOM;
+    HARD;
 
     override fun toString(): String = javaClass
         .getField(name)

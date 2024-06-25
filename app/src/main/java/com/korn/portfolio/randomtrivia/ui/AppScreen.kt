@@ -364,18 +364,17 @@ private fun InsertQuestionDialog(
     getQuestionCount: (categoryId: Int) -> Unit,
     getQuestions: (amount: Int, categoryId: Int?, difficulty: Difficulty?, type: Type?) -> Unit
 ) {
-    val randomCategory = Category(id = -1, name = "random")
-    var category by remember { mutableStateOf(randomCategory) }
-    var difficulty by remember { mutableStateOf(Difficulty.RANDOM) }
+    var category by remember { mutableStateOf<Category?>(null) }
+    var difficulty by remember { mutableStateOf<Difficulty?>(null) }
     var type by remember { mutableStateOf(Type.RANDOM) }
     var amount by remember { mutableIntStateOf(1) }
 
     var maxAmount by remember { mutableIntStateOf(50) }
     val difficulties =
-        if (category == randomCategory) {
+        if (category == null) {
             Difficulty.entries
         } else {
-            mutableSetOf(Difficulty.RANDOM).apply {
+            mutableSetOf<Difficulty?>(null).apply {
                 for (questionCount in questionCounts.data.values) {
                     with(questionCount) {
                         if (easy > 0) add(Difficulty.EASY)
@@ -390,14 +389,16 @@ private fun InsertQuestionDialog(
         }
 
     LaunchedEffect(category) {
-        difficulty = Difficulty.RANDOM
-        if (category != randomCategory && !questionCounts.data.containsKey(category)) {
-            getQuestionCount(category.id)
+        difficulty = null
+        category?.let { c ->
+            if (!questionCounts.data.containsKey(c)) {
+                getQuestionCount(c.id)
+            }
         }
     }
     LaunchedEffect(category, difficulty) {
         maxAmount =
-            if (category == randomCategory || !questionCounts.data.containsKey(category))
+            if (category == null || !questionCounts.data.containsKey(category))
                 50
             else {
                 with(questionCounts.data[category]!!) {
@@ -405,7 +406,7 @@ private fun InsertQuestionDialog(
                         Difficulty.EASY -> easy
                         Difficulty.MEDIUM -> medium
                         Difficulty.HARD -> hard
-                        Difficulty.RANDOM -> easy + medium + hard
+                        null -> easy + medium + hard
                     }.coerceAtMost(50)
                 }
             }
@@ -418,8 +419,8 @@ private fun InsertQuestionDialog(
                 CustomDropdown(
                     value = category,
                     onValueChange = { category = it },
-                    options = categories + randomCategory,
-                    toString = { "${it.id} ${it.name}" }
+                    options = categories + null,
+                    toString = { "${it?.id ?: ""} ${it?.name ?: "Random"}" }
                 )
                 CustomDropdown(
                     value = type,
@@ -427,12 +428,12 @@ private fun InsertQuestionDialog(
                     options = Type.entries,
                     toString = { it.name.lowercase() }
                 )
-                if (category == randomCategory || questionCounts.data.containsKey(category)) {
+                if (category == null || questionCounts.data.containsKey(category)) {
                     CustomDropdown(
                         value = difficulty,
                         onValueChange = { difficulty = it },
                         options = difficulties,
-                        toString = { it.name.lowercase() }
+                        toString = { it?.name?.lowercase() ?: "Random" }
                     )
                     PlainTextField(
                         value = amount.toString(),
@@ -446,8 +447,8 @@ private fun InsertQuestionDialog(
                         onClick = {
                             getQuestions(
                                 amount,
-                                category.takeUnless { it == randomCategory }?.id,
-                                difficulty.takeUnless { it == Difficulty.RANDOM },
+                                category.takeUnless { it == null }?.id,
+                                difficulty.takeUnless { it == null },
                                 type.takeUnless { it == Type.RANDOM }
                             )
                             show.value = false
@@ -455,16 +456,17 @@ private fun InsertQuestionDialog(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                         content = { Icon(Icons.Default.Add, null) }
                     )
-                } else if (category != randomCategory && questionCounts.uiState is UiState.Loading) {
+                } else if (category != null && questionCounts.uiState is UiState.Loading) {
                     CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-                } else if (category != randomCategory && questionCounts.uiState is UiState.Error) {
+                } else if (category != null && questionCounts.uiState is UiState.Error) {
                     Text(
                         text = "Couldn't load category detail.",
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                     IconButton(
-                        onClick = { getQuestionCount(category.id) },
+                        onClick = { category?.let { c -> getQuestionCount(c.id) } },
                         modifier = Modifier.align(Alignment.CenterHorizontally),
+                        enabled = category != null,
                         content = { Icon(Icons.Default.Refresh, null) }
                     )
                 }
