@@ -20,7 +20,7 @@ import java.util.UUID
 data class Question(
     val question: String,
     val difficulty: Difficulty,
-    val categoryId: UUID?,
+    val categoryId: Int?,
     val correctAnswer: String,
     val incorrectAnswers: List<String>,
     @PrimaryKey

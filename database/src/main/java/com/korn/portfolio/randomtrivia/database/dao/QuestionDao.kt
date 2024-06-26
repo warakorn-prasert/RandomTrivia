@@ -5,7 +5,6 @@ import androidx.room.Query
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import kotlinx.coroutines.flow.Flow
-import java.util.UUID
 
 @Dao
 interface QuestionDao : BaseDao<Question> {
@@ -19,13 +18,13 @@ interface QuestionDao : BaseDao<Question> {
         ORDER BY RANDOM()
         LIMIT :amount
         """)
-    suspend fun getBy(categoryId: UUID, difficulty: Difficulty, amount: Int): List<Question>
+    suspend fun getBy(categoryId: Int, difficulty: Difficulty, amount: Int): List<Question>
 
     @Query("DELETE FROM Question")
     suspend fun deleteAll()
 
     @Query("DELETE FROM Question WHERE categoryId = :categoryId")
-    suspend fun deleteByCategory(categoryId: UUID)
+    suspend fun deleteByCategory(categoryId: Int)
 
     @Query("DELETE FROM Question WHERE categoryId IS NULL")
     suspend fun deleteUncategorized()

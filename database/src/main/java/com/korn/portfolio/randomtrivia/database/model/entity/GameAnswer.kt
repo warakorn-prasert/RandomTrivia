@@ -36,5 +36,5 @@ data class GameAnswer(
     val gameId: UUID,
     val questionId: UUID,
     val answer: String,
-    val categoryId: UUID?  // Redundant to questionId, but less nested class.
+    val categoryId: Int?  // Redundant to questionId, but less nested class.
 )
