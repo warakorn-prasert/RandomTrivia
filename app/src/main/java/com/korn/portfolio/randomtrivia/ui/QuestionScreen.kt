@@ -52,7 +52,6 @@ import com.korn.portfolio.randomtrivia.data.mockCategoryEmpty
 import com.korn.portfolio.randomtrivia.data.mockCategoryOverflowText
 import com.korn.portfolio.randomtrivia.data.mockCategoryWithQuestions1
 import com.korn.portfolio.randomtrivia.data.mockQuestion12
-import java.util.UUID
 
 private fun nonBlankListOf(vararg values: String): List<String> {
     return mutableListOf<String>().apply {
@@ -82,7 +81,7 @@ private fun CategoryWithQuestionsCards(
     insertAction: (Question) -> Unit,
     updateAction: (Question) -> Unit,
     deleteAction: (Question) -> Unit,
-    deleteByCategoryAction: (UUID?) -> Unit,
+    deleteByCategoryAction: (Int?) -> Unit,
 ) {
     LazyColumn(Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 12.dp)) {
         item {
@@ -123,7 +122,7 @@ private fun CategoryWithQuestionsCard(
     insertAction: (Question) -> Unit,
     updateAction: (Question) -> Unit,
     deleteAction: (Question) -> Unit,
-    deleteByCategoryAction: (UUID) -> Unit,
+    deleteByCategoryAction: (Int) -> Unit,
     defaultExpanded: Boolean = false
 ) {
     Column(modifier.animateContentSize().width(IntrinsicSize.Max)) {

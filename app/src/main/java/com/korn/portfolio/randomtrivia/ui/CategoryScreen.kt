@@ -270,10 +270,7 @@ private fun CategoryInsertDialog(expanded: MutableState<Boolean>, insertAction: 
                     IconButton(
                         onClick = {
                             insertAction(
-                                Category(
-                                    name.value,
-                                    downloadable.value
-                                )
+                                Category(name.value, downloadable.value, Int.MIN_VALUE)
                             )
                             expanded.value = false
                         },

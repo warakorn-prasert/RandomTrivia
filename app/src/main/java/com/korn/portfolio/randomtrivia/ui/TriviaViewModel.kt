@@ -20,9 +20,9 @@ import com.korn.portfolio.randomtrivia.database.model.GameOption
 import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.data.MockData
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.util.Date
-import java.util.UUID
 
 class TriviaViewModel(
     private val categoryDao: CategoryDao,
@@ -54,9 +54,12 @@ class TriviaViewModel(
         }
     }
 
-    fun insertCategories(vararg category: Category) {
+    fun insertCategories(vararg categories: Category) {
         viewModelScope.launch {
-            categoryDao.insert(*category)
+            categories.forEach { category ->
+                val newId = 1 + (categoriesWithQuestions.firstOrNull()?.maxBy { it.category.id }?.category?.id ?: 0)
+                categoryDao.insert(category.copy(id = newId))
+            }
         }
     }
 
@@ -147,7 +150,7 @@ class TriviaViewModel(
         }
     }
 
-    fun deleteByCategory(categoryId: UUID?) {
+    fun deleteByCategory(categoryId: Int?) {
         viewModelScope.launch {
             if (categoryId == null) {
                 questionDao.deleteUncategorized()
