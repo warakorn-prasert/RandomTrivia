@@ -11,6 +11,8 @@ import com.korn.portfolio.randomtrivia.network.model.Question
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.network.model.ResponseCode
 import com.korn.portfolio.randomtrivia.network.model.Type
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -69,8 +71,13 @@ class TriviaApiClient {
 
     private var categories: List<Category> = emptyList()
 
+    @OptIn(DelicateCoroutinesApi::class)
+    private val categoriesContext = newSingleThreadContext("categories")
+
     private suspend fun cacheCategories() {
-        categories = triviaApiService.getCategories().categories
+        categoriesContext.use {
+            categories = triviaApiService.getCategories().categories
+        }
     }
 
     suspend fun getToken(): Pair<ResponseCode, String> =
@@ -82,16 +89,18 @@ class TriviaApiClient {
         cacheCategories()
         val totalQuestions = triviaApiService.getOverall().categories
         // In case of totalQuestions has fewer categories
-        return totalQuestions
-            .filterKeys { categoryId ->
-                categories.any { it.id == categoryId.toIntOrNull() }
-            }
-            .mapKeys { (categoryId, _) ->
-                categories
-                    .first { it.id == categoryId.toInt() }
-                    .toDbCategory()
-            }
-            .mapValues { it.value.verified }
+        return categoriesContext.use {
+            totalQuestions
+                .filterKeys { categoryId ->
+                    categories.any { it.id == categoryId.toIntOrNull() }
+                }
+                .mapKeys { (categoryId, _) ->
+                    categories
+                        .first { it.id == categoryId.toInt() }
+                        .toDbCategory()
+                }
+                .mapValues { it.value.verified }
+        }
     }
 
     suspend fun getQuestionCount(categoryId: Int): QuestionCount {
@@ -112,10 +121,12 @@ class TriviaApiClient {
             type = type,
             token = token
         ).run {
-            responseCode to results.map { question ->
-                question.toDbQuestion(getId = {
-                    categories.firstOrNull { it.name == question.category }?.id
-                })
+            categoriesContext.use {
+                responseCode to results.map { question ->
+                    question.toDbQuestion(getId = {
+                        categories.firstOrNull { it.name == question.category }?.id
+                    })
+                }
             }
         }
 }
