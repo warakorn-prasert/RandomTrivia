@@ -69,15 +69,20 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.korn.portfolio.randomtrivia.network.model.Category
-import com.korn.portfolio.randomtrivia.network.model.Difficulty
-import com.korn.portfolio.randomtrivia.network.model.Question
+import com.korn.portfolio.randomtrivia.database.model.Difficulty
+import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.network.model.Type
 import kotlinx.coroutines.launch
 
 private val headerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
 private val contentPadding = PaddingValues(start = 28.dp, end = 28.dp, bottom = 12.dp)
+
+private val Question.type: Type
+    get() =
+        if (incorrectAnswers.size == 1) Type.BOOLEAN
+        else Type.MULTIPLE
 
 @Composable
 fun AppScreen() {
@@ -222,9 +227,13 @@ fun AppScreen() {
                 modifier = Modifier.weight(1f)
             ) {
                 items(
-                    items = triviaViewModel.questions.data.groupBy { it.category }.toList(),
-                    key = { it.first }
-                ) { (category, catQuestions) ->
+                    items = triviaViewModel.questions.data.groupBy { it.categoryId }.toList().filter { it.first != null },
+                    key = { it.first!! }
+                ) { (categoryId, catQuestions) ->
+                    val category = categories.data.keys
+                        .firstOrNull { it.id == categoryId }
+                        ?.name
+                        ?: "Category not found"
                     Box(Modifier.padding(contentPadding), contentAlignment = Alignment.Center) {
                         HorizontalDivider()
                         Text(
@@ -244,7 +253,11 @@ fun AppScreen() {
                                 Text(question.question, Modifier.padding(8.dp))
                             }
                             if (showDialog.value) {
-                                QuestionDialog(showDialog, question)
+                                QuestionDialog(
+                                    show = showDialog,
+                                    question = question,
+                                    category = category
+                                )
                             }
                         }
                     }
@@ -314,7 +327,7 @@ private fun QuestionCountDetail(questionCount: QuestionCount) {
 private fun QuestionCountDialogPreview() {
     QuestionCountDialog(
         show = mutableStateOf(true),
-        category = Category(id = 0, name = "Category name"),
+        category = Category(name = "Category name", downloadable = true, id = 0),
         uiState = UiState.Success,
         questionCount = QuestionCount(total = 10, easy = 5, medium = 3, hard = 2),
         refreshAction = {}
@@ -322,14 +335,14 @@ private fun QuestionCountDialogPreview() {
 }
 
 @Composable
-private fun QuestionDialog(show: MutableState<Boolean>, question: Question) {
+private fun QuestionDialog(show: MutableState<Boolean>, question: Question, category: String) {
     Dialog(onDismissRequest = { show.value = false }) {
         Card(border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline)) {
             Column(Modifier.padding(20.dp)) {
                 Text(question.question)
                 Text("Type : ${question.type}")
                 Text("Difficulty : ${question.difficulty}")
-                Text("Category : ${question.category}")
+                Text("Category : $category")
                 Text("Correct answer : ${question.correctAnswer}")
                 question.incorrectAnswers.forEach {
                     Text("Incorrect answer : $it")
@@ -348,11 +361,11 @@ private fun QuestionDialogPreview() {
         question = Question(
             question = "What is 1 + 1?",
             difficulty = Difficulty.EASY,
-            category = "Math",
-            type = "multiple",
+            categoryId = 9,
             correctAnswer = "2",
             incorrectAnswers = listOf("1", "3", "4")
-        )
+        ),
+        category = "Category 9"
     )
 }
 

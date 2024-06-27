@@ -8,10 +8,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.korn.portfolio.randomtrivia.database.model.Difficulty
+import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.network.TriviaApiClient
-import com.korn.portfolio.randomtrivia.network.model.Category
-import com.korn.portfolio.randomtrivia.network.model.Difficulty
-import com.korn.portfolio.randomtrivia.network.model.Question
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.network.model.ResponseCode
 import com.korn.portfolio.randomtrivia.network.model.Type
@@ -86,7 +86,7 @@ class TriviaViewModel(private val triviaApiClient: TriviaApiClient) : ViewModel(
             token = token with UiState.Loading
             token = try {
                 val newToken = triviaApiClient.getToken()
-                    .takeIf { it.responseCode == ResponseCode.SUCCESS }?.token
+                    .takeIf { it.first == ResponseCode.SUCCESS }?.second
                 token with UiState.Success with newToken
             } catch (e: Exception) {
                 token with UiState.Error(e) with null
