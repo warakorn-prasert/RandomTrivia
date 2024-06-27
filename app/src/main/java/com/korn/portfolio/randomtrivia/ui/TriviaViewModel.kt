@@ -16,7 +16,7 @@ import com.korn.portfolio.randomtrivia.database.model.CategoryWithQuestions
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.database.model.entity.GameAnswer
 import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
-import com.korn.portfolio.randomtrivia.database.model.GameOption
+import com.korn.portfolio.randomtrivia.model.GameOption
 import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.data.MockData
 import kotlinx.coroutines.flow.Flow
