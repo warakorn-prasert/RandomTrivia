@@ -53,6 +53,7 @@ private fun Question.toDbQuestion(getId: (String) -> Int? ): DbQuestion =
 class TriviaApiClient {
     private val triviaApiService: TriviaApiService
     init {
+        val baseUrl = "https://opentdb.com"
         val okHttpClient = OkHttpClient().newBuilder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
@@ -60,7 +61,7 @@ class TriviaApiClient {
             .build()
         val retrofit = Retrofit.Builder()
             .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
-            .baseUrl(BASE_URL)
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .build()
         triviaApiService = retrofit.create(TriviaApiService::class.java)
@@ -117,16 +118,4 @@ class TriviaApiClient {
                 })
             }
         }
-
-    companion object {
-        private const val BASE_URL = "https://opentdb.com"
-        @Volatile
-        private var INSTANCE: TriviaApiClient? = null
-
-        fun getClient(): TriviaApiClient {
-            return INSTANCE ?: synchronized(this) {
-                TriviaApiClient().also { INSTANCE = it }
-            }
-        }
-    }
 }
