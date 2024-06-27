@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class FetchQuestions(
+internal data class FetchQuestions(
     @SerialName("response_code")
     val responseCode: ResponseCode,
     val results: List<Question>

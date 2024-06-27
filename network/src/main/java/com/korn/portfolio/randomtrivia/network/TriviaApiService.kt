@@ -11,7 +11,7 @@ import com.korn.portfolio.randomtrivia.network.model.response.FetchResetSession
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-interface TriviaApiService {
+internal interface TriviaApiService {
     @GET("api_category.php")
     suspend fun getCategories(): FetchCategories
 

@@ -32,6 +32,8 @@ android {
 
 dependencies {
 
+    implementation(projects.database)
+
     implementation(libs.androidx.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp.logging)

@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class FetchCategories(
+internal data class FetchCategories(
     @SerialName("trivia_categories")
     val categories: List<Category>
 )

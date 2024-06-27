@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Question(
+internal data class Question(
     val type: String,
     val difficulty: Difficulty,
     val category: String,

@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class Difficulty {
+internal enum class Difficulty {
     @SerialName("easy")
     EASY,
     @SerialName("medium")

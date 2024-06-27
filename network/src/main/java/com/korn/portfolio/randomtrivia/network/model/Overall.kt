@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Overall(
+internal data class Overall(
     @SerialName("total_num_of_questions")
     val total: Int,
     @SerialName("total_num_of_pending_questions")

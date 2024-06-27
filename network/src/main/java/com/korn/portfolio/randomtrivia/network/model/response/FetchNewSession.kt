@@ -5,7 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class FetchNewSession(
+internal data class FetchNewSession(
     @SerialName("response_code")
     val responseCode: ResponseCode,
     @SerialName("response_message")
