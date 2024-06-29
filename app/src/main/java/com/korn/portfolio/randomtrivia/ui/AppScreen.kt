@@ -72,7 +72,7 @@ private fun TriviaBottomAppBar(navController: NavController, playing: Boolean) {
         Screen.entries.forEach {
             NavigationBarItem(
                 selected = it.route == currentRoute && !playing,
-                onClick = { navController.navigate(it.route) },
+                onClick = { if (currentRoute != it.route) navController.navigate(it.route) },
                 icon = { Icon(if (!playing) it.icon else Icons.Default.Lock, null) },
                 enabled = !playing,
                 label = { Text(it.name.replace('_', ' ')) }
