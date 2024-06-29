@@ -240,5 +240,15 @@ class TriviaRepositoryImpl(
         }
     }
 
+    override suspend fun deleteLocalCategories(vararg id: Int) {
+        id.forEach {
+            categoryDao.delete(Category("", false, it))
+        }
+    }
+
+    override suspend fun deleteAllLocalCategories() {
+        categoryDao.deleteAll()
+    }
+
     private val _remoteCategories = MutableLiveData<List<Pair<Category, QuestionCount>>>(emptyList())
 }
