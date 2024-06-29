@@ -15,4 +15,10 @@ interface CategoryDao : BaseDao<Category> {
     @Transaction
     @Query("SELECT * FROM Category")
     fun getCategoriesWithQuestions(): Flow<List<CategoryWithQuestions>>
+
+    @Query("SELECT MIN(id) FROM Category")
+    suspend fun getMinId(): Int
+
+    @Query("SELECT * FROM Category WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Int): Category
 }
