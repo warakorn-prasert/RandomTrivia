@@ -47,7 +47,7 @@ fun AppScreen() {
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screen.CATEGORIES.route) {
-                CategoryScreen()
+                CategoryScreen(snackbarHostState)
             }
             composable(Screen.PLAY.route) {
                 PlayScreen(
