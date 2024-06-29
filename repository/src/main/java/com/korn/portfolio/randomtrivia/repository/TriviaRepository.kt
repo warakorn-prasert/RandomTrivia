@@ -16,8 +16,8 @@ import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.network.model.ResponseCode
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.single
 import java.util.Date
 
 /*
@@ -35,12 +35,14 @@ import java.util.Date
 
 interface TriviaRepository {
     val remoteCategories: LiveData<List<Pair<Category, QuestionCount>>>
-    val categories: Flow<List<Pair<Category, QuestionCount>>>
+    val localCategories: Flow<List<Pair<Category, QuestionCount>>>
     val savedGames: Flow<List<Game>>
     suspend fun fetchCategories()
     suspend fun fetchQuestionCount(categoryId: Int)
     suspend fun fetchNewGame(options: List<GameOption>, offline: Boolean = false): Pair<ResponseCode, Game>
     suspend fun saveGame(game: Game)
+    suspend fun deleteLocalCategories(vararg id: Int)
+    suspend fun deleteAllLocalCategories()
 }
 
 class TriviaRepositoryImpl(
@@ -59,7 +61,7 @@ class TriviaRepositoryImpl(
     override val remoteCategories: LiveData<List<Pair<Category, QuestionCount>>>
         get() = _remoteCategories
 
-    override val categories: Flow<List<Pair<Category, QuestionCount>>>
+    override val localCategories: Flow<List<Pair<Category, QuestionCount>>>
         get() = categoryDao.getCategoriesWithQuestions()
             .map { categoriesWithQuestions ->
                 categoriesWithQuestions.map { (category, questions) ->
@@ -79,44 +81,44 @@ class TriviaRepositoryImpl(
         get() = gameDao.getAll()
 
     override suspend fun fetchCategories() {
-        val resp: List<Pair<Category, Int>> = triviaApiClient.getCategories().toList()
+        val remotes: List<Pair<Category, Int>> = triviaApiClient.getCategories().toList()
         // refresh remote
-        _remoteCategories.postValue(resp.map { (category, total) ->
+        _remoteCategories.postValue(remotes.map { (category, total) ->
             category to QuestionCount(total, 0, 0, 0)
         })
         // update local (3 cases)
-        val savedCategories = categories.single()
+        val locals = localCategories.first()
         // case: new category
-        resp.filter { (category, _) ->
-            !savedCategories.any { (savedCategory, _) ->
-                category.id == savedCategory.id
+        remotes.filter { (remote, _) ->
+            !locals.any { (local, _) ->
+                remote.id == local.id
             }
-        }.forEach { (category, _) ->
+        }.forEach { (remote, _) ->
             categoryDao.insert(Category(
-                name = category.name,
+                name = remote.name,
                 downloadable = true,
-                id = category.id
+                id = remote.id
             ))
         }
         // case: rename or not
-        resp.filter { (category, _) ->
-            savedCategories.any { (savedCategory, _) ->
-                category.id == savedCategory.id
+        remotes.filter { (remote, _) ->
+            locals.any { (local, _) ->
+                remote.id == local.id
             }
-        }.forEach { (category, _) ->
-            categoryDao.update(category.copy(downloadable = true))
+        }.forEach { (remote, _) ->
+            categoryDao.update(remote.copy(downloadable = true))
         }
         // case: delete
-        savedCategories.filter { (savedCategory, _) ->
-            !resp.any { (category, _) ->
-                savedCategory.id == category.id
-            }
-        }.forEach { (category, _) ->
-            categoryDao.insert(category.copy(
+        locals.filter { (local, _) ->
+            !remotes.any { (remote, _) ->
+                local.id == remote.id
+            } && local.id >= 0
+        }.forEach { (local, _) ->
+            categoryDao.insert(local.copy(
                 downloadable = false,
                 id = categoryDao.getMinId().coerceAtMost(0) - 1
             ))
-            categoryDao.delete(category)
+            categoryDao.delete(local)
         }
     }
 
