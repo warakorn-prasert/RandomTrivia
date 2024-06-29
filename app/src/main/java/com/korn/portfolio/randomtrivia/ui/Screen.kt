@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 enum class Screen(val icon: ImageVector) {
     CATEGORIES(Icons.Default.Info),
     PLAY(Icons.Default.Face),
-    PAST_GAMES(Icons.Default.Menu);
+    HISTORY(Icons.Default.Menu);
 
-    val route: String = this.name.lowercase()
+    val route: String = name.lowercase()
 }

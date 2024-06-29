@@ -41,7 +41,7 @@ fun PlayScreen(
                     playing.value = false
                     val previousRoute = navController.previousBackStackEntry?.destination
                         ?.route
-                        ?: Screen.PAST_GAMES.route
+                        ?: Screen.HISTORY.route
                     navController.navigate(previousRoute)
                 }
             }
