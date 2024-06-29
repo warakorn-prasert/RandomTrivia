@@ -110,14 +110,14 @@ class TriviaApiClient {
     suspend fun getQuestions(
         amount: Int,
         categoryId: Int?,
-        dbDifficulty: DbDifficulty?,
+        difficulty: DbDifficulty?,
         type: Type?,
         token: String?
     ): Pair<ResponseCode, List<DbQuestion>> =
         triviaApiService.getQuestions(
             amount = amount,
             categoryId = categoryId,
-            difficulty = dbDifficulty?.toDifficulty(),
+            difficulty = difficulty?.toDifficulty(),
             type = type,
             token = token
         ).run {
