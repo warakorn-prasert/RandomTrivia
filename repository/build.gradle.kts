@@ -31,7 +31,11 @@ android {
 
 dependencies {
 
+    implementation(projects.database)
+    implementation(projects.network)
+
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.livedata.core.ktx)
 
     testImplementation(libs.junit4)
     androidTestImplementation(libs.androidx.test.ext)
