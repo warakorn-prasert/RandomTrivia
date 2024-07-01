@@ -88,7 +88,7 @@ fun CategoryScreen(snackbarHostState: SnackbarHostState) {
 
     val categoryViewModel: CategoryViewModel = viewModel(factory = CategoryViewModel.Factory)
     Column {
-        val remoteCategories by categoryViewModel.remoteCategories.observeAsState()
+        val remoteCategories by categoryViewModel.remoteCategories.observeAsState(emptyList())
         val uiState: MutableState<NetworkUiState> = remember { mutableStateOf(NetworkUiState.Success) }
         LaunchedEffect(uiState) {
             val s = uiState.value
@@ -96,7 +96,7 @@ fun CategoryScreen(snackbarHostState: SnackbarHostState) {
         }
         SectionTitle("Remote") {
             IconButton(
-                onClick = { popMessage((remoteCategories ?: emptyList()).summary) },
+                onClick = { popMessage(remoteCategories.summary) },
                 content = { Icon(Icons.Default.Info, null) }
             )
             IconButton(
@@ -107,8 +107,8 @@ fun CategoryScreen(snackbarHostState: SnackbarHostState) {
         }
         if (uiState.value !is NetworkUiState.Loading) {
             RemoteCategoryCards(
-                modifier = if (remoteCategories?.isNotEmpty() == true) Modifier.weight(1f) else Modifier,
-                categories = remoteCategories ?: emptyList(),
+                modifier = if (remoteCategories.isNotEmpty()) Modifier.weight(1f) else Modifier,
+                categories = remoteCategories,
                 fetchQuestionCount = categoryViewModel::fetchQuestionCount
             )
         } else {
