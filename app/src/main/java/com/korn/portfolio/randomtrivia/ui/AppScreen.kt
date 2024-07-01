@@ -51,7 +51,6 @@ fun AppScreen() {
             }
             composable(Screen.PLAY.route) {
                 PlayScreen(
-                    navController = navController,
                     snackbarHostState = snackbarHostState,
                     playing = playing
                 )
