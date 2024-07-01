@@ -47,7 +47,7 @@ private fun Question.toDbQuestion(getId: (String) -> Int? ): DbQuestion =
     DbQuestion(
         question = question.decodeHtml(),
         difficulty = difficulty.toDbDifficulty(),
-        categoryId = getId(category),
+        categoryId = getId(category.decodeHtml()),
         correctAnswer = correctAnswer.decodeHtml(),
         incorrectAnswers = incorrectAnswers.map { it.decodeHtml() }
     )
@@ -125,8 +125,8 @@ class TriviaApiClient {
         ).run {
             categoriesContext.use {
                 responseCode to results.map { question ->
-                    question.toDbQuestion(getId = {
-                        categories.firstOrNull { it.name == question.category }?.id
+                    question.toDbQuestion(getId = { category ->
+                        categories.firstOrNull { it.name == category }?.id
                     })
                 }
             }
