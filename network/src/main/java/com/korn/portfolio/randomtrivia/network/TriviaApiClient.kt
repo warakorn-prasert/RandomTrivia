@@ -76,7 +76,9 @@ class TriviaApiClient {
 
     private suspend fun cacheCategories() {
         categoriesContext.use {
-            categories = triviaApiService.getCategories().categories
+            categories = triviaApiService.getCategories().categories.map {
+                it.copy(name = it.name.decodeHtml())
+            }
         }
     }
 
