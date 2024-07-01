@@ -1,4 +1,4 @@
-package com.korn.portfolio.randomtrivia.ui
+package com.korn.portfolio.randomtrivia.ui.model
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face

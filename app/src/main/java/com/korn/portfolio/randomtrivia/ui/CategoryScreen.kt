@@ -51,12 +51,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
+import com.korn.portfolio.randomtrivia.ui.model.NetworkUiState
 import kotlinx.coroutines.launch
-
-private val horizontalPadding = 12.dp
-
-private val QuestionCount.invalid: Boolean
-    get() = total != (easy + medium + hard)
 
 private val List<Pair<Category, QuestionCount>>.summary: String
     get() {

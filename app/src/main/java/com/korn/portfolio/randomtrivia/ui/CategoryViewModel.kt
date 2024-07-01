@@ -12,18 +12,10 @@ import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
+import com.korn.portfolio.randomtrivia.ui.model.NetworkUiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-
-sealed interface NetworkUiState {
-    data object Loading : NetworkUiState
-    data class Error(val error: Exception) : NetworkUiState
-    data object Success : NetworkUiState
-}
-
-// If no internet, loading animation will end too soon.
-private const val fakeLoadingTimeMillis = 500L
 
 class CategoryViewModel(private val triviaRepository: TriviaRepository) : ViewModel() {
     val remoteCategories: LiveData<List<Pair<Category, QuestionCount>>>
