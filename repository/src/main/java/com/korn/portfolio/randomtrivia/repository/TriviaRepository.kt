@@ -126,6 +126,7 @@ class TriviaRepositoryImpl(
     }
 
     override suspend fun fetchQuestionCount(categoryId: Int) {
+        if (remoteCategories.value.isNullOrEmpty()) fetchCategories()
         val remote = remoteCategories.value?.toMutableList() ?: mutableListOf()
         val idx = remote.indexOfFirst { it.first.id == categoryId }
         if (idx >= 0) {
@@ -137,6 +138,7 @@ class TriviaRepositoryImpl(
     }
 
     override suspend fun fetchNewGame(options: List<GameOption>, offline: Boolean): Pair<ResponseCode, Game> {
+        if (remoteCategories.value.isNullOrEmpty()) fetchCategories()
         val questions = mutableListOf<GameQuestion>()
         val game = Game(
             detail = GameDetail(timestamp = Date(), totalTimeSecond = 0),
