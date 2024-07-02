@@ -20,5 +20,5 @@ interface CategoryDao : BaseDao<Category> {
     suspend fun getMinId(): Int
 
     @Query("SELECT * FROM Category WHERE id = :id LIMIT 1")
-    suspend fun getById(id: Int): Category
+    suspend fun getById(id: Int): Category?
 }
