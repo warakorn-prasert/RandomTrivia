@@ -31,7 +31,8 @@ import java.util.Date
         - local -- questions in local database
  */
 
-// TODO : Test to list every possible exceptions
+// TODO (Later) : Include `option.type` in search
+// TODO (Later) : Test to list every possible exceptions
 
 interface TriviaRepository {
     val remoteCategories: LiveData<List<Pair<Category, QuestionCount>>>
@@ -162,15 +163,16 @@ class TriviaRepositoryImpl(
             )
             if (respCode2 != ResponseCode.SUCCESS) return respCode1 to game
             questions.addAll(fetchedQuestions.map { question ->
+                val category = question.categoryId?.let { categoryDao.getById(it) }
                 GameQuestion(
-                    question = question,
+                    question = question.copy(categoryId = category?.id),
                     answer = GameAnswer(
                         gameId = game.detail.gameId,
                         questionId = question.id,
                         answer = "",
-                        categoryId = question.categoryId
+                        categoryId = category?.id
                     ),
-                    category = question.categoryId?.let { categoryDao.getById(it) }
+                    category = category
                 )
             })
             delay(6000)  // rate limit = 1 query per 5 seconds
@@ -209,20 +211,20 @@ class TriviaRepositoryImpl(
                         amount = option.amount,
                         excluded = questions.map { it.question.id }
                     )
-                // TODO (Later) : Include `option.type` in search
                 else -> emptyList()
             }
             if (fetchedQuestions.size != option.amount) return ResponseCode.NO_RESULTS to game
             questions.addAll(fetchedQuestions.map { question ->
+                val category = question.categoryId?.let { categoryDao.getById(it) }
                 GameQuestion(
-                    question = question,
+                    question = question.copy(categoryId = category?.id),
                     answer = GameAnswer(
                         gameId = game.detail.gameId,
                         questionId = question.id,
                         answer = "",
-                        categoryId = question.categoryId
+                        categoryId = category?.id
                     ),
-                    category = question.categoryId?.let { categoryDao.getById(it) }
+                    category = category
                 )
             })
         }
