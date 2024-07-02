@@ -163,16 +163,23 @@ class TriviaRepositoryImpl(
             )
             if (respCode2 != ResponseCode.SUCCESS) return respCode1 to game
             questions.addAll(fetchedQuestions.map { question ->
-                val category = question.categoryId?.let { categoryDao.getById(it) }
+                // sync category and question with local by id
+                // (always use properties from `local<name>` variables)
+                val localCategory = question.categoryId?.let { categoryDao.getOneBy(it) }
+                val localQuestion = questionDao.getOneBy(question.question)
+                val questionId = localQuestion?.id ?: question.id
                 GameQuestion(
-                    question = question.copy(categoryId = category?.id),
+                    question = question.copy(
+                        categoryId = localCategory?.id,
+                        id = questionId
+                    ),
                     answer = GameAnswer(
                         gameId = game.detail.gameId,
-                        questionId = question.id,
+                        questionId = questionId,
                         answer = "",
-                        categoryId = category?.id
+                        categoryId = localCategory?.id
                     ),
-                    category = category
+                    category = localCategory
                 )
             })
             delay(6000)  // rate limit = 1 query per 5 seconds
@@ -215,16 +222,15 @@ class TriviaRepositoryImpl(
             }
             if (fetchedQuestions.size != option.amount) return ResponseCode.NO_RESULTS to game
             questions.addAll(fetchedQuestions.map { question ->
-                val category = question.categoryId?.let { categoryDao.getById(it) }
                 GameQuestion(
-                    question = question.copy(categoryId = category?.id),
+                    question = question,
                     answer = GameAnswer(
                         gameId = game.detail.gameId,
                         questionId = question.id,
                         answer = "",
-                        categoryId = category?.id
+                        categoryId = question.categoryId
                     ),
-                    category = category
+                    category = question.categoryId?.let { categoryDao.getOneBy(it) }
                 )
             })
         }
@@ -235,10 +241,15 @@ class TriviaRepositoryImpl(
         val (detail, questions) = game
         gameDao.insert(detail)
         questions.forEach { question ->
-            if (!questionDao.exists(question.question.id, question.question.question)) {
-                questionDao.insert(question.question)
+            // sync category and question ids with local
+            val localQuestion = questionDao.getOneBy(question.question.question)
+            val localCategory = question.question.categoryId?.let { categoryDao.getOneBy(it) }
+            if (localQuestion == null) {  // new question
+                questionDao.insert(question.question.copy(categoryId = localCategory?.id))
+                gameDao.insertAnswer(question.answer.copy(categoryId = localCategory?.id))
+            } else {  // old question
+                gameDao.insertAnswer(question.answer.copy(questionId = localQuestion.id))
             }
-            gameDao.insertAnswer(question.answer)
         }
     }
 
