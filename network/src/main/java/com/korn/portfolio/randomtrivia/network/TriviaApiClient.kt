@@ -52,14 +52,18 @@ private fun Question.toDbQuestion(getId: (String) -> Int? ): DbQuestion =
         incorrectAnswers = incorrectAnswers.map { it.decodeHtml() }
     )
 
-class TriviaApiClient {
+class TriviaApiClient(
+    connectTimeout: Long = 30L,
+    readTimeout: Long = 30L,
+    writeTimeout: Long = 30L
+) {
     private val triviaApiService: TriviaApiService
     init {
         val baseUrl = "https://opentdb.com"
         val okHttpClient = OkHttpClient().newBuilder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
+            .connectTimeout(connectTimeout, TimeUnit.SECONDS)
+            .readTimeout(readTimeout, TimeUnit.SECONDS)
+            .writeTimeout(writeTimeout, TimeUnit.SECONDS)
             .build()
         val retrofit = Retrofit.Builder()
             .addConverterFactory(Json.asConverterFactory("application/json".toMediaType()))
