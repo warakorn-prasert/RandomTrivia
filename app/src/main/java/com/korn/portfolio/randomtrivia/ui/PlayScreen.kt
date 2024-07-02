@@ -132,15 +132,13 @@ fun PlayScreen(
         }
         composable(GameStage.RESULT.route) {
             BackHandler(true) {
-                playViewModel.resetGame()
-                navController.navigate(GameStage.SETTING.route)
+                navController.navigate(GameStage.SETTING.route) {
+                    popUpTo(GameStage.RESULT.route) {
+                        inclusive = true
+                    }
+                }
             }
-            ResultStage()
+            ResultStage(playViewModel.game.value)
         }
     }
-}
-
-@Composable
-private fun ResultStage() {
-
 }
