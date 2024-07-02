@@ -53,7 +53,6 @@ private fun Game.answer(questionIdx: Int, answer: String): Game {
 fun PlayingStage(
     game: MutableState<Game>,
     askToExit: () -> Unit,
-    timerSecond: Int,
     onDone: (Game) -> Unit
 ) {
     Column(
@@ -65,18 +64,21 @@ fun PlayingStage(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Time taken $timerSecond seconds",
+                text = "Time taken ${game.value.detail.totalTimeSecond} seconds",
                 modifier = Modifier.weight(1f),
                 fontStyle = FontStyle.Italic
             )
             TextButton(askToExit) { Text("Exit") }
         }
         HorizontalDivider(Modifier.padding(vertical = 12.dp))
+        var idx by remember { mutableIntStateOf(0) }
+        if (idx < game.value.questions.size) {
+            Text("${idx + 1} / ${game.value.questions.size}")
+        }
         Row(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            var idx by remember { mutableIntStateOf(0) }
             IconButton(
                 onClick = { idx-- },
                 modifier = Modifier.align(Alignment.CenterVertically),

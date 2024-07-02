@@ -43,9 +43,6 @@ class PlayViewModel(private val triviaRepository: TriviaRepository) : ViewModel(
 
     var game = mutableStateOf(emptyGame)
 
-    var timerSecond by mutableIntStateOf(0)
-        private set
-
     private var timer: Job = Job().also { it.cancel() }
 
     fun fetchCategories(uiState: MutableState<NetworkUiState>) {
@@ -104,7 +101,6 @@ class PlayViewModel(private val triviaRepository: TriviaRepository) : ViewModel(
     fun setTimer(state: Boolean) {
         if (state && !timer.isActive) {
             timer = viewModelScope.launch {
-                timerSecond = 0
                 flow {
                     var count = 0
                     var refTime = System.currentTimeMillis()
@@ -116,8 +112,12 @@ class PlayViewModel(private val triviaRepository: TriviaRepository) : ViewModel(
                         }
                         delay(300)
                     }
-                }.collect {
-                    timerSecond = it
+                }.collect { timeSecond ->
+                    game.value = game.value.let { game ->
+                        game.copy(detail = game.detail.copy(
+                            totalTimeSecond = timeSecond
+                        ))
+                    }
                 }
             }
         } else if (!state) {

@@ -119,7 +119,6 @@ fun PlayScreen(
             PlayingStage(
                 game = playViewModel.game,
                 askToExit = ::askToExit,
-                timerSecond = playViewModel.timerSecond,
                 onDone = {
                     playViewModel.saveGame()
                     playing.value = false
