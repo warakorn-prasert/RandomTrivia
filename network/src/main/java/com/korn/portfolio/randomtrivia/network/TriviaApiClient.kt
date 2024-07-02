@@ -119,8 +119,9 @@ class TriviaApiClient(
         difficulty: DbDifficulty?,
         type: Type?,
         token: String?
-    ): Pair<ResponseCode, List<DbQuestion>> =
-        triviaApiService.getQuestions(
+    ): Pair<ResponseCode, List<DbQuestion>> {
+        if (categories.isEmpty()) cacheCategories()
+        return triviaApiService.getQuestions(
             amount = amount,
             categoryId = categoryId,
             difficulty = difficulty?.toDifficulty(),
@@ -135,4 +136,5 @@ class TriviaApiClient(
                 }
             }
         }
+    }
 }
