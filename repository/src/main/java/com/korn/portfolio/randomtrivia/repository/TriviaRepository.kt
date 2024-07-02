@@ -54,13 +54,6 @@ class TriviaRepositoryImpl(
     private val gameDao: GameDao,
     private val triviaApiClient: TriviaApiClient
 ) : TriviaRepository {
-    /* TODO
-        - Handle case of server add/rename/delete a category.
-            - If local id does not exist in remote, change its id to -1 and keeps decrementing.
-        - Don't save duplicate questions.
-        - Online & Offline.
-     */
-
     override val remoteCategories: LiveData<List<Pair<Category, QuestionCount>>>
         get() = _remoteCategories
 
