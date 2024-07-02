@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import kotlin.math.roundToInt
 
@@ -40,6 +41,16 @@ val horizontalPadding = 12.dp
 
 val QuestionCount.invalid: Boolean
     get() = total != (easy + medium + hard)
+
+val Game.score: Pair<Int, Int>
+    get() = questions
+        .fold(0 to 0) { acc, (question, answer, _) ->
+            val correct = question.correctAnswer == answer.answer
+            acc.copy(
+                first = acc.first + if (correct) 1 else 0,
+                second = acc.second + 1
+            )
+        }
 
 @Composable
 fun <T> DropdownButton(
