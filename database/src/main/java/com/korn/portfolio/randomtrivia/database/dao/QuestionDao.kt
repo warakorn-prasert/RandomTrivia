@@ -48,8 +48,8 @@ interface QuestionDao : BaseDao<Question> {
         """)
     suspend fun getBy(amount: Int, excluded: List<UUID> = emptyList()): List<Question>
 
-    @Query("SELECT EXISTS(SELECT * FROM Question WHERE id = :id AND question = :question)")
-    fun exists(id : UUID, question: String) : Boolean
+    @Query("SELECT EXISTS(SELECT * FROM Question WHERE id = :id OR question = :question)")
+    suspend fun exists(id : UUID, question: String) : Boolean
 
     @Query("DELETE FROM Question")
     suspend fun deleteAll()
