@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.Date
+import java.util.UUID
 
 /*
     Note: ('updates by' ~ '--')
@@ -44,6 +45,7 @@ interface TriviaRepository {
     suspend fun saveGame(game: Game)
     suspend fun deleteLocalCategories(vararg id: Int)
     suspend fun deleteAllLocalCategories()
+    suspend fun deleteGame(gameId: UUID)
 }
 
 class TriviaRepositoryImpl(
@@ -261,6 +263,10 @@ class TriviaRepositoryImpl(
 
     override suspend fun deleteAllLocalCategories() {
         categoryDao.deleteAll()
+    }
+
+    override suspend fun deleteGame(gameId: UUID) {
+        gameDao.delete(GameDetail(timestamp = Date(), totalTimeSecond = 0, gameId = gameId))
     }
 
     private val _remoteCategories = MutableLiveData<List<Pair<Category, QuestionCount>>>(emptyList())
