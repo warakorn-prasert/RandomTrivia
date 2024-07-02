@@ -12,7 +12,9 @@ import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.network.model.ResponseCode
 import com.korn.portfolio.randomtrivia.network.model.Type
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.newSingleThreadContext
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -87,13 +89,17 @@ class TriviaApiClient(
     }
 
     suspend fun getToken(): Pair<ResponseCode, String> =
-        triviaApiService.getNewSession().run {
-            responseCode to token
+        withContext(Dispatchers.IO) {
+            triviaApiService.getNewSession().run {
+                responseCode to token
+            }
         }
 
     suspend fun getCategories(): Map<DbCategory, Int> {
         cacheCategories()
-        val totalQuestions = triviaApiService.getOverall().categories
+        val totalQuestions = withContext(Dispatchers.IO) {
+            triviaApiService.getOverall().categories
+        }
         // In case of totalQuestions has fewer categories
         return categoriesContext.use {
             totalQuestions
@@ -109,9 +115,10 @@ class TriviaApiClient(
         }
     }
 
-    suspend fun getQuestionCount(categoryId: Int): QuestionCount {
-        return triviaApiService.getQuestionCount(categoryId).questionCount
-    }
+    suspend fun getQuestionCount(categoryId: Int): QuestionCount =
+        withContext(Dispatchers.IO) {
+            triviaApiService.getQuestionCount(categoryId).questionCount
+        }
 
     suspend fun getQuestions(
         amount: Int,
@@ -121,13 +128,15 @@ class TriviaApiClient(
         token: String?
     ): Pair<ResponseCode, List<DbQuestion>> {
         if (categories.isEmpty()) cacheCategories()
-        return triviaApiService.getQuestions(
-            amount = amount,
-            categoryId = categoryId,
-            difficulty = difficulty?.toDifficulty(),
-            type = type,
-            token = token
-        ).run {
+        return withContext(Dispatchers.IO) {
+            triviaApiService.getQuestions(
+                amount = amount,
+                categoryId = categoryId,
+                difficulty = difficulty?.toDifficulty(),
+                type = type,
+                token = token
+            )
+        }.run {
             categoriesContext.use {
                 responseCode to results.map { question ->
                     question.toDbQuestion(getId = { category ->
