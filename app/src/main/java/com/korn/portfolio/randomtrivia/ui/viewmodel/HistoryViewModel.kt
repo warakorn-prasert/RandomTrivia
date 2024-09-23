@@ -21,7 +21,7 @@ import java.util.UUID
 
 enum class HistoryFilter(
     val displayText: String,
-    val function: (List<Game>) -> List<Game>
+    val invoke: (List<Game>) -> List<Game>
 ) {
     ALL("All", { it }),
     TODAY("Today", { games ->
@@ -39,7 +39,7 @@ enum class HistoryFilter(
 
 enum class HistorySort(
     val displayText: String,
-    val function: (List<Game>) -> List<Game>
+    val invoke: (List<Game>) -> List<Game>
 ) {
     MOST_RECENT("Most recent", { games ->
         games.sortedByDescending { it.detail.timestamp }
@@ -67,7 +67,7 @@ class HistoryViewModel(private val triviaRepository: TriviaRepository) : ViewMod
 
     val games: Flow<List<Game>>
         get() = combine(triviaRepository.savedGames, filter, sort, reverseSort) { games, f, s, rs ->
-            s.function(f.function(games)).let {
+            s.invoke(f.invoke(games)).let {
                 if (rs) it.reversed()
                 else it
             }

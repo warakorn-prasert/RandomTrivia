@@ -43,7 +43,7 @@ private fun Pair<Category, QuestionCount>.asDisplay(playedQuestions: Int) =
 
 enum class CategoryFilter(
     val displayText: String,
-    val function: (List<CategoryDisplay>) -> List<CategoryDisplay>
+    val invoke: (List<CategoryDisplay>) -> List<CategoryDisplay>
 ) {
     ALL("All", { it }),
     PLAYED("Played", { all -> all.filter { it.isPlayed } }),
@@ -52,7 +52,7 @@ enum class CategoryFilter(
 
 enum class CategorySort(
     val displayText: String,
-    val function: (List<CategoryDisplay>) -> List<CategoryDisplay>
+    val invoke: (List<CategoryDisplay>) -> List<CategoryDisplay>
 ) {
     NAME("Name (A-Z)", { all -> all.sortedBy { it.name.lowercase() } }),
     TOTAL_QUESTIONS("Total questions (low-high)", { all -> all.sortedBy { it.totalQuestions } })
@@ -118,13 +118,13 @@ class CategoriesViewModel(
                         p.asDisplay(playedQuestions = p.second.total)
                     }
             }.combine(filter) { cats, newFilter ->
-                newFilter.function(cats)
+                newFilter.invoke(cats)
             }.combine(searchWord) { all, newSearchWord ->
                 all.filter {
                     it.name.lowercase().contains(newSearchWord.lowercase())
                 }
             }.combine(sort) { all, newSort ->
-                newSort.function(all)
+                newSort.invoke(all)
             }.combine(reverseSort) { all, newReverse ->
                 if (newReverse) all.reversed()
                 else all
