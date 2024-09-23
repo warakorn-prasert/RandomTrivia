@@ -45,7 +45,10 @@ fun MainScreen() {
                 )
             }
             composable(MainNavigation.HISTORY.route) {
-
+                History(
+                    requestFullScreen = { showBottomBar = false },
+                    dismissFullScreen = { showBottomBar = true }
+                )
             }
         }
     }
