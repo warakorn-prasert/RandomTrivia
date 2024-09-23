@@ -28,7 +28,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.korn.portfolio.randomtrivia.model.ContrastLevel
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,7 +111,7 @@ fun <T> OutlinedDropdown(
 @Preview(showBackground = true)
 @Composable
 private fun OutlinedDropdownPreview() {
-    RandomTriviaTheme(contrastLevel = ContrastLevel.Custom(0f)) {
+    RandomTriviaTheme {
         var selected: String? by remember { mutableStateOf(null) }
         OutlinedDropdown(
             selected = selected,

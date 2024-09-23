@@ -21,6 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,13 +32,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
-import com.korn.portfolio.randomtrivia.model.ContrastLevel
-import com.korn.portfolio.randomtrivia.ui.AboutDialog
-import com.korn.portfolio.randomtrivia.ui.SettingDialog
+import com.korn.portfolio.randomtrivia.R
+import com.korn.portfolio.randomtrivia.ui.screen.AboutDialog
+import com.korn.portfolio.randomtrivia.ui.screen.SettingDialog
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 @Composable
@@ -45,9 +47,10 @@ fun SearchableTopBar(
     searchWord: String,
     onChange: (String) -> Unit,
     hint: String = "",
-    title: String = "Random Trivia"
+    title: String = "Random Trivia",
+    hideSearchButton: Boolean = false
 ) {
-    SearchableTopBarDefault(searchWord, onChange, hint, title)
+    SearchableTopBarDefault(searchWord, onChange, hint, title, hideSearchButton = hideSearchButton)
 }
 
 @Composable
@@ -58,7 +61,7 @@ fun SearchableTopBarWithBackButton(
     title: String = "Random Trivia",
     onBackButtonClick: () -> Unit
 ) {
-    SearchableTopBarDefault(searchWord, onChange, hint, title, onBackButtonClick)
+    SearchableTopBarDefault(searchWord, onChange, hint, title, onBackButtonClick, false)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,7 +71,8 @@ private fun SearchableTopBarDefault(
     onChange: (String) -> Unit,
     hint: String = "",
     title: String = "Random Trivia",
-    onNavigateBackClick: (() -> Unit)? = null  // If not null, icon will be app logo.
+    onNavigateBackClick: (() -> Unit)? = null,  // If not null, icon will be app logo.
+    hideSearchButton: Boolean = false
 ) {
     var searching by remember { mutableStateOf(false) }
 
@@ -123,7 +127,12 @@ private fun SearchableTopBarDefault(
         },
         navigationIcon = {
             if (!searching && searchWord.isBlank() && onNavigateBackClick == null)
-                AppIcon()
+                Icon(
+                    painter = painterResource(R.drawable.ic_android),
+                    contentDescription = "App icon",
+                    modifier = Modifier.minimumInteractiveComponentSize(),
+                    tint = MaterialTheme.colorScheme.primary
+                )
             if (onNavigateBackClick != null)
                 IconButton(onNavigateBackClick) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Button to navigate back")
@@ -131,17 +140,18 @@ private fun SearchableTopBarDefault(
         },
         actions = {
             if (!searching) {
-                IconButton({searching = true}) {
-                    Icon(Icons.Default.Search, "Search button")
-                }
+                if (!hideSearchButton)
+                    IconButton({ searching = true }) {
+                        Icon(Icons.Default.Search, "Search button")
+                    }
                 Column {
                     var menuExpanded by remember { mutableStateOf(false) }
                     IconButton({ menuExpanded = true }) {
                         Icon(Icons.Default.MoreVert, "Button to open mini menu")
                     }
-                    var settingExpanded by remember { mutableStateOf(false) }
-                    var aboutExpanded by remember { mutableStateOf(false) }
-                    LaunchedEffect(settingExpanded, aboutExpanded) {
+                    var showSetting by remember { mutableStateOf(false) }
+                    var showAbout by remember { mutableStateOf(false) }
+                    LaunchedEffect(showSetting, showAbout) {
                         menuExpanded = false
                     }
                     DropdownMenu(
@@ -150,21 +160,17 @@ private fun SearchableTopBarDefault(
                     ) {
                         DropdownMenuItem(
                             text = { Text("Setting") },
-                            onClick = { settingExpanded = true }
+                            onClick = { showSetting = true }
                         )
                         DropdownMenuItem(
                             text = { Text("About App") },
-                            onClick = { aboutExpanded = true }
+                            onClick = { showAbout = true }
                         )
                     }
-                    SettingDialog(
-                        expanded = settingExpanded,
-                        onDismissRequest = { settingExpanded = false }
-                    )
-                    AboutDialog(
-                        expanded = aboutExpanded,
-                        onDismissRequest = { aboutExpanded = false }
-                    )
+                    if (showSetting)
+                        SettingDialog(onDismissRequest = { showSetting = false })
+                    if (showAbout)
+                        AboutDialog(onDismissRequest = { showAbout = false })
                 }
             } else {
                 IconButton({ searching = false }) {
@@ -184,7 +190,7 @@ private fun SearchableTopBarDefault(
 @Preview
 @Composable
 private fun TopBarSearchPreview() {
-    RandomTriviaTheme(contrastLevel = ContrastLevel.Custom(0f)) {
+    RandomTriviaTheme {
         var searchWord by remember { mutableStateOf("") }
         Column {
             SearchableTopBar(

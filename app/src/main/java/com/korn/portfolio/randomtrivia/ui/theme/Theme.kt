@@ -13,11 +13,14 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.material.color.utilities.DynamicScheme
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.MaterialDynamicColors
@@ -25,6 +28,7 @@ import com.google.android.material.color.utilities.SchemeContent
 import com.korn.portfolio.randomtrivia.model.ContrastLevel
 import com.korn.portfolio.randomtrivia.model.IsDark
 import com.korn.portfolio.randomtrivia.model.SourceColor
+import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 
 fun isSystemInDarkTheme(context: Context): Boolean {
     val uiMode = context.resources.configuration.uiMode
@@ -96,18 +100,23 @@ fun dynamicColorScheme(
 
 @Suppress("FunctionName")
 @Composable
-fun RandomTriviaTheme(
-    isDark: IsDark = IsDark.Default,
-    sourceColor: SourceColor = SourceColor.Default,
-    contrastLevel: ContrastLevel = ContrastLevel.Default,
-    content: @Composable () -> Unit
-) {
+fun RandomTriviaTheme(content: @Composable () -> Unit) {
+    val themeViewModel: ThemeViewModel = viewModel(factory = ThemeViewModel.Factory)
     val context = LocalContext.current
+
+    val isDark by themeViewModel.getIsDark(context).collectAsState(IsDark.Default)
+    val contrastLevel by themeViewModel.getContrastLevel(context).collectAsState(ContrastLevel.Default)
+    val sourceColor by themeViewModel.getSourceColor(context).collectAsState(SourceColor.Default)
+
+    val isDarkValue = themeViewModel.getIsDarkValue(context, isDark)
+    val contrastLevelValue = themeViewModel.getContrastLevelValue(context, contrastLevel)
+    val sourceColorValue = themeViewModel.getSourceColorValue(sourceColor)
+
     val colorScheme =
         if (sourceColor == SourceColor.Wallpaper && Build.VERSION.SDK_INT >= 31) {
-            when (isDark) {
+            when (val i = isDark) {
                 is IsDark.Custom ->
-                    if (isDark.value) dynamicDarkColorScheme(context)
+                    if (i.value) dynamicDarkColorScheme(context)
                     else dynamicLightColorScheme(context)
                 IsDark.Default ->
                     if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
@@ -115,19 +124,9 @@ fun RandomTriviaTheme(
             }
         } else {
             dynamicColorScheme(
-                sourceColor =
-                    if (sourceColor is SourceColor.Custom) sourceColor.value
-                    else TriviaAppColor,
-                isDark =
-                    when (isDark) {
-                        is IsDark.Custom -> isDark.value
-                        IsDark.Default -> isSystemInDarkTheme()
-                    },
-                contrastLevel =
-                    when (contrastLevel) {
-                        is ContrastLevel.Custom -> contrastLevel.value
-                        ContrastLevel.Default -> getSystemContrast(context)
-                    }.toDouble()
+                sourceColor = sourceColorValue,
+                isDark = isDarkValue,
+                contrastLevel = contrastLevelValue.toDouble()
             )
         }
 
@@ -138,7 +137,7 @@ fun RandomTriviaTheme(
             window.statusBarColor = colorScheme.primary.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
                 when (isDark) {
-                    is IsDark.Custom -> isDark.value
+                    is IsDark.Custom -> isDarkValue
                     IsDark.Default -> isSystemInDarkTheme(context)
                 }
         }

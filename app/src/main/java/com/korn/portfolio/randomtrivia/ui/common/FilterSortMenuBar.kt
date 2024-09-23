@@ -27,7 +27,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.korn.portfolio.randomtrivia.R
-import com.korn.portfolio.randomtrivia.model.ContrastLevel
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 /**
@@ -95,7 +94,7 @@ fun <T> FilterSortMenuBar(
 @Preview(showBackground = true)
 @Composable
 private fun FilterSortMenuBarPreview() {
-    RandomTriviaTheme(contrastLevel = ContrastLevel.Custom(0f)) {
+    RandomTriviaTheme {
         FilterSortMenuBar(
             selectedFilter = "T1",
             filters = (1..10).map { "T$it" },

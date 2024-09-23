@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.korn.portfolio.randomtrivia.model.ContrastLevel
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 @Composable
@@ -94,7 +93,7 @@ private fun FilterChip(
 @Preview
 @Composable
 private fun ChipPreview() {
-    RandomTriviaTheme(contrastLevel = ContrastLevel.Custom(0f)) {
+    RandomTriviaTheme {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             listOf(true, false).forEach { selected ->
                 TextChip(

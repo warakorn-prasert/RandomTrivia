@@ -3,6 +3,7 @@
 package com.korn.portfolio.randomtrivia.ui.theme
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.graphics.Color as ColorTool
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,11 +27,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,6 +45,7 @@ import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.material.color.utilities.DynamicScheme
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.MaterialDynamicColors
@@ -52,6 +54,7 @@ import com.google.android.material.color.utilities.TonalPalette
 import com.korn.portfolio.randomtrivia.model.ContrastLevel
 import com.korn.portfolio.randomtrivia.model.IsDark
 import com.korn.portfolio.randomtrivia.model.SourceColor
+import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -72,37 +75,60 @@ private fun colorFromHue(hue: Float): Int {
 @Preview
 @Composable
 private fun DynamicColorPreview() {
+    val themeViewModel: ThemeViewModel = viewModel(factory = ThemeViewModel.Factory)
     val context = LocalContext.current
-    var isDark by remember { mutableStateOf(isSystemInDarkTheme(context)) }
-    var contrastLevel by remember { mutableFloatStateOf(getSystemContrast(context)) }
-    var sourceColor by remember { mutableIntStateOf(TriviaAppColor) }
 
-    RandomTriviaTheme(
-        IsDark.Custom(isDark),
-        SourceColor.Custom(sourceColor),
-        ContrastLevel.Custom(contrastLevel)
-    ) {
+    val isDark by themeViewModel.getIsDark(context).collectAsState(IsDark.Default)
+    val contrastLevel by themeViewModel.getContrastLevel(context).collectAsState(ContrastLevel.Default)
+    val sourceColor by themeViewModel.getSourceColor(context).collectAsState(SourceColor.Default)
+
+    val isDarkValue = themeViewModel.getIsDarkValue(context, isDark)
+    val contrastLevelValue = themeViewModel.getContrastLevelValue(context, contrastLevel)
+    val sourceColorValue = themeViewModel.getSourceColorValue(sourceColor)
+
+    RandomTriviaTheme {
         Surface(Modifier.fillMaxSize()) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Button(
-                    onClick = { isDark = !isDark },
-                    content = {
-                        Text("isDark = $isDark")
-                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    TextButton(
+                        onClick = { themeViewModel.setIsDark(context, IsDark.Custom(!isDarkValue)) },
+                        content = { Text("Toggle dark") }
+                    )
+                    TextButton(
+                        onClick = {
+                            themeViewModel.setIsDark(context, IsDark.Default)
+                            themeViewModel.setContrastLevel(context, ContrastLevel.Default)
+                            themeViewModel.setSourceColor(context, SourceColor.Default)
+                        },
+                        content = { Text("System default") }
+                    )
+                    TextButton(
+                        onClick = {
+                            themeViewModel.setSourceColor(context, SourceColor.Wallpaper)
+                        },
+                        enabled = Build.VERSION.SDK_INT >= 31,
+                        content = { Text("Color from Wallpaper") }
+                    )
+                }
+                ContrastPicker(
+                    contrastLevel = contrastLevelValue,
+                    saveAction = { themeViewModel.setContrastLevel(context, ContrastLevel.Custom(it)) }
                 )
-                ContrastPicker(contrastLevel) { contrastLevel = it }
                 HorizontalColorBox(
                     prefix = "Source color",
-                    color = Color(sourceColor)
+                    color = Color(sourceColorValue)
                 )
-                SourceColorPicker(sourceColor) { sourceColor = it }
+                SourceColorPicker(
+                    sourceColor = sourceColorValue,
+                    saveAction = { themeViewModel.setSourceColor(context, SourceColor.Custom(it)) }
+                )
                 ColorSchemeDisplay(
-                    sourceColor = sourceColor,
-                    isDark = isDark,
-                    contrastLevel = contrastLevel
+                    sourceColor = sourceColorValue,
+                    isDark = isDarkValue,
+                    contrastLevel = contrastLevelValue
                 )
             }
         }
@@ -306,7 +332,11 @@ private fun HorizontalColorBox(prefix: String, color: Color) {
                 .width(42.dp)
                 .height(24.dp)
                 .background(color)
-        )
+        ) {
+            if (color.alpha == 0f) {
+                Text("Wallpaper")
+            }
+        }
     }
 }
 
