@@ -7,11 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -76,13 +73,10 @@ fun <T> FilterSortMenuBar(
             }
         }
         if (showSortMenu) {
-            ModalBottomSheet(
-                onDismissRequest = { showSortMenu = false }
-            ) {
+            ModalBottomSheet(onDismissRequest = { showSortMenu = false }) {
                 Column(
                     Modifier
                         .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                        .windowInsetsPadding(WindowInsets.navigationBars)
                 ) {
                     sortBottomSheetContent()
                 }

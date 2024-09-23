@@ -5,8 +5,7 @@ package com.korn.portfolio.randomtrivia.ui.common
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -33,22 +32,22 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> OutlinedDropdown(
-    selected: T?,
+    selected: T,
     onSelect: (T) -> Unit,
     items: Collection<T>,
     modifier: Modifier = Modifier,
     toString: (T) -> String = { it.toString() },
     label: (@Composable () -> Unit)? = null,
-    itemLeadingIcon: (@Composable () -> Unit)? = null,
+    itemLeadingIcon: (@Composable (T) -> Unit)? = null,
     itemContent: @Composable (T) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocus by interactionSource.collectIsFocusedAsState()
     Column(modifier) {
         BasicTextField(
-            value = selected?.let { toString(it) } ?: "",
+            value = toString(selected),
             onValueChange = {},
-            modifier = Modifier.width(IntrinsicSize.Min),
+            modifier = if (label != null) Modifier.padding(top = 8.dp) else Modifier,
             enabled = true,
             readOnly = true,
             textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -58,7 +57,7 @@ fun <T> OutlinedDropdown(
             singleLine = false,
             decorationBox = @Composable { innerTextField ->
                 OutlinedTextFieldDefaults.DecorationBox(
-                    value = selected?.let { toString(it) } ?: "",
+                    value = toString(selected),
                     visualTransformation = VisualTransformation.None,
                     innerTextField = innerTextField,
                     label = label,
@@ -101,7 +100,7 @@ fun <T> OutlinedDropdown(
                         focusManager.clearFocus()
                         onSelect(it)
                     },
-                    leadingIcon = itemLeadingIcon
+                    leadingIcon = itemLeadingIcon?.run { { invoke(it) } }
                 )
             }
         }
@@ -119,7 +118,7 @@ private fun OutlinedDropdownPreview() {
             items = listOf("it1", "it2", "it3"),
             label = { Text("Label") }
         ) {
-            Text(it)
+            Text(it ?: "")
         }
     }
 }
