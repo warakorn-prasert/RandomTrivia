@@ -39,10 +39,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
@@ -50,40 +46,13 @@ import com.korn.portfolio.randomtrivia.ui.common.FetchStatusBar
 import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
-import com.korn.portfolio.randomtrivia.ui.navigation.CategoriesNavigation
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
 
 @Composable
-fun Categories() {
-    val navController = rememberNavController()
-    val categoriesViewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
-    NavHost(navController, startDestination = CategoriesNavigation.CATEGORIES.route) {
-        composable(CategoriesNavigation.CATEGORIES.route) {
-            Categories(
-                categoriesViewModel = categoriesViewModel,
-                onCategoryCardClick = { categoryId ->
-                    categoriesViewModel.getPlayedQuestions(categoryId)
-                    navController.navigate(CategoriesNavigation.QUESTIONS.route)
-                }
-            )
-        }
-        composable(CategoriesNavigation.QUESTIONS.route) {
-            Questions(
-                categoryName = categoriesViewModel.categoryName,
-                questions = categoriesViewModel.questions,
-                onBackButtonClick = {
-                    navController.navigate(CategoriesNavigation.CATEGORIES.route)
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun Categories(
+fun Categories(
     categoriesViewModel: CategoriesViewModel,
     onCategoryCardClick: (Int) -> Unit
 ) {
@@ -259,14 +228,5 @@ private fun CategoryCardPreview() {
                 onClick = {}
             )
         }
-    }
-}
-
-
-@Preview
-@Composable
-private fun CategoriesPreview() {
-    RandomTriviaTheme {
-        Categories()
     }
 }

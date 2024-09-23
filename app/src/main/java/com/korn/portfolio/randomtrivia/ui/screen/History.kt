@@ -38,10 +38,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
@@ -107,69 +103,7 @@ fun Game.asDisplay() =
         }
 
 @Composable
-fun History(
-    requestFullScreen: () -> Unit,
-    dismissFullScreen: () -> Unit
-) {
-    val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "history") {
-        composable("replay") {
-            requestFullScreen()
-            Playing(
-                game = historyViewModel.gameToReplay,
-                onExit = {
-                    navController.navigate("history") {
-                        popUpTo("replay") {
-                            inclusive = true
-                        }
-                    }
-                },
-                onSubmit = { game ->
-                    historyViewModel.gameToReplay = game
-                    navController.navigate("result") {
-                        popUpTo("replay") {
-                            inclusive = true
-                        }
-                    }
-                }
-            )
-        }
-        composable("result") {
-            requestFullScreen()
-            Result(
-                game = historyViewModel.gameToReplay,
-                onExit = {
-                    navController.navigate("history") {
-                        popUpTo("result") {
-                            inclusive = true
-                        }
-                    }
-                },
-                onReplay = { _ ->
-                    navController.navigate("replay") {
-                        popUpTo("result") {
-                            inclusive = true
-                        }
-                    }
-                }
-            )
-        }
-        composable("history") {
-            dismissFullScreen()
-            History(
-                historyViewModel = historyViewModel,
-                onReplay = { game ->
-                    historyViewModel.gameToReplay = game
-                    navController.navigate("replay")
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun History(
+fun PastGames(
     historyViewModel: HistoryViewModel,
     onReplay: (Game) -> Unit,
 ) {

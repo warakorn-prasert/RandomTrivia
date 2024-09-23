@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ fun Result(
     onReplay: (Game) -> Unit,
 ) {
     val viewModel: ResultViewModel = viewModel(factory = ResultViewModel.Factory(game))
+    BackHandler(onBack = onExit)
     Scaffold(
         topBar = {
             Box(

@@ -3,6 +3,7 @@
 package com.korn.portfolio.randomtrivia.ui.screen
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -84,6 +85,7 @@ fun Playing(
     onSubmit: (Game) -> Unit
 ) {
     val viewModel: PlayingViewModel = viewModel(factory = PlayingViewModel.Factory(game))
+    BackHandler(onBack = onExit)
     ScrimmableBottomSheetScaffold(
         sheetContent = { paddingValues ->
             QuestionSelector(

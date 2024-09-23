@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -87,9 +88,10 @@ private fun List<Question>.process(
 fun Questions(
     categoryName: String,
     questions: List<Question>,
-    onBackButtonClick: () -> Unit
+    onBack: () -> Unit
 ) {
     var searchWord by remember { mutableStateOf("") }
+    BackHandler(onBack = onBack)
     Scaffold(
         topBar = {
             SearchableTopBarWithBackButton(
@@ -97,7 +99,7 @@ fun Questions(
                 onChange = { searchWord = it },
                 hint = "Search for questions",
                 title = categoryName,
-                onBackButtonClick = onBackButtonClick
+                onBackButtonClick = onBack
             )
         }
     ) { paddingValues ->
@@ -238,7 +240,7 @@ private fun QuestionsPreview() {
                 mockQuestion.copy(question = "bcd", difficulty = Difficulty.EASY, id = UUID.randomUUID()),
                 mockQuestion.copy(question = "efg", difficulty = Difficulty.HARD, id = UUID.randomUUID()),
             ),
-            onBackButtonClick = {}
+            onBack = {}
         )
     }
 }
