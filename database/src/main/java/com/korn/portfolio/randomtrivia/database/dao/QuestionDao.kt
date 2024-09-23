@@ -48,6 +48,9 @@ interface QuestionDao : BaseDao<Question> {
         """)
     suspend fun getBy(amount: Int, excluded: List<UUID> = emptyList()): List<Question>
 
+    @Query("SELECT * FROM Question WHERE categoryId = :categoryId")
+    suspend fun getByCategory(categoryId: Int): List<Question>
+
     @Query("SELECT * FROM Question WHERE question = :question LIMIT 1")
     suspend fun getOneBy(question: String): Question?
 
