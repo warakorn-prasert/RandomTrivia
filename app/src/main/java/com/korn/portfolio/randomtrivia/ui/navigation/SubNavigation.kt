@@ -4,3 +4,10 @@ enum class CategoriesNavigation : Route {
     CATEGORIES,
     QUESTIONS;
 }
+
+enum class PlayNavigation : Route {
+    SETTING,
+    LOADING,
+    PLAYING,
+    RESULT
+}

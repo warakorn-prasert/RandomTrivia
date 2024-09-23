@@ -19,12 +19,14 @@ import com.korn.portfolio.randomtrivia.ui.navigation.MainNavigation
 @Composable
 fun MainScreen() {
     var currentRoute by remember { mutableStateOf(MainNavigation.CATEGORIES) }
+    var showBottomBar by remember { mutableStateOf(true) }
     Scaffold(
         bottomBar = {
-            BottomBar(
-                selected = currentRoute,
-                onClick = { currentRoute = it }
-            )
+            if (showBottomBar)
+                BottomBar(
+                    selected = currentRoute,
+                    onClick = { currentRoute = it }
+                )
         }
     ) { paddingValues ->
         val navController = rememberNavController()
@@ -37,7 +39,10 @@ fun MainScreen() {
                 Categories()
             }
             composable(MainNavigation.PLAY.route) {
-
+                Play(
+                    requestFullScreen = { showBottomBar = false },
+                    dismissFullScreen = { showBottomBar = true }
+                )
             }
             composable(MainNavigation.HISTORY.route) {
 

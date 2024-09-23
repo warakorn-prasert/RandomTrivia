@@ -39,15 +39,8 @@ import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBarWithBackButton
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
+import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
 import java.util.UUID
-
-private val Difficulty?.displayName: String
-    get() = when (this) {
-        Difficulty.EASY -> "Easy"
-        Difficulty.MEDIUM -> "Medium"
-        Difficulty.HARD -> "Hard"
-        null -> "Random"
-    }
 
 private enum class QuestionFilter(
     val displayText: String,
