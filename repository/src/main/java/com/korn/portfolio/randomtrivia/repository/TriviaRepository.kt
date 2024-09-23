@@ -11,13 +11,16 @@ import com.korn.portfolio.randomtrivia.database.model.GameQuestion
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.database.model.entity.GameAnswer
 import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
+import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.network.TriviaApiClient
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.network.model.ResponseCode
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.UUID
 
@@ -41,7 +44,7 @@ interface TriviaRepository {
     val savedGames: Flow<List<Game>>
     suspend fun fetchCategories()
     suspend fun fetchQuestionCount(categoryId: Int)
-    suspend fun fetchNewGame(options: List<GameOption>, offline: Boolean = false): Pair<ResponseCode, Game>
+    suspend fun fetchNewGame(options: List<GameOption>, offline: Boolean = false, processLog: suspend (currentIdx: Int) -> Unit): Pair<ResponseCode, Game>
     suspend fun saveGame(game: Game)
     suspend fun deleteLocalCategories(vararg id: Int)
     suspend fun deleteAllLocalCategories()
@@ -131,27 +134,33 @@ class TriviaRepositoryImpl(
         }
     }
 
-    override suspend fun fetchNewGame(options: List<GameOption>, offline: Boolean): Pair<ResponseCode, Game> {
-        if (remoteCategories.value.isNullOrEmpty()) fetchCategories()
+    override suspend fun fetchNewGame(
+        options: List<GameOption>,
+        offline: Boolean,
+        processLog: suspend (currentIdx: Int) -> Unit
+    ): Pair<ResponseCode, Game> {
+        if (!offline && remoteCategories.value.isNullOrEmpty()) fetchCategories()
         val questions = mutableListOf<GameQuestion>()
         val game = Game(
             detail = GameDetail(timestamp = Date(), totalTimeSecond = 0),
             questions = questions
         )
-        return if (offline) fetchOfflineGame(options, questions, game)
-        else fetchOnlineGame(options, questions, game)
+        return if (offline) fetchOfflineGame(options, questions, game, processLog)
+        else fetchOnlineGame(options, questions, game, processLog)
     }
 
     private suspend fun fetchOnlineGame(
         options: List<GameOption>,
         questions: MutableList<GameQuestion>,
-        game: Game
+        game: Game,
+        processLog: suspend (currentIdx: Int) -> Unit
     ): Pair<ResponseCode, Game> {
         // get token
         val (respCode1, token) = triviaApiClient.getToken()
         if (respCode1 != ResponseCode.SUCCESS) return respCode1 to game
         // get questions
-        for (option in options) {
+        options.forEachIndexed { idx, option ->
+            withContext(Dispatchers.Main) { processLog(idx) }
             val (respCode2, fetchedQuestions) = triviaApiClient.getQuestions(
                 amount = option.amount,
                 categoryId = option.category?.id,
@@ -159,7 +168,7 @@ class TriviaRepositoryImpl(
                 type = option.type,
                 token = token
             )
-            if (respCode2 != ResponseCode.SUCCESS) return respCode1 to game
+            if (respCode2 != ResponseCode.SUCCESS) return respCode2 to game
             questions.addAll(fetchedQuestions.map { question ->
                 // sync category and question with local by id
                 // (always use properties from `local<name>` variables)
@@ -181,6 +190,7 @@ class TriviaRepositoryImpl(
                 )
             })
             delay(6000)  // rate limit = 1 query per 5 seconds
+            // TODO : Use MeasureTime to calculate proper delay
         }
         return ResponseCode.SUCCESS to game
     }
@@ -188,9 +198,11 @@ class TriviaRepositoryImpl(
     private suspend fun fetchOfflineGame(
         options: List<GameOption>,
         questions: MutableList<GameQuestion>,
-        game: Game
+        game: Game,
+        processLog: suspend (currentIdx: Int) -> Unit
     ): Pair<ResponseCode, Game> {
-        for (option in options) {
+        options.forEachIndexed { idx, option ->
+            withContext(Dispatchers.Main) { processLog(idx) }
             val fetchedQuestions = when {
                 option.category == null && option.difficulty == null ->
                     questionDao.getBy(
