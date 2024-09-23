@@ -46,6 +46,7 @@ interface TriviaRepository {
     suspend fun deleteLocalCategories(vararg id: Int)
     suspend fun deleteAllLocalCategories()
     suspend fun deleteGame(gameId: UUID)
+    suspend fun getLocalQuestions(categoryId: Int): List<Question>
 }
 
 class TriviaRepositoryImpl(
@@ -263,6 +264,9 @@ class TriviaRepositoryImpl(
     override suspend fun deleteGame(gameId: UUID) {
         gameDao.delete(GameDetail(timestamp = Date(), totalTimeSecond = 0, gameId = gameId))
     }
+
+    override suspend fun getLocalQuestions(categoryId: Int): List<Question> =
+        questionDao.getByCategory(categoryId)
 
     private val _remoteCategories = MutableLiveData<List<Pair<Category, QuestionCount>>>(emptyList())
 }
