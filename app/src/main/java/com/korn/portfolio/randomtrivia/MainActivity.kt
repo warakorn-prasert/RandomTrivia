@@ -4,9 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import com.korn.portfolio.randomtrivia.ui.screen.MainScreen
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 class MainActivity : ComponentActivity() {
@@ -14,8 +15,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             RandomTriviaTheme {
-                Surface(Modifier.fillMaxSize()) {
-                    Text("Hello World!")
+                Surface(Modifier.safeDrawingPadding().fillMaxSize()) {
+                    MainScreen()
                 }
             }
         }
