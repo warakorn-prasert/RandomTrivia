@@ -1,6 +1,4 @@
-package com.korn.portfolio.randomtrivia.model
-
-import com.korn.portfolio.randomtrivia.ui.theme.TriviaAppColor
+package com.korn.portfolio.randomtrivia.ui.theme
 
 sealed interface IsDark {
     data class Custom(val value: Boolean) : IsDark

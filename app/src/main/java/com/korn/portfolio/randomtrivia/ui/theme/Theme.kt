@@ -25,9 +25,6 @@ import com.google.android.material.color.utilities.DynamicScheme
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.SchemeContent
-import com.korn.portfolio.randomtrivia.model.ContrastLevel
-import com.korn.portfolio.randomtrivia.model.IsDark
-import com.korn.portfolio.randomtrivia.model.SourceColor
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 
 fun isSystemInDarkTheme(context: Context): Boolean {

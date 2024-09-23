@@ -75,9 +75,9 @@ import com.korn.portfolio.randomtrivia.ui.common.FetchStatusBar
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.OutlinedDropdown
 import com.korn.portfolio.randomtrivia.ui.common.PaddedDialog
-import com.korn.portfolio.randomtrivia.ui.preview.BooleanDataProvider
-import com.korn.portfolio.randomtrivia.ui.preview.GameSettingDataProvider
-import com.korn.portfolio.randomtrivia.ui.preview.getCategory
+import com.korn.portfolio.randomtrivia.ui.previewdata.BooleanDataProvider
+import com.korn.portfolio.randomtrivia.ui.previewdata.GameSettingDataProvider
+import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import com.korn.portfolio.randomtrivia.ui.viewmodel.MAX_AMOUNT

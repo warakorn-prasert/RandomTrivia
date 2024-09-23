@@ -1,4 +1,4 @@
-package com.korn.portfolio.randomtrivia.ui.preview
+package com.korn.portfolio.randomtrivia.ui.previewdata
 
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.Game

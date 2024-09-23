@@ -14,9 +14,9 @@ import com.korn.portfolio.randomtrivia.data.IS_DARK_VALUE
 import com.korn.portfolio.randomtrivia.data.SOURCE_COLOR
 import com.korn.portfolio.randomtrivia.data.SOURCE_COLOR_VALUE
 import com.korn.portfolio.randomtrivia.data.dataStore
-import com.korn.portfolio.randomtrivia.model.ContrastLevel
-import com.korn.portfolio.randomtrivia.model.IsDark
-import com.korn.portfolio.randomtrivia.model.SourceColor
+import com.korn.portfolio.randomtrivia.ui.theme.ContrastLevel
+import com.korn.portfolio.randomtrivia.ui.theme.IsDark
+import com.korn.portfolio.randomtrivia.ui.theme.SourceColor
 import com.korn.portfolio.randomtrivia.ui.theme.TriviaAppColor
 import com.korn.portfolio.randomtrivia.ui.theme.getSystemContrast
 import com.korn.portfolio.randomtrivia.ui.theme.isSystemInDarkTheme

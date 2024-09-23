@@ -35,7 +35,7 @@ import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.GameFetchStatus
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.M3ProgressBar
-import com.korn.portfolio.randomtrivia.ui.preview.getCategory
+import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewModel

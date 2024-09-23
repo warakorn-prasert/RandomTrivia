@@ -50,9 +50,9 @@ import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
 import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
-import com.korn.portfolio.randomtrivia.ui.preview.getCategory
-import com.korn.portfolio.randomtrivia.ui.preview.getGame
-import com.korn.portfolio.randomtrivia.ui.preview.getGameQuestion
+import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGameQuestion
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.PlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName

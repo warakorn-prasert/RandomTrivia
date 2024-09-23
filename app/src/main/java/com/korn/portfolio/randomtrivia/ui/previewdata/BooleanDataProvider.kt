@@ -1,4 +1,4 @@
-package com.korn.portfolio.randomtrivia.ui.preview
+package com.korn.portfolio.randomtrivia.ui.previewdata
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 

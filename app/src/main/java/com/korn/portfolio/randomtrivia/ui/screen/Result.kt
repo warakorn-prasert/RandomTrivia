@@ -28,7 +28,7 @@ import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
-import com.korn.portfolio.randomtrivia.ui.preview.getGame
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ResultViewModel
 
