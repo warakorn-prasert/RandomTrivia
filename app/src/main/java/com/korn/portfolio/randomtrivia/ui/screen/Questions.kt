@@ -1,6 +1,6 @@
 @file:Suppress("FunctionName")
 
-package com.korn.portfolio.randomtrivia.ui
+package com.korn.portfolio.randomtrivia.ui.screen
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,13 +34,20 @@ import androidx.compose.ui.unit.dp
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.entity.Question
-import com.korn.portfolio.randomtrivia.model.ContrastLevel
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
 import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBarWithBackButton
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import java.util.UUID
+
+private val Difficulty?.displayName: String
+    get() = when (this) {
+        Difficulty.EASY -> "Easy"
+        Difficulty.MEDIUM -> "Medium"
+        Difficulty.HARD -> "Hard"
+        null -> "Random"
+    }
 
 private enum class QuestionFilter(
     val displayText: String,
@@ -179,12 +186,12 @@ private fun QuestionCard(question: Question, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
-            .clickable { expanded = !expanded }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(vertical = 8.dp)
+            .clickable { expanded = !expanded },
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("(${question.difficulty.name}) ${question.question}", Modifier.weight(1f))
+            Text("(${question.difficulty.displayName}) ${question.question}", Modifier.weight(1f))
             Icon(
                 painter = painterResource(
                     if (expanded) R.drawable.ic_arrow_drop_up
@@ -205,7 +212,10 @@ private fun QuestionCard(question: Question, modifier: Modifier = Modifier) {
 
 @Composable
 private fun Answer(answer: String, correct: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Icon(
             imageVector = Icons.Default.run {
                 if (correct) Check else Close
@@ -226,7 +236,7 @@ private fun QuestionsPreview() {
         correctAnswer = "Correct answer",
         incorrectAnswers = listOf("Incorrect 1", "Incorrect 2"),
     )
-    RandomTriviaTheme(contrastLevel = ContrastLevel.Custom(0f)) {
+    RandomTriviaTheme {
         Questions(
             categoryName = "Category name",
             questions = listOf(

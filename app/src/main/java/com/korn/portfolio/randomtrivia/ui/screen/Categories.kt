@@ -1,9 +1,8 @@
 @file:Suppress("FunctionName")
 
-package com.korn.portfolio.randomtrivia.ui
+package com.korn.portfolio.randomtrivia.ui.screen
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,23 +10,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
@@ -50,14 +44,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.korn.portfolio.randomtrivia.R
-import com.korn.portfolio.randomtrivia.model.ContrastLevel
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
+import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
+import com.korn.portfolio.randomtrivia.ui.common.FetchStatusBar
 import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
-import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
 import com.korn.portfolio.randomtrivia.ui.navigation.CategoriesNavigation
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
+import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryFilter
+import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
 
 @Composable
 fun Categories() {
@@ -65,15 +62,31 @@ fun Categories() {
     val categoriesViewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
     NavHost(navController, startDestination = CategoriesNavigation.CATEGORIES.route) {
         composable(CategoriesNavigation.CATEGORIES.route) {
-            Categories(categoriesViewModel)
+            Categories(
+                categoriesViewModel = categoriesViewModel,
+                onCategoryCardClick = { categoryId ->
+                    categoriesViewModel.getPlayedQuestions(categoryId)
+                    navController.navigate(CategoriesNavigation.QUESTIONS.route)
+                }
+            )
         }
         composable(CategoriesNavigation.QUESTIONS.route) {
+            Questions(
+                categoryName = categoriesViewModel.categoryName,
+                questions = categoriesViewModel.questions,
+                onBackButtonClick = {
+                    navController.navigate(CategoriesNavigation.CATEGORIES.route)
+                }
+            )
         }
     }
 }
 
 @Composable
-private fun Categories(categoriesViewModel: CategoriesViewModel) {
+private fun Categories(
+    categoriesViewModel: CategoriesViewModel,
+    onCategoryCardClick: (Int) -> Unit
+) {
     val searchWord by categoriesViewModel.searchWord.collectAsState()
     Scaffold(
         topBar = {
@@ -100,12 +113,11 @@ private fun Categories(categoriesViewModel: CategoriesViewModel) {
                 sort, categoriesViewModel::setSort,
                 reverseSort, categoriesViewModel::setReverseSort
             )
-            FetchResultBar(
+            FetchStatusBar(
                 categoriesViewModel.fetchStatus,
-                categoriesViewModel::fetchCategories,
-                Modifier.fillMaxWidth()
+                categoriesViewModel::fetchCategories
             )
-            if (categories.isEmpty() && categoriesViewModel.fetchStatus != CategoryFetchStatus.Loading)
+            if (categories.isEmpty() && categoriesViewModel.fetchStatus != FetchStatus.Loading)
                 Box(Modifier.fillMaxSize().padding(horizontal = 16.dp), Alignment.Center) {
                     Text("No category available to play.")
                 }
@@ -114,12 +126,13 @@ private fun Categories(categoriesViewModel: CategoriesViewModel) {
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(categories, key = { it.id }) { (name, total, isPlayed, _) ->
+                items(categories, key = { it.id }) { (name, total, totalPlayed, id, isPlayed) ->
                     CategoryCard(
                         categoryName = name,
-                        totalQuestion = total,
+                        totalQuestions = total,
+                        playedQuestions = totalPlayed,
                         isPlayed = isPlayed,
-                        onClick = {},
+                        onClick = { onCategoryCardClick(id) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -171,46 +184,10 @@ private fun CategoriesFilterSortMenuBar(
 }
 
 @Composable
-private fun FetchResultBar(
-    fetchStatus: CategoryFetchStatus,
-    retryAction: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    if (fetchStatus !is CategoryFetchStatus.Success)
-        Box(
-            modifier = modifier
-                .height(40.dp)
-                .background(MaterialTheme.colorScheme.surfaceContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (fetchStatus == CategoryFetchStatus.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "Loading new categories.",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                } else if (fetchStatus is CategoryFetchStatus.Error) {
-                    Text(fetchStatus.message, style = MaterialTheme.typography.labelLarge)
-                    IconButtonWithText(
-                        onClick = retryAction,
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Retry button for fetching categories.",
-                        text = "Retry"
-                    )
-                }
-            }
-        }
-}
-
-@Composable
 private fun CategoryCard(
     categoryName: String,
-    totalQuestion: Int,
+    totalQuestions: Int,
+    playedQuestions: Int,
     isPlayed: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -241,14 +218,13 @@ private fun CategoryCard(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(text = categoryName, fontWeight = FontWeight.Bold)
-                var detail = "$totalQuestion question"
-                if (totalQuestion > 1) detail += "s"
+                var detail = "$totalQuestions question"
+                if (totalQuestions > 1) detail += "s"
+                if (playedQuestions > 0) detail += " ($playedQuestions played)"
                 Text(text = detail)
             }
             if (isPlayed)
-                IconButton(onClick) {
-                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Category card navigation button")
-                }
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Category card navigation button")
         }
     }
 }
@@ -257,24 +233,28 @@ private fun CategoryCard(
 @Composable
 private fun CategoryCardPreview() {
     val categoryName = "CategoryName"
-    val totalQuestion = 100
-    RandomTriviaTheme(contrastLevel = ContrastLevel.Custom(0f)) {
+    val totalQuestions = 100
+    val playedQuestions = 20
+    RandomTriviaTheme {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             CategoryCard(
                 categoryName = categoryName,
-                totalQuestion = totalQuestion,
+                totalQuestions = totalQuestions,
+                playedQuestions = playedQuestions,
                 isPlayed = false,
                 onClick = {}
             )
             CategoryCard(
                 categoryName = categoryName,
-                totalQuestion = totalQuestion,
+                totalQuestions = totalQuestions,
+                playedQuestions = playedQuestions,
                 isPlayed = true,
                 onClick = {}
             )
             CategoryCard(
                 categoryName = categoryName.repeat(10),
-                totalQuestion = totalQuestion,
+                totalQuestions = totalQuestions,
+                playedQuestions = playedQuestions,
                 isPlayed = true,
                 onClick = {}
             )
@@ -286,7 +266,7 @@ private fun CategoryCardPreview() {
 @Preview
 @Composable
 private fun CategoriesPreview() {
-    RandomTriviaTheme(contrastLevel = ContrastLevel.Custom(0f)) {
+    RandomTriviaTheme {
         Categories()
     }
 }

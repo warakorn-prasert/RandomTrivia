@@ -1,4 +1,4 @@
-package com.korn.portfolio.randomtrivia.ui
+package com.korn.portfolio.randomtrivia.ui.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,28 +12,38 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
-import kotlinx.coroutines.Dispatchers
+import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
-data class CategoryDisplayData(
+data class CategoryDisplay(
     val name: String,
-    val totalQuestion: Int,
-    val isPlayed: Boolean,
-    val id: Int
+    val totalQuestions: Int,
+    val playedQuestions: Int,
+    val id: Int,
+    val isPlayed: Boolean = playedQuestions > 0,
 )
+
+private fun Pair<Category, QuestionCount>.asDisplay(playedQuestions: Int) =
+    CategoryDisplay(
+        name = first.name,
+        totalQuestions = second.total,
+        playedQuestions = playedQuestions,
+        id = first.id
+    )
 
 enum class CategoryFilter(
     val displayText: String,
-    val function: (List<CategoryDisplayData>) -> List<CategoryDisplayData>
+    val function: (List<CategoryDisplay>) -> List<CategoryDisplay>
 ) {
     ALL("All", { it }),
     PLAYED("Played", { all -> all.filter { it.isPlayed } }),
@@ -42,25 +52,21 @@ enum class CategoryFilter(
 
 enum class CategorySort(
     val displayText: String,
-    val function: (List<CategoryDisplayData>) -> List<CategoryDisplayData>
+    val function: (List<CategoryDisplay>) -> List<CategoryDisplay>
 ) {
     NAME("Name (A-Z)", { all -> all.sortedBy { it.name.lowercase() } }),
-    TOTAL_QUESTIONS("Total questions (low-high)", { all -> all.sortedBy { it.totalQuestion } })
+    TOTAL_QUESTIONS("Total questions (low-high)", { all -> all.sortedBy { it.totalQuestions } })
 }
-
-sealed interface CategoryFetchStatus {
-    data object Loading : CategoryFetchStatus
-    data class Error(val message: String) : CategoryFetchStatus
-    data object Success : CategoryFetchStatus
-}
-
-
 
 class CategoriesViewModel(
     private val triviaRepository: TriviaRepository
 ) : ViewModel() {
 
-    var fetchStatus: CategoryFetchStatus by mutableStateOf(CategoryFetchStatus.Success)
+    /*
+     * Part 1/2 : Categories
+     */
+
+    var fetchStatus: FetchStatus by mutableStateOf(FetchStatus.Success)
         private set
 
     init {
@@ -78,7 +84,7 @@ class CategoriesViewModel(
 
     fun setSearchWord(searchWord: String) {
         viewModelScope.launch {
-            if (searchWord != this@CategoriesViewModel.searchWord.value) mutableSearchWord.emit(searchWord)
+            mutableSearchWord.emit(searchWord)
         }
     }
 
@@ -100,16 +106,19 @@ class CategoriesViewModel(
         }
     }
 
-    val categories: Flow<List<CategoryDisplayData>>
-        get () = playedCategories
-            .combine(notPlayedCategories) { played, notPlayed ->
-                played.map { (category, questionCount) ->
-                    CategoryDisplayData(category.name, questionCount.total, true, category.id)
-                } + notPlayed.map { (category, questionCount) ->
-                    CategoryDisplayData(category.name, questionCount.total, false, category.id)
-                }
-            }.combine(filter) { all, newFilter ->
-                newFilter.function(all)
+    val categories: Flow<List<CategoryDisplay>>
+        get() =
+            combine(playedCategories, triviaRepository.remoteCategories.asFlow()) { played, remote ->
+                remote.map { r ->
+                    val playedCat = played.firstOrNull { it.first.id == r.first.id }
+                    r.asDisplay(playedQuestions = playedCat?.second?.total ?: 0)
+                } + played
+                    .filter { p -> !remote.any { it.first.id == p.first.id } }
+                    .map { p ->
+                        p.asDisplay(playedQuestions = p.second.total)
+                    }
+            }.combine(filter) { cats, newFilter ->
+                newFilter.function(cats)
             }.combine(searchWord) { all, newSearchWord ->
                 all.filter {
                     it.name.lowercase().contains(newSearchWord.lowercase())
@@ -121,18 +130,15 @@ class CategoriesViewModel(
                 else all
             }
 
-
     fun fetchCategories() {
         viewModelScope.launch {
-            fetchStatus = CategoryFetchStatus.Loading
+            fetchStatus = FetchStatus.Loading
             delay(1000L)  // make progress indicator not look flickering
             fetchStatus = try {
-                withContext(Dispatchers.IO) {
-                    triviaRepository.fetchCategories()
-                }
-                CategoryFetchStatus.Success
+                triviaRepository.fetchCategories()
+                FetchStatus.Success
             } catch (_: Exception) {
-                CategoryFetchStatus.Error("Failed to load new categories")
+                FetchStatus.Error("Failed to load new categories")
             }
         }
     }
@@ -151,16 +157,25 @@ class CategoriesViewModel(
                 }
             }
 
-    // remote categories that are not played
-    private val notPlayedCategories: Flow<List<Pair<Category, QuestionCount>>>
-        get() = triviaRepository.remoteCategories.asFlow()
-            .combine(playedCategories) { remote, played ->
-                remote.filterNot { (r, _) ->
-                    played.any { (p, _) ->
-                        r.name == p.name
-                    }
-                }
-            }
+    /*
+     * Part 2/2 : Questions of selected played category
+     */
+
+    var categoryName by mutableStateOf("")
+        private set
+
+    var questions by mutableStateOf(emptyList<Question>())
+        private set
+
+    fun getPlayedQuestions(categoryId: Int) {
+        viewModelScope.launch {
+            categoryName = triviaRepository.localCategories.first()
+                .first { it.first.id == categoryId }
+                .first
+                .name
+            questions = triviaRepository.getLocalQuestions(categoryId)
+        }
+    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
