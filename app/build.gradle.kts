@@ -48,10 +48,18 @@ android {
 
 dependencies {
 
+    implementation(projects.database)
+    implementation(projects.network)
+    implementation(projects.repository)
+
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.material)
+    implementation(libs.retrofit.core)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
