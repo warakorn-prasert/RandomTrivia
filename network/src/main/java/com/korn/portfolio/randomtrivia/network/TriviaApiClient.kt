@@ -27,7 +27,6 @@ private fun String.decodeHtml(): String =
 private fun Category.toDbCategory(): DbCategory =
     DbCategory(
         name = name.decodeHtml(),
-        downloadable = true,
         id = id
     )
 
