@@ -8,7 +8,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.Game
-import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,12 +15,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import java.util.Date
 import java.util.UUID
 
 enum class HistoryFilter(
     val displayText: String,
-    val function: (List<Game>) -> List<Game>
+    val invoke: (List<Game>) -> List<Game>
 ) {
     ALL("All", { it }),
     TODAY("Today", { games ->
@@ -39,7 +37,7 @@ enum class HistoryFilter(
 
 enum class HistorySort(
     val displayText: String,
-    val function: (List<Game>) -> List<Game>
+    val invoke: (List<Game>) -> List<Game>
 ) {
     MOST_RECENT("Most recent", { games ->
         games.sortedByDescending { it.detail.timestamp }
@@ -67,7 +65,7 @@ class HistoryViewModel(private val triviaRepository: TriviaRepository) : ViewMod
 
     val games: Flow<List<Game>>
         get() = combine(triviaRepository.savedGames, filter, sort, reverseSort) { games, f, s, rs ->
-            s.function(f.function(games)).let {
+            s.invoke(f.invoke(games)).let {
                 if (rs) it.reversed()
                 else it
             }
@@ -78,8 +76,6 @@ class HistoryViewModel(private val triviaRepository: TriviaRepository) : ViewMod
             triviaRepository.deleteGame(gameId)
         }
     }
-
-    var gameToReplay: Game = Game(GameDetail(Date(), 0), emptyList())
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

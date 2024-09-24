@@ -9,8 +9,6 @@ import java.util.Date
 
 // TODO : Remove Category.downloadable (Seems like it is not used.)
 
-// TODO : Remove categoryId property from GameAnswer (redundant)
-
 val Category?.displayName: String
     get() = this?.name ?: "Random"
 

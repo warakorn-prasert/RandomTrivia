@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -50,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.korn.portfolio.randomtrivia.R
@@ -57,9 +59,13 @@ import com.korn.portfolio.randomtrivia.database.model.GameQuestion
 import com.korn.portfolio.randomtrivia.ui.common.QuestionButtonState.Companion.Badge
 import com.korn.portfolio.randomtrivia.ui.common.QuestionButtonState.Companion.inspectButtonState
 import com.korn.portfolio.randomtrivia.ui.common.QuestionButtonState.Companion.playingButtonState
+import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGameQuestion
+import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.sqrt
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -268,5 +274,39 @@ private enum class QuestionButtonState(
                 in question.incorrectAnswers -> INCORRECT
                 else -> UNANSWERED
             }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun QuestionSelectorPreview() {
+    RandomTriviaTheme {
+        Column {
+            QuestionSelector(
+                currentIdx = 0,
+                questions = List(12) {
+                    getGameQuestion(getCategory(it), correctAnswer = Random.nextBoolean())
+                },
+                selectAction = {},
+                isInspecting = false
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun InspectModePreview() {
+    RandomTriviaTheme {
+        Column {
+            QuestionSelector(
+                currentIdx = 0,
+                questions = List(12) {
+                    getGameQuestion(getCategory(it), correctAnswer = Random.nextBoolean())
+                },
+                selectAction = {},
+                isInspecting = true
+            )
+        }
     }
 }

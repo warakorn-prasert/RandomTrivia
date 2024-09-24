@@ -3,6 +3,9 @@
 package com.korn.portfolio.randomtrivia.ui.common
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,14 +15,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -71,18 +75,25 @@ private fun FilterChip(
     minHeight: Dp,
     cornerSize: Dp
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(cornerSize),
-        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-            .takeUnless { selected },
-    ) {
+    val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+    CompositionLocalProvider(LocalContentColor provides contentColor) {
         Box(
             modifier = Modifier
-                .padding(horizontal = horizontalPadding)
-                .heightIn(min = minHeight),
+                .heightIn(min = minHeight)
+                .let {
+                    if (selected)
+                        it
+                    else
+                        it.border(
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                            shape = RoundedCornerShape(cornerSize)
+                        )
+                }
+                .clip(RoundedCornerShape(cornerSize))
+                .background(containerColor)
+                .clickable(onClick = onClick)
+                .padding(horizontal = horizontalPadding),
             contentAlignment = Alignment.Center
         ) {
             label()
@@ -90,7 +101,7 @@ private fun FilterChip(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 private fun ChipPreview() {
     RandomTriviaTheme {

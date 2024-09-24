@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -11,14 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,12 +36,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
-import com.korn.portfolio.randomtrivia.ui.preview.getGame
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 private enum class InspectAnswerButtonState(
@@ -83,16 +81,13 @@ private enum class InspectAnswerButtonState(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InspectDialog(
-    onDismissRequest: () -> Unit,
-    replayAction: () -> Unit,
+fun Inspect(
+    onBack: () -> Unit,
+    onReplay: (Game) -> Unit,
     game: Game
 ) {
+    BackHandler(onBack = onBack)
     var currentIdx by remember { mutableIntStateOf(0) }
-    BasicAlertDialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
         ScrimmableBottomSheetScaffold(
             sheetContent = { paddingValues ->
                 QuestionSelector(
@@ -109,7 +104,7 @@ fun InspectDialog(
                     title = {},
                     navigationIcon = {
                         IconButtonWithText(
-                            onClick = onDismissRequest,
+                            onClick = onBack,
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Button to return to main menu.",
                             text = "Exit"
@@ -117,7 +112,7 @@ fun InspectDialog(
                     },
                     actions = {
                         IconButtonWithText(
-                            onClick = replayAction,
+                            onClick = { onReplay(game) },
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Replay button.",
                             text = "Replay"
@@ -157,7 +152,6 @@ fun InspectDialog(
                 )
             }
         }
-    }
 }
 
 @Composable
@@ -186,13 +180,18 @@ private fun InspectAnswerButtons(
                     verticalAlignment = Alignment.Top
                 ) {
                     Text("${idx + 1}.")
-                    Text(answer)
-                    if (state.trailingIcon != null) {
-                        Spacer(Modifier.weight(1f).widthIn(48.dp))
-                        Icon(
-                            imageVector = state.trailingIcon,
-                            contentDescription = null
-                        )
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(answer, Modifier.weight(1f))
+                        if (state.trailingIcon != null) {
+                            Spacer(Modifier.width(48.dp))
+                            Icon(
+                                imageVector = state.trailingIcon,
+                                contentDescription = null
+                            )
+                        }
                     }
                 }
             }
@@ -202,11 +201,11 @@ private fun InspectAnswerButtons(
 
 @Preview
 @Composable
-private fun InspectDialogPreview() {
+private fun InspectPreview() {
     RandomTriviaTheme {
-        InspectDialog(
-            onDismissRequest = {},
-            replayAction = {},
+        Inspect(
+            onBack = {},
+            onReplay = {},
             game = getGame(totalQuestions = 44, played = true)
         )
     }
@@ -214,11 +213,52 @@ private fun InspectDialogPreview() {
 
 @Preview
 @Composable
-private fun InspectAnswerButtonsPreview() {
+private fun IncorrectPreview() {
     val answers = listOf("a", "b", "c", "d")
-    InspectAnswerButtons(
-        userAnswer = answers[0],
-        answers = answers,
-        correctAnswer = answers[2]
-    )
+    RandomTriviaTheme {
+        InspectAnswerButtons(
+            userAnswer = answers[0],
+            answers = answers,
+            correctAnswer = answers[2]
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun UnansweredPreview() {
+    val answers = listOf("a", "b", "c", "d")
+    RandomTriviaTheme {
+        InspectAnswerButtons(
+            userAnswer = "",
+            answers = answers,
+            correctAnswer = answers[2]
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun CorrectPreview() {
+    val answers = listOf("a", "b", "c", "d")
+    RandomTriviaTheme {
+        InspectAnswerButtons(
+            userAnswer = answers[0],
+            answers = answers,
+            correctAnswer = answers[0]
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun OverflowPreview() {
+    val answers = List(4) { "overflow$it".repeat(10) }
+    RandomTriviaTheme {
+        InspectAnswerButtons(
+            userAnswer = answers[0],
+            answers = answers,
+            correctAnswer = answers[2]
+        )
+    }
 }

@@ -51,9 +51,6 @@ import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.SchemeContent
 import com.google.android.material.color.utilities.TonalPalette
-import com.korn.portfolio.randomtrivia.model.ContrastLevel
-import com.korn.portfolio.randomtrivia.model.IsDark
-import com.korn.portfolio.randomtrivia.model.SourceColor
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 import kotlin.math.roundToInt
 import kotlin.random.Random

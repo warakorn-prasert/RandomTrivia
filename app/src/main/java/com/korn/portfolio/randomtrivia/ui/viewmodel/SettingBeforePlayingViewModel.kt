@@ -67,7 +67,7 @@ private val QuestionCount?.difficultiesWithQuestions: List<Difficulty?>
 private val Pair<Category, QuestionCount>?.difficultiesWithQuestions: List<Difficulty?>
     get() = if (this == null) allDifficulties else second.difficultiesWithQuestions
 
-private interface SettingBeforePlayingLogic {
+private interface SettingBeforePlaying {
     val categoriesFetchStatus: StateFlow<FetchStatus>
     val questionCountFetchStatus: StateFlow<FetchStatus>
     fun fetchCategories()
@@ -96,7 +96,7 @@ private interface SettingBeforePlayingLogic {
 
 class SettingBeforePlayingViewModel(
     private val triviaRepository: TriviaRepository
-) : ViewModel(), SettingBeforePlayingLogic {
+) : ViewModel(), SettingBeforePlaying {
     /*
      * Part 1/4 : Fetching categories and question counts
      */

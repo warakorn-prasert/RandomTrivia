@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +29,7 @@ import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
-import com.korn.portfolio.randomtrivia.ui.preview.getGame
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ResultViewModel
 
@@ -37,8 +38,10 @@ fun Result(
     game: Game,
     onExit: () -> Unit,
     onReplay: (Game) -> Unit,
+    onInspect: (Game) -> Unit
 ) {
     val viewModel: ResultViewModel = viewModel(factory = ResultViewModel.Factory(game))
+    BackHandler(onBack = onExit)
     Scaffold(
         topBar = {
             Box(
@@ -64,7 +67,7 @@ fun Result(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButtonWithText(
-                    onClick = { viewModel.enterInspect() },
+                    onClick = { onInspect(game) },
                     imageVector = Icons.Default.Search,
                     contentDescription = "Button to inspect previous game.",
                     text = "Inspect"
@@ -95,12 +98,6 @@ fun Result(
                     Text(hhmmssFrom(viewModel.totalTimeSecond))
                 }
             }
-            if (viewModel.inspect)
-                InspectDialog(
-                    onDismissRequest = viewModel::exitInspect,
-                    replayAction = { viewModel.replay(onReplay) },
-                    game = viewModel.game
-                )
         }
     }
 }
@@ -112,7 +109,8 @@ private fun ResultPreview() {
         Result(
             game = getGame(42),
             onExit = {},
-            onReplay = {}
+            onReplay = {},
+            onInspect = {}
         )
     }
 }

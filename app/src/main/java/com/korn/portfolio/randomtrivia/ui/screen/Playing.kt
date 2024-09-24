@@ -3,6 +3,7 @@
 package com.korn.portfolio.randomtrivia.ui.screen
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -45,14 +45,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.Game
+import com.korn.portfolio.randomtrivia.database.model.GameQuestion
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
 import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
-import com.korn.portfolio.randomtrivia.ui.preview.getCategory
-import com.korn.portfolio.randomtrivia.ui.preview.getGame
-import com.korn.portfolio.randomtrivia.ui.preview.getGameQuestion
+import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGameQuestion
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.PlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
@@ -76,7 +76,6 @@ enum class AnswerButtonState(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Playing(
     game: Game,
@@ -84,12 +83,37 @@ fun Playing(
     onSubmit: (Game) -> Unit
 ) {
     val viewModel: PlayingViewModel = viewModel(factory = PlayingViewModel.Factory(game))
+    Playing(
+        exitAction = { viewModel.exit(onExit) },
+        submitAction = { viewModel.submit(onSubmit) },
+        currentIdx = viewModel.second,
+        questions = viewModel.questions,
+        selectQuestion = viewModel::selectQuestion,
+        submittable = viewModel.submittable,
+        second = viewModel.second,
+        answerAction = viewModel::answer
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun Playing(
+    exitAction: () -> Unit,
+    submitAction: () -> Unit,
+    currentIdx: Int,
+    questions: List<GameQuestion>,
+    selectQuestion: (Int) -> Unit,
+    submittable: Boolean,
+    second: Int,
+    answerAction: (String) -> Unit
+) {
+    BackHandler(onBack = exitAction)
     ScrimmableBottomSheetScaffold(
         sheetContent = { paddingValues ->
             QuestionSelector(
-                currentIdx = viewModel.currentIdx,
-                questions = viewModel.questions,
-                selectAction = viewModel::selectQuestion,
+                currentIdx = currentIdx,
+                questions = questions,
+                selectAction = selectQuestion,
                 paddingValues = paddingValues
             )
         },
@@ -99,7 +123,7 @@ fun Playing(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = { viewModel.exit(onExit) },
+                        onClick = exitAction,
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to return to main menu.",
                         text = "Exit"
@@ -107,11 +131,11 @@ fun Playing(
                 },
                 actions = {
                     IconButtonWithText(
-                        onClick = { viewModel.submit(onSubmit) },
+                        onClick = submitAction,
                         imageVector = Icons.Default.Check,
                         contentDescription = "Button to submit game answers.",
                         text = "Submit",
-                        enabled = viewModel.submittable
+                        enabled = submittable
                     )
                 }
             )
@@ -124,9 +148,9 @@ fun Playing(
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val question = viewModel.questions[viewModel.currentIdx]
+            val question = questions[currentIdx]
             GameStatus(
-                second = viewModel.second,
+                second = second,
                 category = question.category,
                 difficulty = question.question.difficulty,
                 modifier = Modifier
@@ -142,7 +166,7 @@ fun Playing(
             AnswerButtons(
                 userAnswer = question.answer.answer,
                 answers = question.question.run { incorrectAnswers + correctAnswer },
-                answerAction = viewModel::answer,
+                answerAction = answerAction,
                 modifier = Modifier
                     .padding(vertical = 16.dp)
             )
@@ -262,21 +286,31 @@ private fun AnswerButtons(
 private fun PlayingPreview() {
     RandomTriviaTheme {
         Playing(
-            game = getGame(42),
-            onExit = {},
-            onSubmit = {}
+            exitAction = {},
+            submitAction = {},
+            currentIdx = 2,
+            questions = List(12) { getGameQuestion(getCategory(it % 2)) },
+            selectQuestion = {},
+            submittable = true,
+            second = 100,
+            answerAction = {}
         )
     }
 }
 
 @Preview
 @Composable
-private fun PlayingOverflowQuestionPreview() {
+private fun OverflowQuestionPreview() {
     RandomTriviaTheme {
         Playing(
-            game = getGame(42),
-            onExit = {},
-            onSubmit = {}
+            exitAction = {},
+            submitAction = {},
+            currentIdx = 0,
+            questions = listOf(getGameQuestion(getCategory(0), overflow = true)),
+            selectQuestion = {},
+            submittable = true,
+            second = 100,
+            answerAction = {}
         )
     }
 }
@@ -290,21 +324,5 @@ private fun OverflowAnswerButtonsPreview() {
             answers = listOf("OverflowAnswer".repeat(20)),
             answerAction = {}
         )
-    }
-}
-
-@Preview
-@Composable
-private fun QuestionSelectorPreview() {
-    RandomTriviaTheme {
-        Surface {
-            Column {
-                QuestionSelector(
-                    currentIdx = 0,
-                    questions = List(44) { getGameQuestion(getCategory(0)) },
-                    selectAction = {}
-                )
-            }
-        }
     }
 }

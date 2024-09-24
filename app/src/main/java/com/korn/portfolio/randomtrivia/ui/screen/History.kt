@@ -36,12 +36,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
@@ -49,6 +47,8 @@ import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
 import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
+import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistorySort
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryViewModel
@@ -107,71 +107,39 @@ fun Game.asDisplay() =
         }
 
 @Composable
-fun History(
-    requestFullScreen: () -> Unit,
-    dismissFullScreen: () -> Unit
+fun PastGames(
+    onReplay: (Game) -> Unit,
+    onInspect: (Game) -> Unit
 ) {
-    val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "history") {
-        composable("replay") {
-            requestFullScreen()
-            Playing(
-                game = historyViewModel.gameToReplay,
-                onExit = {
-                    navController.navigate("history") {
-                        popUpTo("replay") {
-                            inclusive = true
-                        }
-                    }
-                },
-                onSubmit = { game ->
-                    historyViewModel.gameToReplay = game
-                    navController.navigate("result") {
-                        popUpTo("replay") {
-                            inclusive = true
-                        }
-                    }
-                }
-            )
-        }
-        composable("result") {
-            requestFullScreen()
-            Result(
-                game = historyViewModel.gameToReplay,
-                onExit = {
-                    navController.navigate("history") {
-                        popUpTo("result") {
-                            inclusive = true
-                        }
-                    }
-                },
-                onReplay = { _ ->
-                    navController.navigate("replay") {
-                        popUpTo("result") {
-                            inclusive = true
-                        }
-                    }
-                }
-            )
-        }
-        composable("history") {
-            dismissFullScreen()
-            History(
-                historyViewModel = historyViewModel,
-                onReplay = { game ->
-                    historyViewModel.gameToReplay = game
-                    navController.navigate("replay")
-                }
-            )
-        }
-    }
+    val viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
+
+    val filter: HistoryFilter by viewModel.filter.collectAsState()
+    val sort: HistorySort by viewModel.sort.collectAsState()
+    val reverseSort by viewModel.reverseSort.collectAsState()
+    val games by viewModel.games.collectAsState(emptyList())
+
+    PastGames(
+        onReplay = onReplay,
+        onInspect = onInspect,
+        filter = filter, setFilter = viewModel::setFilter,
+        sort = sort, setSort = viewModel::setSort,
+        reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
+        games = games,
+        deleteGame = viewModel::deleteGame
+    )
 }
 
 @Composable
-private fun History(
-    historyViewModel: HistoryViewModel,
+private fun PastGames(
     onReplay: (Game) -> Unit,
+    onInspect: (Game) -> Unit,
+
+    filter: HistoryFilter, setFilter: (HistoryFilter) -> Unit,
+    sort: HistorySort, setSort: (HistorySort) -> Unit,
+    reverseSort: Boolean, setReverseSort: (Boolean) -> Unit,
+
+    games: List<Game>,
+    deleteGame: (gameId: UUID) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -186,15 +154,13 @@ private fun History(
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             HistoryFilterSortMenuBar(
-                historyViewModel.filter.collectAsState().value,
-                historyViewModel::setFilter,
-                historyViewModel.sort.collectAsState().value,
-                historyViewModel::setSort,
-                historyViewModel.reverseSort.collectAsState().value,
-                historyViewModel::setReverseSort
+                filter,
+                setFilter,
+                sort,
+                setSort,
+                reverseSort,
+                setReverseSort
             )
-            val games by historyViewModel.games.collectAsState(emptyList())
-            var inspectGame by remember { mutableStateOf<Game?>(null) }
             if (games.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("No game played yet.")
@@ -205,20 +171,11 @@ private fun History(
                         HorizontalDivider()
                     GameDisplayItem(
                         game = game,
-                        inspectAction = { inspectGame = game },
+                        inspectAction = { onInspect(game) },
                         replayAction = { onReplay(game) },
-                        deleteAction = { historyViewModel.deleteGame(game.detail.gameId) }
+                        deleteAction = { deleteGame(game.detail.gameId) }
                     )
                 }
-            }
-            if (inspectGame != null) {
-                InspectDialog(
-                    onDismissRequest = {
-                        inspectGame = null
-                    },
-                    replayAction = { onReplay(inspectGame!!) },
-                    game = inspectGame!!
-                )
             }
         }
     }
@@ -342,5 +299,21 @@ private fun GameDisplayItem(
                 }
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun PastGamesPreview() {
+    RandomTriviaTheme {
+        PastGames(
+            onReplay = {},
+            onInspect = {},
+            filter = HistoryFilter.ALL, setFilter = {},
+            sort = HistorySort.MOST_RECENT, setSort = {},
+            reverseSort = false, setReverseSort = {},
+            games = List(2) { getGame(totalQuestions = 10, played = true) },
+            deleteGame = {}
+        )
     }
 }

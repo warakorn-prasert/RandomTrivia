@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.common
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.BasicTextField
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.ui.screen.AboutDialog
 import com.korn.portfolio.randomtrivia.ui.screen.SettingDialog
@@ -192,7 +194,7 @@ private fun SearchableTopBarDefault(
 private fun TopBarSearchPreview() {
     RandomTriviaTheme {
         var searchWord by remember { mutableStateOf("") }
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SearchableTopBar(
                 searchWord = searchWord,
                 onChange = { searchWord = it },

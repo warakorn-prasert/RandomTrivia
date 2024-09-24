@@ -30,11 +30,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.korn.portfolio.randomtrivia.model.IsDark
-import com.korn.portfolio.randomtrivia.model.SourceColor
 import com.korn.portfolio.randomtrivia.ui.common.OutlinedDropdown
+import com.korn.portfolio.randomtrivia.ui.theme.IsDark
 import com.korn.portfolio.randomtrivia.ui.theme.M3Purple
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
+import com.korn.portfolio.randomtrivia.ui.theme.SourceColor
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,8 +42,8 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 fun SettingDialog(onDismissRequest: () -> Unit) {
     val themeViewModel: ThemeViewModel = viewModel(factory = ThemeViewModel.Factory)
     val context = LocalContext.current
-    val isDark by themeViewModel.getIsDark(context).collectAsState(IsDark.Default)
-    val sourceColor by themeViewModel.getSourceColor(context).collectAsState(SourceColor.Default)
+    val isDark: IsDark by themeViewModel.getIsDark(context).collectAsState(IsDark.Default)
+    val sourceColor: SourceColor by themeViewModel.getSourceColor(context).collectAsState(SourceColor.Default)
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false)

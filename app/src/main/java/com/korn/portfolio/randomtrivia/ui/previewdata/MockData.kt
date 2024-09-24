@@ -1,4 +1,4 @@
-package com.korn.portfolio.randomtrivia.ui.preview
+package com.korn.portfolio.randomtrivia.ui.previewdata
 
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.Game
@@ -13,7 +13,6 @@ import java.util.UUID
 
 fun getCategory(id: Int) = Category(
     name = "Category name of id $id",
-    downloadable = true,
     id = id
 )
 
