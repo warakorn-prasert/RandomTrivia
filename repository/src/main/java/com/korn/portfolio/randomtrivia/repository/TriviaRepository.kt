@@ -96,17 +96,16 @@ class TriviaRepositoryImpl(
         }.forEach { (remote, _) ->
             categoryDao.insert(Category(
                 name = remote.name,
-                downloadable = true,
                 id = remote.id
             ))
         }
-        // case: rename or not
+        // case: rename
         remotes.filter { (remote, _) ->
             locals.any { (local, _) ->
-                remote.id == local.id
+                remote.id == local.id && remote.name != local.name
             }
         }.forEach { (remote, _) ->
-            categoryDao.update(remote.copy(downloadable = true))
+            categoryDao.update(remote)
         }
         // case: delete
         locals.filter { (local, _) ->
@@ -115,7 +114,6 @@ class TriviaRepositoryImpl(
             } && local.id >= 0
         }.forEach { (local, _) ->
             categoryDao.insert(local.copy(
-                downloadable = false,
                 id = categoryDao.getMinId().coerceAtMost(0) - 1
             ))
             categoryDao.delete(local)
@@ -265,7 +263,7 @@ class TriviaRepositoryImpl(
 
     override suspend fun deleteLocalCategories(vararg id: Int) {
         id.forEach {
-            categoryDao.delete(Category("", false, it))
+            categoryDao.delete(Category("", it))
         }
     }
 
