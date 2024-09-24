@@ -17,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +34,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -152,4 +154,14 @@ private fun BottomSheetScrimmableContent(
             drawRect(color = color, alpha = alpha)
         }
     }
+}
+
+@Preview
+@Composable
+private fun ScrimmableBottomSheetScaffoldPreview() {
+    ScrimmableBottomSheetScaffold(
+        sheetContent = { Text("Bottom sheet content") },
+        sheetContentPeekHeight = 96.dp,
+        content = { Text("Content") }
+    )
 }

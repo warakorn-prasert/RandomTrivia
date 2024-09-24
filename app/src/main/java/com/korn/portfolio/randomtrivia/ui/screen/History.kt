@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,6 +47,8 @@ import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
 import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
+import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistorySort
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryViewModel
@@ -108,7 +111,36 @@ fun PastGames(
     onReplay: (Game) -> Unit,
     onInspect: (Game) -> Unit
 ) {
-    val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
+    val viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
+
+    val filter: HistoryFilter by viewModel.filter.collectAsState()
+    val sort: HistorySort by viewModel.sort.collectAsState()
+    val reverseSort by viewModel.reverseSort.collectAsState()
+    val games by viewModel.games.collectAsState(emptyList())
+
+    PastGames(
+        onReplay = onReplay,
+        onInspect = onInspect,
+        filter = filter, setFilter = viewModel::setFilter,
+        sort = sort, setSort = viewModel::setSort,
+        reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
+        games = games,
+        deleteGame = viewModel::deleteGame
+    )
+}
+
+@Composable
+private fun PastGames(
+    onReplay: (Game) -> Unit,
+    onInspect: (Game) -> Unit,
+
+    filter: HistoryFilter, setFilter: (HistoryFilter) -> Unit,
+    sort: HistorySort, setSort: (HistorySort) -> Unit,
+    reverseSort: Boolean, setReverseSort: (Boolean) -> Unit,
+
+    games: List<Game>,
+    deleteGame: (gameId: UUID) -> Unit
+) {
     Scaffold(
         topBar = {
             SearchableTopBar(
@@ -122,14 +154,13 @@ fun PastGames(
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             HistoryFilterSortMenuBar(
-                historyViewModel.filter.collectAsState().value,
-                historyViewModel::setFilter,
-                historyViewModel.sort.collectAsState().value,
-                historyViewModel::setSort,
-                historyViewModel.reverseSort.collectAsState().value,
-                historyViewModel::setReverseSort
+                filter,
+                setFilter,
+                sort,
+                setSort,
+                reverseSort,
+                setReverseSort
             )
-            val games by historyViewModel.games.collectAsState(emptyList())
             if (games.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("No game played yet.")
@@ -142,7 +173,7 @@ fun PastGames(
                         game = game,
                         inspectAction = { onInspect(game) },
                         replayAction = { onReplay(game) },
-                        deleteAction = { historyViewModel.deleteGame(game.detail.gameId) }
+                        deleteAction = { deleteGame(game.detail.gameId) }
                     )
                 }
             }
@@ -268,5 +299,21 @@ private fun GameDisplayItem(
                 }
             }
         }
+    }
+}
+
+@Preview
+@Composable
+private fun PastGamesPreview() {
+    RandomTriviaTheme {
+        PastGames(
+            onReplay = {},
+            onInspect = {},
+            filter = HistoryFilter.ALL, setFilter = {},
+            sort = HistorySort.MOST_RECENT, setSort = {},
+            reverseSort = false, setReverseSort = {},
+            games = List(2) { getGame(totalQuestions = 10, played = true) },
+            deleteGame = {}
+        )
     }
 }

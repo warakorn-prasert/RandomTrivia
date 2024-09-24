@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -181,13 +180,18 @@ private fun InspectAnswerButtons(
                     verticalAlignment = Alignment.Top
                 ) {
                     Text("${idx + 1}.")
-                    Text(answer)
-                    if (state.trailingIcon != null) {
-                        Spacer(Modifier.weight(1f).widthIn(48.dp))
-                        Icon(
-                            imageVector = state.trailingIcon,
-                            contentDescription = null
-                        )
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(answer, Modifier.weight(1f))
+                        if (state.trailingIcon != null) {
+                            Spacer(Modifier.width(48.dp))
+                            Icon(
+                                imageVector = state.trailingIcon,
+                                contentDescription = null
+                            )
+                        }
                     }
                 }
             }
@@ -209,11 +213,52 @@ private fun InspectPreview() {
 
 @Preview
 @Composable
-private fun InspectAnswerButtonsPreview() {
+private fun IncorrectPreview() {
     val answers = listOf("a", "b", "c", "d")
-    InspectAnswerButtons(
-        userAnswer = answers[0],
-        answers = answers,
-        correctAnswer = answers[2]
-    )
+    RandomTriviaTheme {
+        InspectAnswerButtons(
+            userAnswer = answers[0],
+            answers = answers,
+            correctAnswer = answers[2]
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun UnansweredPreview() {
+    val answers = listOf("a", "b", "c", "d")
+    RandomTriviaTheme {
+        InspectAnswerButtons(
+            userAnswer = "",
+            answers = answers,
+            correctAnswer = answers[2]
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun CorrectPreview() {
+    val answers = listOf("a", "b", "c", "d")
+    RandomTriviaTheme {
+        InspectAnswerButtons(
+            userAnswer = answers[0],
+            answers = answers,
+            correctAnswer = answers[0]
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun OverflowPreview() {
+    val answers = List(4) { "overflow$it".repeat(10) }
+    RandomTriviaTheme {
+        InspectAnswerButtons(
+            userAnswer = answers[0],
+            answers = answers,
+            correctAnswer = answers[2]
+        )
+    }
 }

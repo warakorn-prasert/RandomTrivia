@@ -2,7 +2,6 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
-import android.content.res.Configuration
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -86,53 +85,117 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewMode
 import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
 
 @Composable
-fun SettingBeforePlaying(onSubmit: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit) {
+fun SettingBeforePlaying(
+    onSubmit: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit
+) {
     val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
+
+    val canStartGame by viewModel.canStartGame.collectAsState(false)
+    val onlineMode by viewModel.onlineMode.collectAsState()
+
+    val canAddMoreSetting by viewModel.canAddMoreSetting.collectAsState(false)
+    val settings by viewModel.settings.collectAsState()
+
+    val fetchStatus by viewModel.categoriesFetchStatus.collectAsState()
+    val questionCountFetchStatus by viewModel.questionCountFetchStatus.collectAsState()
+
+    val category by viewModel.category.collectAsState()
+    val difficulty by viewModel.difficulty.collectAsState()
+    val amount by viewModel.amount.collectAsState()
+    val categories by viewModel.categories.collectAsState(emptyList())
+    val difficulties by viewModel.difficulties.collectAsState(emptyList())
+    val maxAmount by viewModel.maxAmount.collectAsState(MAX_AMOUNT)
+
+    SettingBeforePlaying(
+        submitAction = { viewModel.submit(onSubmit) },
+        canStartGame = canStartGame,
+        canAddMoreSetting = canAddMoreSetting,
+        settings = settings,
+        removeSetting = viewModel::removeSetting,
+        onlineMode = onlineMode,
+        changeOnlineMode = viewModel::changeOnlineMode,
+        fetchStatus = fetchStatus,
+        fetchCategories = viewModel::fetchCategories,
+        questionCountFetchStatus = questionCountFetchStatus,
+        fetchQuestionCount = viewModel::fetchQuestionCountIfNeedTo,
+        addSetting = viewModel::addSetting,
+        category = category,
+        difficulty = difficulty,
+        amount = amount,
+        categories = categories,
+        difficulties = difficulties,
+        maxAmount = maxAmount,
+        selectCategory = viewModel::selectCategory,
+        selectDifficulty = viewModel::selectDifficulty,
+        selectAmount = viewModel::selectAmount,
+    )
+}
+
+@Composable
+fun SettingBeforePlaying(
+    submitAction: () -> Unit,
+    canStartGame: Boolean,
+    onlineMode: Boolean,
+    canAddMoreSetting: Boolean,
+    settings: List<GameSetting>,
+    removeSetting: (GameSetting) -> Unit,
+    changeOnlineMode: (Boolean) -> Unit,
+    fetchStatus: FetchStatus,
+    fetchCategories: () -> Unit,
+    questionCountFetchStatus: FetchStatus,
+    fetchQuestionCount: () -> Unit,
+    addSetting: () -> Unit,
+    category: Category?,
+    difficulty: Difficulty?,
+    amount: Int,
+    categories: List<Category?>,
+    difficulties: List<Difficulty?>,
+    maxAmount: Int,
+    selectCategory: (Category?) -> Unit,
+    selectDifficulty: (Difficulty?) -> Unit,
+    selectAmount: (Int) -> Unit
+) {
     var showDialog by remember { mutableStateOf(false) }
     Scaffold(
         topBar = {
-            val canStartGame by viewModel.canStartGame.collectAsState(false)
             TopBarWithStartButton(
                 enabled = canStartGame,
-                onClick = { viewModel.submit(onSubmit) }
+                onClick = submitAction
             )
         },
         floatingActionButton = {
             ExtendedFAB(
-                enabled = viewModel.canAddMoreSetting.collectAsState(false).value,
+                enabled = canAddMoreSetting,
                 onClick = { showDialog = true }
             )
         }
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
-            val onlineMode by viewModel.onlineMode.collectAsState()
             OnlineModeToggleMenu(
                 onlineMode = onlineMode,
-                onChange = viewModel::changeOnlineMode
+                onChange = changeOnlineMode
             )
             AddGameSettingDialog(
                 show = showDialog,
                 onDismissRequest = { showDialog = false },
-                canAddMoreSetting = viewModel.canAddMoreSetting.collectAsState(false).value,
-                fetchStatus = viewModel.questionCountFetchStatus.collectAsState().value,
-                fetchQuestionCount = { viewModel.fetchQuestionCountIfNeedTo() },
-                addSetting = viewModel::addSetting,
-                category = viewModel.category.collectAsState().value,
-                difficulty = viewModel.difficulty.collectAsState().value,
-                amount = viewModel.amount.collectAsState().value,
-                categories = viewModel.categories.collectAsState(emptyList()).value,
-                difficulties = viewModel.difficulties.collectAsState(emptyList()).value,
-                maxAmount = viewModel.maxAmount.collectAsState(MAX_AMOUNT).value,
-                selectCategory = viewModel::selectCategory,
-                selectDifficulty = viewModel::selectDifficulty,
-                selectAmount = viewModel::selectAmount
+                canAddMoreSetting = canAddMoreSetting,
+                fetchStatus = questionCountFetchStatus,
+                fetchQuestionCount = fetchQuestionCount,
+                addSetting = addSetting,
+                category = category,
+                difficulty = difficulty,
+                amount = amount,
+                categories = categories,
+                difficulties = difficulties,
+                maxAmount = maxAmount,
+                selectCategory = selectCategory,
+                selectDifficulty = selectDifficulty,
+                selectAmount = selectAmount
             )
-            val fetchStatus by viewModel.categoriesFetchStatus.collectAsState()
             FetchStatusBar(
                 fetchStatus = fetchStatus,
-                retryAction = viewModel::fetchCategories
+                retryAction = fetchCategories
             )
-            val settings by viewModel.settings.collectAsState()
             if (settings.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("Add game setting.")
@@ -140,7 +203,7 @@ fun SettingBeforePlaying(onSubmit: (onlineMode: Boolean, settings: List<GameSett
             else
                 SettingListItems(
                     settings = settings,
-                    removeAction = viewModel::removeSetting
+                    removeAction = removeSetting
                 )
         }
     }
@@ -417,12 +480,95 @@ private fun SettingListItem(
 }
 
 @Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun SettingBeforePlayingPreview() {
     RandomTriviaTheme {
-        SettingBeforePlaying { _, _ -> }
+        SettingBeforePlaying(
+            submitAction = {},
+            canStartGame = true,
+            canAddMoreSetting = true,
+            settings = listOf(
+                GameSetting(getCategory(0), Difficulty.EASY, 10),
+                GameSetting(getCategory(1), Difficulty.HARD, 50),
+            ),
+            removeSetting = {},
+            onlineMode = true,
+            changeOnlineMode = {},
+            fetchStatus = FetchStatus.Success,
+            fetchCategories = {},
+            questionCountFetchStatus = FetchStatus.Success,
+            fetchQuestionCount = {},
+            addSetting = {},
+            category = getCategory(0),
+            difficulty = Difficulty.EASY,
+            amount = 1,
+            categories = emptyList(),
+            difficulties = emptyList(),
+            maxAmount = 1,
+            selectCategory = {},
+            selectDifficulty = {},
+            selectAmount = {},
+        )
+    }
+}
 
+@Preview
+@Composable
+private fun LoadingPreview() {
+    RandomTriviaTheme {
+        SettingBeforePlaying(
+            submitAction = {},
+            canStartGame = false,
+            canAddMoreSetting = false,
+            settings = emptyList(),
+            removeSetting = {},
+            onlineMode = true,
+            changeOnlineMode = {},
+            fetchStatus = FetchStatus.Loading,
+            fetchCategories = {},
+            questionCountFetchStatus = FetchStatus.Success,
+            fetchQuestionCount = {},
+            addSetting = {},
+            category = getCategory(0),
+            difficulty = Difficulty.EASY,
+            amount = 1,
+            categories = emptyList(),
+            difficulties = emptyList(),
+            maxAmount = 1,
+            selectCategory = {},
+            selectDifficulty = {},
+            selectAmount = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ErrorPreview() {
+    RandomTriviaTheme {
+        SettingBeforePlaying(
+            submitAction = {},
+            canStartGame = false,
+            canAddMoreSetting = false,
+            settings = emptyList(),
+            removeSetting = {},
+            onlineMode = true,
+            changeOnlineMode = {},
+            fetchStatus = FetchStatus.Error("Some error message"),
+            fetchCategories = {},
+            questionCountFetchStatus = FetchStatus.Success,
+            fetchQuestionCount = {},
+            addSetting = {},
+            category = getCategory(0),
+            difficulty = Difficulty.EASY,
+            amount = 1,
+            categories = emptyList(),
+            difficulties = emptyList(),
+            maxAmount = 1,
+            selectCategory = {},
+            selectDifficulty = {},
+            selectAmount = {},
+        )
     }
 }
 

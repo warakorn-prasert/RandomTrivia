@@ -1,8 +1,5 @@
 package com.korn.portfolio.randomtrivia.ui.viewmodel
 
-import android.annotation.SuppressLint
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +17,8 @@ import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.GameFetchStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -47,26 +46,27 @@ private fun List<GameSetting>.toGameOptions(): List<GameOption> =
     }
 
 class LoadingBeforePlayingViewModel(
+    private val onSuccess: (Game) -> Unit,
     private val onlineMode: Boolean,
     private val settings: List<GameSetting>,
     private val triviaRepository: TriviaRepository
 ) : ViewModel() {
-    @SuppressLint("ComposableNaming")
-    @Composable
-    fun startGameWhenReady(action: (Game) -> Unit) {
-        LaunchedEffect(fetchStatus, game == null) {
-            if (fetchStatus is GameFetchStatus.Success) {
-                val tmpGame = game
-                if (tmpGame != null) {
-                    delay(1000)  // Let user sees full progress bar.
-                    action(tmpGame)
+    val fetchStatus: StateFlow<GameFetchStatus> get() = mutableFetchStatus
+    private val mutableFetchStatus = MutableStateFlow<GameFetchStatus>(GameFetchStatus.Loading)
+
+    init {
+        viewModelScope.launch {
+            fetchStatus.collect {
+                if (it is GameFetchStatus.Success) {
+                    val tmpGame = game
+                    if (tmpGame != null) {
+                        delay(1000)  // Let user sees full progress bar.
+                        onSuccess(tmpGame)
+                    }
                 }
             }
         }
     }
-
-    var fetchStatus: GameFetchStatus by mutableStateOf(GameFetchStatus.Loading)
-        private set
 
     var statusText: String by mutableStateOf(prepareText)
         private set
@@ -92,37 +92,39 @@ class LoadingBeforePlayingViewModel(
             }
             fetchJob = viewModelScope.launch {
                 try {
-                    fetchStatus = GameFetchStatus.Loading
+                    mutableFetchStatus.emit(GameFetchStatus.Loading)
                     progress = 0f
                     statusText = prepareText
-                    fetchStatus = try {
-                        var currentSettingDisplayName = ""
-                        val (responseCode, game) = triviaRepository.fetchNewGame(
-                            settings.toGameOptions(),
-                            !onlineMode
-                        ) { currentIdx ->
-                            val s = settings[currentIdx]
-                            progress = currentIdx.toFloat() / settings.size
-                            currentSettingDisplayName = "${s.amount}x (${s.difficulty.displayName}) ${s.category.displayName}"
-                            statusText =
-                                "${currentIdx + 1}/${settings.size} - fetching $currentSettingDisplayName"
+                    mutableFetchStatus.emit(
+                        try {
+                            var currentSettingDisplayName = ""
+                            val (responseCode, game) = triviaRepository.fetchNewGame(
+                                settings.toGameOptions(),
+                                !onlineMode
+                            ) { currentIdx ->
+                                val s = settings[currentIdx]
+                                progress = currentIdx.toFloat() / settings.size
+                                currentSettingDisplayName = "${s.amount}x (${s.difficulty.displayName}) ${s.category.displayName}"
+                                statusText =
+                                    "${currentIdx + 1}/${settings.size} - fetching $currentSettingDisplayName"
+                            }
+                            if (responseCode == ResponseCode.SUCCESS)
+                                GameFetchStatus.Success(game)
+                            else
+                                GameFetchStatus.Error(/*"[${responseCode.name}]*/ "\"${responseCode.message}\" on $currentSettingDisplayName")
+                        } catch (e: retrofit2.HttpException) {
+                            GameFetchStatus.Error(
+                                if (e.code() == 429) ResponseCode.RATE_LIMIT.message
+//                                else "Unhandled network request error (${e.message})"
+                                else "Failed to load."
+                            )
+                        } catch (_: Exception) {
+//                            GameFetchStatus.Error("Unhandled error (${e.message})")
+                            GameFetchStatus.Error("Failed to load.")
+                            // TODO : Handle "Unable to resolve host ..."
                         }
-                        if (responseCode == ResponseCode.SUCCESS)
-                            GameFetchStatus.Success(game)
-                        else
-                            GameFetchStatus.Error(/*"[${responseCode.name}]*/ "\"${responseCode.message}\" on $currentSettingDisplayName")
-                    } catch (e: retrofit2.HttpException) {
-                        GameFetchStatus.Error(
-                            if (e.code() == 429) ResponseCode.RATE_LIMIT.message
-//                            else "Unhandled network request error (${e.message})"
-                            else "Failed to load."
-                        )
-                    } catch (_: Exception) {
-//                        GameFetchStatus.Error("Unhandled error (${e.message})")
-                        GameFetchStatus.Error("Failed to load.")
-                        // TODO : Handle "Unable to resolve host ..."
-                    }
-                    when (val f = fetchStatus) {
+                    )
+                    when (val f = fetchStatus.value) {
                         is GameFetchStatus.Error -> statusText = f.message
                         GameFetchStatus.Loading -> {}
                         is GameFetchStatus.Success -> {
@@ -142,7 +144,8 @@ class LoadingBeforePlayingViewModel(
 
     class Factory(
         private val onlineMode: Boolean,
-        private val settings: List<GameSetting>
+        private val settings: List<GameSetting>,
+        private val onSuccess: (Game) -> Unit
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(
@@ -151,6 +154,7 @@ class LoadingBeforePlayingViewModel(
         ): T {
             val application = checkNotNull(extras[APPLICATION_KEY]) as TriviaApplication
             return LoadingBeforePlayingViewModel(
+                onSuccess,
                 onlineMode,
                 settings,
                 application.triviaRepository,
