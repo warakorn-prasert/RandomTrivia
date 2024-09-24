@@ -38,6 +38,7 @@ fun Result(
     game: Game,
     onExit: () -> Unit,
     onReplay: (Game) -> Unit,
+    onInspect: (Game) -> Unit
 ) {
     val viewModel: ResultViewModel = viewModel(factory = ResultViewModel.Factory(game))
     BackHandler(onBack = onExit)
@@ -66,7 +67,7 @@ fun Result(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButtonWithText(
-                    onClick = { viewModel.enterInspect() },
+                    onClick = { onInspect(game) },
                     imageVector = Icons.Default.Search,
                     contentDescription = "Button to inspect previous game.",
                     text = "Inspect"
@@ -97,12 +98,6 @@ fun Result(
                     Text(hhmmssFrom(viewModel.totalTimeSecond))
                 }
             }
-            if (viewModel.inspect)
-                InspectDialog(
-                    onDismissRequest = viewModel::exitInspect,
-                    replayAction = { viewModel.replay(onReplay) },
-                    game = viewModel.game
-                )
         }
     }
 }
@@ -114,7 +109,8 @@ private fun ResultPreview() {
         Result(
             game = getGame(42),
             onExit = {},
-            onReplay = {}
+            onReplay = {},
+            onInspect = {}
         )
     }
 }

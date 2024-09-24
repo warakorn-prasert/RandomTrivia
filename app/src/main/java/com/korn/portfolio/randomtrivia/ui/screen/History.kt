@@ -106,6 +106,7 @@ fun Game.asDisplay() =
 @Composable
 fun PastGames(
     onReplay: (Game) -> Unit,
+    onInspect: (Game) -> Unit
 ) {
     val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
     Scaffold(
@@ -137,19 +138,12 @@ fun PastGames(
                 itemsIndexed(games, key = { _, game -> game.detail.gameId }) { idx, game ->
                     if (idx > 0)
                         HorizontalDivider()
-                    var inspect by remember { mutableStateOf(false) }
                     GameDisplayItem(
                         game = game,
-                        inspectAction = { inspect = true },
+                        inspectAction = { onInspect(game) },
                         replayAction = { onReplay(game) },
                         deleteAction = { historyViewModel.deleteGame(game.detail.gameId) }
                     )
-                    if (inspect)
-                        InspectDialog(
-                            onDismissRequest = { inspect = false },
-                            replayAction = { onReplay(game) },
-                            game = game
-                        )
                 }
             }
         }

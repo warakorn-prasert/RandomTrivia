@@ -42,3 +42,5 @@ data object History : BottomNav {
     @Serializable data object Replay
     @Serializable data object Result
 }
+
+@Serializable data object Inspect

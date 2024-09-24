@@ -1,8 +1,5 @@
 package com.korn.portfolio.randomtrivia.ui.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.korn.portfolio.randomtrivia.database.model.Game
@@ -16,15 +13,6 @@ class ResultViewModel(val game: Game) : ViewModel() {
             score
     }
     val maxScore = game.questions.size
-
-    var inspect by mutableStateOf(false)
-        private set
-    fun enterInspect() {
-        inspect = true
-    }
-    fun exitInspect() {
-        inspect = false
-    }
 
     fun exit(action: () -> Unit) {
         action()

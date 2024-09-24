@@ -19,6 +19,7 @@ import androidx.navigation.toRoute
 import com.korn.portfolio.randomtrivia.ui.common.BottomBar
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
 import com.korn.portfolio.randomtrivia.ui.navigation.History
+import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
 import com.korn.portfolio.randomtrivia.ui.navigation.Play
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SharedViewModel
 
@@ -119,6 +120,10 @@ fun MainScreen() {
                             navController.navigate(Play.Playing) {
                                 popUpTo(Play.Playing) { inclusive = true }
                             }
+                        },
+                        onInspect = { game ->
+                            sharedViewModel.game = game
+                            navController.navigate(Inspect)
                         }
                     )
                 }
@@ -130,6 +135,10 @@ fun MainScreen() {
                         onReplay = { game ->
                             sharedViewModel.game = game
                             navController.navigate(History.Replay)
+                        },
+                        onInspect = { game ->
+                            sharedViewModel.game = game
+                            navController.navigate(Inspect)
                         }
                     )
                 }
@@ -163,9 +172,29 @@ fun MainScreen() {
                             navController.navigate(History.Replay) {
                                 popUpTo(History.Replay) { inclusive = true }
                             }
+                        },
+                        onInspect = { game ->
+                            sharedViewModel.game = game
+                            navController.navigate(Inspect)
                         }
                     )
                 }
+            }
+            composable<Inspect> {
+                requestFullScreen()
+                Inspect(
+                    onBack = {
+                        navController.navigate(History) {
+                            popUpTo(History) { inclusive = true }
+                        }
+                    },
+                    onReplay = { _ ->
+                        navController.navigate(History.Replay) {
+                            popUpTo(History.Replay) { inclusive = true }
+                        }
+                    },
+                    game = sharedViewModel.game
+                )
             }
         }
     }

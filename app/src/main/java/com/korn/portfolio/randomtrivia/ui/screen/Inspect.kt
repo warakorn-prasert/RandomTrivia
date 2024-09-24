@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -18,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,7 +37,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
@@ -83,16 +82,13 @@ private enum class InspectAnswerButtonState(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InspectDialog(
-    onDismissRequest: () -> Unit,
-    replayAction: () -> Unit,
+fun Inspect(
+    onBack: () -> Unit,
+    onReplay: (Game) -> Unit,
     game: Game
 ) {
+    BackHandler(onBack = onBack)
     var currentIdx by remember { mutableIntStateOf(0) }
-    BasicAlertDialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
         ScrimmableBottomSheetScaffold(
             sheetContent = { paddingValues ->
                 QuestionSelector(
@@ -109,7 +105,7 @@ fun InspectDialog(
                     title = {},
                     navigationIcon = {
                         IconButtonWithText(
-                            onClick = onDismissRequest,
+                            onClick = onBack,
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Button to return to main menu.",
                             text = "Exit"
@@ -117,7 +113,7 @@ fun InspectDialog(
                     },
                     actions = {
                         IconButtonWithText(
-                            onClick = replayAction,
+                            onClick = { onReplay(game) },
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Replay button.",
                             text = "Replay"
@@ -157,7 +153,6 @@ fun InspectDialog(
                 )
             }
         }
-    }
 }
 
 @Composable
@@ -202,11 +197,11 @@ private fun InspectAnswerButtons(
 
 @Preview
 @Composable
-private fun InspectDialogPreview() {
+private fun InspectPreview() {
     RandomTriviaTheme {
-        InspectDialog(
-            onDismissRequest = {},
-            replayAction = {},
+        Inspect(
+            onBack = {},
+            onReplay = {},
             game = getGame(totalQuestions = 44, played = true)
         )
     }
