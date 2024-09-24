@@ -38,6 +38,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
@@ -104,9 +105,9 @@ fun Game.asDisplay() =
 
 @Composable
 fun PastGames(
-    historyViewModel: HistoryViewModel,
     onReplay: (Game) -> Unit,
 ) {
+    val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
     Scaffold(
         topBar = {
             SearchableTopBar(
@@ -128,7 +129,6 @@ fun PastGames(
                 historyViewModel::setReverseSort
             )
             val games by historyViewModel.games.collectAsState(emptyList())
-            var inspectGame by remember { mutableStateOf<Game?>(null) }
             if (games.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("No game played yet.")
@@ -137,22 +137,20 @@ fun PastGames(
                 itemsIndexed(games, key = { _, game -> game.detail.gameId }) { idx, game ->
                     if (idx > 0)
                         HorizontalDivider()
+                    var inspect by remember { mutableStateOf(false) }
                     GameDisplayItem(
                         game = game,
-                        inspectAction = { inspectGame = game },
+                        inspectAction = { inspect = true },
                         replayAction = { onReplay(game) },
                         deleteAction = { historyViewModel.deleteGame(game.detail.gameId) }
                     )
+                    if (inspect)
+                        InspectDialog(
+                            onDismissRequest = { inspect = false },
+                            replayAction = { onReplay(game) },
+                            game = game
+                        )
                 }
-            }
-            if (inspectGame != null) {
-                InspectDialog(
-                    onDismissRequest = {
-                        inspectGame = null
-                    },
-                    replayAction = { onReplay(inspectGame!!) },
-                    game = inspectGame!!
-                )
             }
         }
     }

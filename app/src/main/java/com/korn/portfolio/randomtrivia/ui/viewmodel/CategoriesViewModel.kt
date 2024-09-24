@@ -12,7 +12,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
-import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
@@ -21,7 +20,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -61,10 +59,6 @@ enum class CategorySort(
 class CategoriesViewModel(
     private val triviaRepository: TriviaRepository
 ) : ViewModel() {
-
-    /*
-     * Part 1/2 : Categories
-     */
 
     var fetchStatus: FetchStatus by mutableStateOf(FetchStatus.Success)
         private set
@@ -156,26 +150,6 @@ class CategoriesViewModel(
                     }
                 }
             }
-
-    /*
-     * Part 2/2 : Questions of selected played category
-     */
-
-    var categoryName by mutableStateOf("")
-        private set
-
-    var questions by mutableStateOf(emptyList<Question>())
-        private set
-
-    fun getPlayedQuestions(categoryId: Int) {
-        viewModelScope.launch {
-            categoryName = triviaRepository.localCategories.first()
-                .first { it.first.id == categoryId }
-                .first
-                .name
-            questions = triviaRepository.getLocalQuestions(categoryId)
-        }
-    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

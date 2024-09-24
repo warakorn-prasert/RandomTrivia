@@ -19,7 +19,7 @@ data object Categories : BottomNav {
     override val icon = R.drawable.ic_lists
 
     @Serializable data object Default : SubNav
-    @Serializable data object Questions : SubNav
+    @Serializable data class Questions(val categoryId: Int) : SubNav
 }
 
 @Serializable

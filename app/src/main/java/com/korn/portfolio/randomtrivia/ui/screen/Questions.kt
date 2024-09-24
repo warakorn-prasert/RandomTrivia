@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.entity.Question
@@ -40,6 +41,7 @@ import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBarWithBackButton
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
+import com.korn.portfolio.randomtrivia.ui.viewmodel.QuestionsViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
 import java.util.UUID
 
@@ -86,6 +88,19 @@ private fun List<Question>.process(
 
 @Composable
 fun Questions(
+    categoryId: Int,
+    onBack: () -> Unit
+) {
+    val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
+    Questions(
+        categoryName = viewModel.categoryName,
+        questions = viewModel.questions,
+        onBack = onBack
+    )
+}
+
+@Composable
+private fun Questions(
     categoryName: String,
     questions: List<Question>,
     onBack: () -> Unit

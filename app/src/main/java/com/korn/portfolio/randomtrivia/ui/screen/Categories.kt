@@ -39,6 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
@@ -46,47 +47,75 @@ import com.korn.portfolio.randomtrivia.ui.common.FetchStatusBar
 import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
-import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
+import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryDisplay
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
 
 @Composable
-fun Categories(
-    categoriesViewModel: CategoriesViewModel,
-    onCategoryCardClick: (Int) -> Unit
+fun Categories(navToQuestions: (categoryId: Int) -> Unit) {
+    val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
+    val searchWord by viewModel.searchWord.collectAsState()
+
+    val categories by viewModel.categories.collectAsState(emptyList())
+    val filter by viewModel.filter.collectAsState()
+    val sort by viewModel.sort.collectAsState()
+    val reverseSort by viewModel.reverseSort.collectAsState()
+    Categories(
+        searchWord = searchWord, setSearchWord = viewModel::setSearchWord,
+        categories = categories,
+        filter = filter, setFilter = viewModel::setFilter,
+        sort = sort, setSort = viewModel::setSort,
+        reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
+        fetchStatus = viewModel.fetchStatus, fetchCategories = viewModel::fetchCategories,
+        navToQuestions = navToQuestions
+    )
+}
+
+@Composable
+private fun Categories(
+    searchWord: String,
+    setSearchWord: (String) -> Unit,
+
+    categories: List<CategoryDisplay>,
+    filter: CategoryFilter,
+    sort: CategorySort,
+    reverseSort: Boolean,
+    setFilter: (CategoryFilter) -> Unit,
+    setSort: (CategorySort) -> Unit,
+    setReverseSort: (Boolean) -> Unit,
+
+    fetchStatus: FetchStatus,
+    fetchCategories: () -> Unit,
+
+    navToQuestions: (categoryId: Int) -> Unit
 ) {
-    val searchWord by categoriesViewModel.searchWord.collectAsState()
     Scaffold(
         topBar = {
             SearchableTopBar(
                 searchWord = searchWord,
-                onChange = categoriesViewModel::setSearchWord,
+                onChange = setSearchWord,
                 hint = "Search for categories"
             )
         }
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
-            val categories by categoriesViewModel.categories.collectAsState(emptyList())
-            val filter by categoriesViewModel.filter.collectAsState()
-            val reverseSort by categoriesViewModel.reverseSort.collectAsState()
-            val sort by categoriesViewModel.sort.collectAsState()
-
             val listState = rememberLazyListState()
             LaunchedEffect(searchWord, filter, reverseSort, sort) {
                 listState.scrollToItem(0)
             }
 
             CategoriesFilterSortMenuBar(
-                filter, categoriesViewModel::setFilter,
-                sort, categoriesViewModel::setSort,
-                reverseSort, categoriesViewModel::setReverseSort
+                filter, setFilter,
+                sort, setSort,
+                reverseSort, setReverseSort
             )
             FetchStatusBar(
-                categoriesViewModel.fetchStatus,
-                categoriesViewModel::fetchCategories
+                fetchStatus,
+                fetchCategories
             )
-            if (categories.isEmpty() && categoriesViewModel.fetchStatus != FetchStatus.Loading)
+            if (categories.isEmpty() && fetchStatus != FetchStatus.Loading)
                 Box(Modifier.fillMaxSize().padding(horizontal = 16.dp), Alignment.Center) {
                     Text("No category available to play.")
                 }
@@ -101,7 +130,10 @@ fun Categories(
                         totalQuestions = total,
                         playedQuestions = totalPlayed,
                         isPlayed = isPlayed,
-                        onClick = { onCategoryCardClick(id) },
+                        onClick = {
+                            //viewModel.saveCategoryId(id)
+                            navToQuestions(id)
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -198,35 +230,20 @@ private fun CategoryCard(
     }
 }
 
-@Preview(showBackground = true)
+@Preview
 @Composable
-private fun CategoryCardPreview() {
-    val categoryName = "CategoryName"
-    val totalQuestions = 100
-    val playedQuestions = 20
-    RandomTriviaTheme {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            CategoryCard(
-                categoryName = categoryName,
-                totalQuestions = totalQuestions,
-                playedQuestions = playedQuestions,
-                isPlayed = false,
-                onClick = {}
-            )
-            CategoryCard(
-                categoryName = categoryName,
-                totalQuestions = totalQuestions,
-                playedQuestions = playedQuestions,
-                isPlayed = true,
-                onClick = {}
-            )
-            CategoryCard(
-                categoryName = categoryName.repeat(10),
-                totalQuestions = totalQuestions,
-                playedQuestions = playedQuestions,
-                isPlayed = true,
-                onClick = {}
-            )
-        }
-    }
+private fun CategoriesPreview() {
+    Categories(
+        searchWord = "", setSearchWord = {},
+        categories = List(5) {
+            getCategory(it).run {
+                CategoryDisplay(name, 10, it % 2, id)
+            }
+        },
+        filter = CategoryFilter.ALL, setFilter = {},
+        sort = CategorySort.NAME, setSort = {},
+        reverseSort = false, setReverseSort = {},
+        fetchStatus = FetchStatus.Success, fetchCategories = {},
+        navToQuestions = {}
+    )
 }

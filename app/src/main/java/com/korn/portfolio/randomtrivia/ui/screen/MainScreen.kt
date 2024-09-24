@@ -15,13 +15,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.korn.portfolio.randomtrivia.ui.common.BottomBar
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Play
-import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
-import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryViewModel
-import com.korn.portfolio.randomtrivia.ui.viewmodel.PlayViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.SharedViewModel
 
 @Composable
 fun MainScreen() {
@@ -34,10 +33,7 @@ fun MainScreen() {
     Scaffold(
         bottomBar = { if (showBottomBar) BottomBar(navController) }
     ) { paddingValues ->
-        // TODO : Localize viewModels (for passing data, use savedStateHandle either inside viewModel or in nav block)
-        val categoriesViewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
-        val playViewModel: PlayViewModel = viewModel()
-        val historyViewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
+        val sharedViewModel: SharedViewModel = viewModel()
         NavHost(
             navController = navController,
             startDestination = Categories,
@@ -47,18 +43,15 @@ fun MainScreen() {
                 composable<Categories.Default> {
                     dismissFullScreen()
                     Categories(
-                        categoriesViewModel = categoriesViewModel,
-                        onCategoryCardClick = { categoryId ->
-                            categoriesViewModel.getPlayedQuestions(categoryId)
-                            navController.navigate(Categories.Questions)
+                        navToQuestions = { categoryId ->
+                            navController.navigate(Categories.Questions(categoryId))
                         }
                     )
                 }
-                composable<Categories.Questions> {
+                composable<Categories.Questions> { backStackEntry ->
                     dismissFullScreen()
                     Questions(
-                        categoryName = categoriesViewModel.categoryName,
-                        questions = categoriesViewModel.questions,
+                        categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId,
                         onBack = {
                             navController.navigate(Categories.Default) {
                                 popUpTo(Categories.Default) { inclusive = true }
@@ -72,8 +65,8 @@ fun MainScreen() {
                     dismissFullScreen()
                     SettingBeforePlaying(
                         onSubmit = { onlineMode, settings ->
-                            playViewModel.onlineMode = onlineMode
-                            playViewModel.settings = settings
+                            sharedViewModel.onlineMode = onlineMode
+                            sharedViewModel.settings = settings
                             navController.navigate(Play.Loading)
                         }
                     )
@@ -81,15 +74,15 @@ fun MainScreen() {
                 composable<Play.Loading> {
                     requestFullScreen()
                     LoadingBeforePlaying(
-                        onlineMode = playViewModel.onlineMode,
-                        settings = playViewModel.settings,
+                        onlineMode = sharedViewModel.onlineMode,
+                        settings = sharedViewModel.settings,
                         onCancel = {
                             navController.navigate(Play.Setting) {
                                 popUpTo(Play.Setting) { inclusive = true }
                             }
                         },
                         onStart = { game ->
-                            playViewModel.game = game
+                            sharedViewModel.game = game
                             navController.navigate(Play.Playing) {
                                 popUpTo(Play.Playing) { inclusive = true }
                             }
@@ -99,14 +92,14 @@ fun MainScreen() {
                 composable<Play.Playing> {
                     requestFullScreen()
                     Playing(
-                        game = playViewModel.game,
+                        game = sharedViewModel.game,
                         onExit = {
                             navController.navigate(Play.Setting) {
                                 popUpTo(Play.Setting) { inclusive = true }
                             }
                         },
                         onSubmit = { game ->
-                            playViewModel.game = game
+                            sharedViewModel.game = game
                             navController.navigate(Play.Result) {
                                 popUpTo(Play.Result) { inclusive = true }
                             }
@@ -116,7 +109,7 @@ fun MainScreen() {
                 composable<Play.Result> {
                     requestFullScreen()
                     Result(
-                        game = playViewModel.game,
+                        game = sharedViewModel.game,
                         onExit = {
                             navController.navigate(Play.Setting) {
                                 popUpTo(Play.Setting) { inclusive = true }
@@ -134,9 +127,8 @@ fun MainScreen() {
                 composable<History.Default> {
                     dismissFullScreen()
                     PastGames(
-                        historyViewModel = historyViewModel,
                         onReplay = { game ->
-                            historyViewModel.gameToReplay = game
+                            sharedViewModel.game = game
                             navController.navigate(History.Replay)
                         }
                     )
@@ -144,14 +136,14 @@ fun MainScreen() {
                 composable<History.Replay> {
                     requestFullScreen()
                     Playing(
-                        game = historyViewModel.gameToReplay,
+                        game = sharedViewModel.game,
                         onExit = {
                             navController.navigate(History.Default) {
                                 popUpTo(History.Default) { inclusive = true }
                             }
                         },
                         onSubmit = { game ->
-                            historyViewModel.gameToReplay = game
+                            sharedViewModel.game = game
                             navController.navigate(History.Result) {
                                 popUpTo(History.Result) { inclusive = true }
                             }
@@ -161,7 +153,7 @@ fun MainScreen() {
                 composable<History.Result> {
                     requestFullScreen()
                     Result(
-                        game = historyViewModel.gameToReplay,
+                        game = sharedViewModel.game,
                         onExit = {
                             navController.navigate(History.Default) {
                                 popUpTo(History.Default) { inclusive = true }

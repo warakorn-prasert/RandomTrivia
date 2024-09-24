@@ -13,7 +13,6 @@ import java.util.UUID
 
 fun getCategory(id: Int) = Category(
     name = "Category name of id $id",
-    downloadable = true,
     id = id
 )
 
