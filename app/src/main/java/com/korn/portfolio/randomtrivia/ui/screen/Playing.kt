@@ -86,7 +86,7 @@ fun Playing(
     Playing(
         exitAction = { viewModel.exit(onExit) },
         submitAction = { viewModel.submit(onSubmit) },
-        currentIdx = viewModel.second,
+        currentIdx = viewModel.currentIdx,
         questions = viewModel.questions,
         selectQuestion = viewModel::selectQuestion,
         submittable = viewModel.submittable,
