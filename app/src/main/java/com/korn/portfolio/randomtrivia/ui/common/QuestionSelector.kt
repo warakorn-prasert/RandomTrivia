@@ -145,9 +145,9 @@ fun ColumnScope.QuestionSelector(
     FlowRow(
         modifier = Modifier
             .align(Alignment.CenterHorizontally)
-            .padding(vertical = 16.dp)
             .padding(
                 start = paddingValues.calculateStartPadding(layoutDirection),
+                top = 16.dp,
                 end = paddingValues.calculateEndPadding(layoutDirection),
                 bottom = paddingValues.calculateBottomPadding()
             ),
