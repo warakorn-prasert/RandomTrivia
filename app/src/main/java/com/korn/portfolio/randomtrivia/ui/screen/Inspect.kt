@@ -89,13 +89,14 @@ fun Inspect(
     BackHandler(onBack = onBack)
     var currentIdx by remember { mutableIntStateOf(0) }
         ScrimmableBottomSheetScaffold(
-            sheetContent = { paddingValues ->
+            sheetContent = { paddingValues, spaceUnderPeekContent ->
                 QuestionSelector(
                     currentIdx = currentIdx,
                     questions = game.questions,
                     selectAction = { currentIdx = it },
                     paddingValues = paddingValues,
-                    isInspecting = true
+                    isInspecting = true,
+                    spaceUnderQuestionIdx = spaceUnderPeekContent
                 )
             },
             sheetContentPeekHeight = 56.dp,

@@ -89,13 +89,15 @@ private fun List<Question>.process(
 @Composable
 fun Questions(
     categoryId: Int,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
     Questions(
         categoryName = viewModel.categoryName,
         questions = viewModel.questions,
-        onBack = onBack
+        onBack = onBack,
+        onShowSortMenuChange = onShowSortMenuChange
     )
 }
 
@@ -103,7 +105,8 @@ fun Questions(
 private fun Questions(
     categoryName: String,
     questions: List<Question>,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     var searchWord by remember { mutableStateOf("") }
     BackHandler(onBack = onBack)
@@ -131,7 +134,8 @@ private fun Questions(
             QuestionsFilterSortMenuBar(
                 filter, { filter = it },
                 sort, { sort = it },
-                reverseSort, { reverseSort = it }
+                reverseSort, { reverseSort = it },
+                onShowSortMenuChange = onShowSortMenuChange
             )
             LazyColumn(
                 state = listState,
@@ -156,7 +160,8 @@ private fun QuestionsFilterSortMenuBar(
     sort: QuestionSort,
     onSortSelect: (QuestionSort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit
+    onReverseSortChange: (Boolean) -> Unit,
+    onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
@@ -187,7 +192,8 @@ private fun QuestionsFilterSortMenuBar(
                     )
                 }
             }
-        }
+        },
+        onShowSortMenuChange = onShowSortMenuChange
     )
 }
 

@@ -54,7 +54,10 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
 
 @Composable
-fun Categories(navToQuestions: (categoryId: Int) -> Unit) {
+fun Categories(
+    navToQuestions: (categoryId: Int) -> Unit,
+    onShowSortMenuChange: (Boolean) -> Unit = {}
+) {
     val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
     val searchWord by viewModel.searchWord.collectAsState()
 
@@ -69,7 +72,8 @@ fun Categories(navToQuestions: (categoryId: Int) -> Unit) {
         sort = sort, setSort = viewModel::setSort,
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
         fetchStatus = viewModel.fetchStatus, fetchCategories = viewModel::fetchCategories,
-        navToQuestions = navToQuestions
+        navToQuestions = navToQuestions,
+        onShowSortMenuChange = onShowSortMenuChange
     )
 }
 
@@ -89,7 +93,9 @@ private fun Categories(
     fetchStatus: FetchStatus,
     fetchCategories: () -> Unit,
 
-    navToQuestions: (categoryId: Int) -> Unit
+    navToQuestions: (categoryId: Int) -> Unit,
+
+    onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -109,7 +115,8 @@ private fun Categories(
             CategoriesFilterSortMenuBar(
                 filter, setFilter,
                 sort, setSort,
-                reverseSort, setReverseSort
+                reverseSort, setReverseSort,
+                onShowSortMenuChange = onShowSortMenuChange
             )
             FetchStatusBar(
                 fetchStatus,
@@ -149,7 +156,8 @@ private fun CategoriesFilterSortMenuBar(
     sort: CategorySort,
     onSortSelect: (CategorySort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit
+    onReverseSortChange: (Boolean) -> Unit,
+    onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
@@ -180,7 +188,8 @@ private fun CategoriesFilterSortMenuBar(
                     )
                 }
             }
-        }
+        },
+        onShowSortMenuChange = onShowSortMenuChange,
     )
 }
 

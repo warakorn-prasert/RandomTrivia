@@ -52,6 +52,8 @@ import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.SchemeContent
 import com.google.android.material.color.utilities.TonalPalette
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.dynamicColorScheme
+import com.korn.portfolio.randomtrivia.ui.viewmodel.getSystemContrast
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -72,7 +74,7 @@ private fun colorFromHue(hue: Float): Int {
 @Preview
 @Composable
 private fun DynamicColorPreview() {
-    val themeViewModel: ThemeViewModel = viewModel(factory = ThemeViewModel.Factory)
+    val themeViewModel: ThemeViewModel = viewModel()
     val context = LocalContext.current
 
     val isDark by themeViewModel.getIsDark(context).collectAsState(IsDark.Default)

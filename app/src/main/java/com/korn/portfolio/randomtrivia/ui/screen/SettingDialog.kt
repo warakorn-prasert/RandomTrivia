@@ -40,7 +40,7 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingDialog(onDismissRequest: () -> Unit) {
-    val themeViewModel: ThemeViewModel = viewModel(factory = ThemeViewModel.Factory)
+    val themeViewModel: ThemeViewModel = viewModel()
     val context = LocalContext.current
     val isDark: IsDark by themeViewModel.getIsDark(context).collectAsState(IsDark.Default)
     val sourceColor: SourceColor by themeViewModel.getSourceColor(context).collectAsState(SourceColor.Default)

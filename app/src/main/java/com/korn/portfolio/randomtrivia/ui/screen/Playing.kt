@@ -109,12 +109,13 @@ private fun Playing(
 ) {
     BackHandler(onBack = exitAction)
     ScrimmableBottomSheetScaffold(
-        sheetContent = { paddingValues ->
+        sheetContent = { paddingValues, spaceUnderPeekContent ->
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = questions,
                 selectAction = selectQuestion,
-                paddingValues = paddingValues
+                paddingValues = paddingValues,
+                spaceUnderQuestionIdx = spaceUnderPeekContent
             )
         },
         sheetContentPeekHeight = 56.dp,
