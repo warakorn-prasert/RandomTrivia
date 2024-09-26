@@ -90,6 +90,7 @@ private fun List<Question>.process(
 fun Questions(
     categoryId: Int,
     onBack: () -> Unit,
+    navToAboutScreen: () -> Unit,
     onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
@@ -97,6 +98,7 @@ fun Questions(
         categoryName = viewModel.categoryName,
         questions = viewModel.questions,
         onBack = onBack,
+        navToAboutScreen = navToAboutScreen,
         onShowSortMenuChange = onShowSortMenuChange
     )
 }
@@ -106,6 +108,7 @@ private fun Questions(
     categoryName: String,
     questions: List<Question>,
     onBack: () -> Unit,
+    navToAboutScreen: () -> Unit,
     onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     var searchWord by remember { mutableStateOf("") }
@@ -115,6 +118,7 @@ private fun Questions(
             SearchableTopBarWithBackButton(
                 searchWord = searchWord,
                 onChange = { searchWord = it },
+                navToAboutScreen = navToAboutScreen,
                 hint = "Search for questions",
                 title = categoryName,
                 onBackButtonClick = onBack
@@ -261,7 +265,8 @@ private fun QuestionsPreview() {
                 mockQuestion.copy(question = "bcd", difficulty = Difficulty.EASY, id = UUID.randomUUID()),
                 mockQuestion.copy(question = "efg", difficulty = Difficulty.HARD, id = UUID.randomUUID()),
             ),
-            onBack = {}
+            onBack = {},
+            navToAboutScreen = {}
         )
     }
 }

@@ -42,3 +42,4 @@ data object History : BottomNav {
 }
 
 @Serializable data object Inspect
+@Serializable data object About
