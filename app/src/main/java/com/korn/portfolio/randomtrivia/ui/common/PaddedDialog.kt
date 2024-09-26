@@ -2,7 +2,6 @@
 
 package com.korn.portfolio.randomtrivia.ui.common
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -27,7 +26,7 @@ import androidx.compose.ui.window.Dialog
 fun PaddedDialog(
     show: Boolean,
     onDismissRequest: () -> Unit,
-    title: @Composable () -> Unit,
+    title: @Composable RowScope.() -> Unit,
     actions: @Composable RowScope.() -> Unit,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -37,7 +36,10 @@ fun PaddedDialog(
                 modifier = Modifier.widthIn(min = 280.dp, max = 560.dp),
                 shape = RoundedCornerShape(28.dp)
             ) {
-                Box(Modifier.padding(24.dp)) {
+                Row(
+                    modifier = Modifier.padding(24.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.titleMedium) {
                         title()
                     }
