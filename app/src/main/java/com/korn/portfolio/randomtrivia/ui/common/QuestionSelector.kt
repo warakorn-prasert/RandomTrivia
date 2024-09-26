@@ -74,7 +74,8 @@ fun ColumnScope.QuestionSelector(
     questions: List<GameQuestion>,
     selectAction: (Int) -> Unit,
     paddingValues: PaddingValues = PaddingValues(),
-    isInspecting: Boolean = false
+    isInspecting: Boolean = false,
+    spaceUnderQuestionIdx: (@Composable () -> Unit)? = null
 ) {
     val layoutDirection = when (LocalConfiguration.current.layoutDirection) {
         View.LAYOUT_DIRECTION_RTL -> LayoutDirection.Rtl
@@ -109,6 +110,9 @@ fun ColumnScope.QuestionSelector(
             }
         }
     }
+
+    spaceUnderQuestionIdx?.invoke()
+
     var currentTabIdx by remember { mutableIntStateOf(0) }
     LaunchedEffect(currentIdx) {
         val correctTabIdx = floor(currentIdx / 10f).toInt()
@@ -145,9 +149,9 @@ fun ColumnScope.QuestionSelector(
     FlowRow(
         modifier = Modifier
             .align(Alignment.CenterHorizontally)
-            .padding(vertical = 16.dp)
             .padding(
                 start = paddingValues.calculateStartPadding(layoutDirection),
+                top = 16.dp,
                 end = paddingValues.calculateEndPadding(layoutDirection),
                 bottom = paddingValues.calculateBottomPadding()
             ),

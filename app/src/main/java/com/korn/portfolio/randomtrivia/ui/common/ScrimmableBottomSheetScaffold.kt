@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
@@ -42,11 +46,14 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScrimmableBottomSheetScaffold(
-    sheetContent: @Composable ColumnScope.(PaddingValues) -> Unit,
+    sheetContent: @Composable ColumnScope.(
+        PaddingValues,
+        spaceUnderPeekContent: @Composable () -> Unit) -> Unit,
     sheetContentPeekHeight: Dp,
     topBar: @Composable (() -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
+    val density = LocalDensity.current
     /**
      * Fix : Bottom sheet is fully hidable after screen orientation. (Sol : Don't use rememberSaveable.)
      * @see androidx.compose.material3.rememberSheetState
@@ -54,18 +61,27 @@ fun ScrimmableBottomSheetScaffold(
     val scaffoldSheetState = rememberBottomSheetScaffoldState(
         SheetState(
             skipPartiallyExpanded = false,
-            density = LocalDensity.current,
+            density = density,
             initialValue = SheetValue.PartiallyExpanded,
             skipHiddenState = true
         )
     )
     val sheetPeekHeight = 48.dp /* (handle) */ + sheetContentPeekHeight
-    val density = LocalDensity.current
     val configuration = LocalConfiguration.current
     var showScrim by remember { mutableStateOf(false) }
     BottomSheetScaffold(
         sheetContent = {
-            sheetContent(PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp))
+            sheetContent(PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                val heightBetween: Float by animateFloatAsState(
+                    if (showScrim)
+                        0f
+                    else
+                        WindowInsets.navigationBars.getBottom(density).toFloat()
+                )
+                Spacer(Modifier.height(
+                    with(density) { heightBetween.toDp() }
+                ))
+            }
         },
         scaffoldState = scaffoldSheetState,
         sheetPeekHeight = sheetPeekHeight,
@@ -160,7 +176,7 @@ private fun BottomSheetScrimmableContent(
 @Composable
 private fun ScrimmableBottomSheetScaffoldPreview() {
     ScrimmableBottomSheetScaffold(
-        sheetContent = { Text("Bottom sheet content") },
+        sheetContent = { _, _ -> Text("Bottom sheet content") },
         sheetContentPeekHeight = 96.dp,
         content = { Text("Content") }
     )

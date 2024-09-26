@@ -109,7 +109,8 @@ fun Game.asDisplay() =
 @Composable
 fun PastGames(
     onReplay: (Game) -> Unit,
-    onInspect: (Game) -> Unit
+    onInspect: (Game) -> Unit,
+    onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     val viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
 
@@ -125,7 +126,8 @@ fun PastGames(
         sort = sort, setSort = viewModel::setSort,
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
         games = games,
-        deleteGame = viewModel::deleteGame
+        deleteGame = viewModel::deleteGame,
+        onShowSortMenuChange = onShowSortMenuChange
     )
 }
 
@@ -139,7 +141,9 @@ private fun PastGames(
     reverseSort: Boolean, setReverseSort: (Boolean) -> Unit,
 
     games: List<Game>,
-    deleteGame: (gameId: UUID) -> Unit
+    deleteGame: (gameId: UUID) -> Unit,
+
+    onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -159,7 +163,8 @@ private fun PastGames(
                 sort,
                 setSort,
                 reverseSort,
-                setReverseSort
+                setReverseSort,
+                onShowSortMenuChange = onShowSortMenuChange
             )
             if (games.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
@@ -188,7 +193,8 @@ private fun HistoryFilterSortMenuBar(
     sort: HistorySort,
     onSortSelect: (HistorySort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit
+    onReverseSortChange: (Boolean) -> Unit,
+    onShowSortMenuChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
@@ -219,7 +225,8 @@ private fun HistoryFilterSortMenuBar(
                     )
                 }
             }
-        }
+        },
+        onShowSortMenuChange = onShowSortMenuChange
     )
 }
 

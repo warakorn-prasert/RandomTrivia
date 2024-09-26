@@ -86,7 +86,7 @@ fun Playing(
     Playing(
         exitAction = { viewModel.exit(onExit) },
         submitAction = { viewModel.submit(onSubmit) },
-        currentIdx = viewModel.second,
+        currentIdx = viewModel.currentIdx,
         questions = viewModel.questions,
         selectQuestion = viewModel::selectQuestion,
         submittable = viewModel.submittable,
@@ -109,12 +109,13 @@ private fun Playing(
 ) {
     BackHandler(onBack = exitAction)
     ScrimmableBottomSheetScaffold(
-        sheetContent = { paddingValues ->
+        sheetContent = { paddingValues, spaceUnderPeekContent ->
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = questions,
                 selectAction = selectQuestion,
-                paddingValues = paddingValues
+                paddingValues = paddingValues,
+                spaceUnderQuestionIdx = spaceUnderPeekContent
             )
         },
         sheetContentPeekHeight = 56.dp,

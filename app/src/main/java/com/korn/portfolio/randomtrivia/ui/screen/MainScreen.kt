@@ -2,9 +2,14 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,9 +27,10 @@ import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
 import com.korn.portfolio.randomtrivia.ui.navigation.Play
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SharedViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 
 @Composable
-fun MainScreen() {
+fun MainScreen(modifier: Modifier = Modifier) {
     var showBottomBar by remember { mutableStateOf(true) }
     fun requestFullScreen() { showBottomBar = false }
     fun dismissFullScreen() { showBottomBar = true }
@@ -32,38 +38,57 @@ fun MainScreen() {
     val navController = rememberNavController()
 
     Scaffold(
+        modifier = modifier,
         bottomBar = { if (showBottomBar) BottomBar(navController) }
     ) { paddingValues ->
         val sharedViewModel: SharedViewModel = viewModel()
+        val themeViewModel: ThemeViewModel = viewModel()
+        val bottomSheetColor = MaterialTheme.colorScheme.surfaceContainerLow
         NavHost(
             navController = navController,
             startDestination = Categories,
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier
+                .consumeWindowInsets(WindowInsets.navigationBars)
+                .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             navigation<Categories>(startDestination = Categories.Default) {
                 composable<Categories.Default> {
-                    dismissFullScreen()
+                    LaunchedEffect(Unit) {
+                        dismissFullScreen()
+                    }
                     Categories(
                         navToQuestions = { categoryId ->
                             navController.navigate(Categories.Questions(categoryId))
+                        },
+                        onShowSortMenuChange = {
+                            if (it) themeViewModel.enableCustomNavBarColor(bottomSheetColor)
+                            else themeViewModel.disableCustomNavBarColor()
                         }
                     )
                 }
                 composable<Categories.Questions> { backStackEntry ->
-                    dismissFullScreen()
+                    LaunchedEffect(Unit) {
+                        dismissFullScreen()
+                    }
                     Questions(
                         categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId,
                         onBack = {
                             navController.navigate(Categories.Default) {
                                 popUpTo(Categories.Default) { inclusive = true }
                             }
+                        },
+                        onShowSortMenuChange = {
+                            if (it) themeViewModel.enableCustomNavBarColor(bottomSheetColor)
+                            else themeViewModel.disableCustomNavBarColor()
                         }
                     )
                 }
             }
             navigation<Play>(startDestination = Play.Setting) {
                 composable<Play.Setting> {
-                    dismissFullScreen()
+                    LaunchedEffect(Unit) {
+                        dismissFullScreen()
+                    }
                     SettingBeforePlaying(
                         onSubmit = { onlineMode, settings ->
                             sharedViewModel.onlineMode = onlineMode
@@ -73,7 +98,9 @@ fun MainScreen() {
                     )
                 }
                 composable<Play.Loading> {
-                    requestFullScreen()
+                    LaunchedEffect(Unit) {
+                        requestFullScreen()
+                    }
                     LoadingBeforePlaying(
                         onlineMode = sharedViewModel.onlineMode,
                         settings = sharedViewModel.settings,
@@ -91,16 +118,21 @@ fun MainScreen() {
                     )
                 }
                 composable<Play.Playing> {
-                    requestFullScreen()
+                    LaunchedEffect(Unit) {
+                        requestFullScreen()
+                        themeViewModel.enableCustomNavBarColor(bottomSheetColor)
+                    }
                     Playing(
                         game = sharedViewModel.game,
                         onExit = {
+                            themeViewModel.disableCustomNavBarColor()
                             navController.navigate(Play.Setting) {
                                 popUpTo(Play.Setting) { inclusive = true }
                             }
                         },
                         onSubmit = { game ->
                             sharedViewModel.game = game
+                            themeViewModel.disableCustomNavBarColor()
                             navController.navigate(Play.Result) {
                                 popUpTo(Play.Result) { inclusive = true }
                             }
@@ -108,7 +140,9 @@ fun MainScreen() {
                     )
                 }
                 composable<Play.Result> {
-                    requestFullScreen()
+                    LaunchedEffect(Unit) {
+                        requestFullScreen()
+                    }
                     Result(
                         game = sharedViewModel.game,
                         onExit = {
@@ -130,7 +164,9 @@ fun MainScreen() {
             }
             navigation<History>(startDestination = History.Default) {
                 composable<History.Default> {
-                    dismissFullScreen()
+                    LaunchedEffect(Unit) {
+                        dismissFullScreen()
+                    }
                     PastGames(
                         onReplay = { game ->
                             sharedViewModel.game = game
@@ -139,19 +175,28 @@ fun MainScreen() {
                         onInspect = { game ->
                             sharedViewModel.game = game
                             navController.navigate(Inspect)
+                        },
+                        onShowSortMenuChange = {
+                            if (it) themeViewModel.enableCustomNavBarColor(bottomSheetColor)
+                            else themeViewModel.disableCustomNavBarColor()
                         }
                     )
                 }
                 composable<History.Replay> {
-                    requestFullScreen()
+                    LaunchedEffect(Unit) {
+                        requestFullScreen()
+                        themeViewModel.enableCustomNavBarColor(bottomSheetColor)
+                    }
                     Playing(
                         game = sharedViewModel.game,
                         onExit = {
+                            themeViewModel.disableCustomNavBarColor()
                             navController.navigate(History.Default) {
                                 popUpTo(History.Default) { inclusive = true }
                             }
                         },
                         onSubmit = { game ->
+                            themeViewModel.disableCustomNavBarColor()
                             sharedViewModel.game = game
                             navController.navigate(History.Result) {
                                 popUpTo(History.Result) { inclusive = true }
@@ -160,7 +205,9 @@ fun MainScreen() {
                     )
                 }
                 composable<History.Result> {
-                    requestFullScreen()
+                    LaunchedEffect(Unit) {
+                        requestFullScreen()
+                    }
                     Result(
                         game = sharedViewModel.game,
                         onExit = {
@@ -181,9 +228,13 @@ fun MainScreen() {
                 }
             }
             composable<Inspect> {
-                requestFullScreen()
+                LaunchedEffect(Unit) {
+                    requestFullScreen()
+                    themeViewModel.enableCustomNavBarColor(bottomSheetColor)
+                }
                 Inspect(
                     onBack = {
+                        themeViewModel.disableCustomNavBarColor()
                         navController.navigate(History) {
                             popUpTo(History) { inclusive = true }
                         }

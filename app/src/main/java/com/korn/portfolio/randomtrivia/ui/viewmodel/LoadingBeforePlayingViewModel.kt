@@ -15,11 +15,13 @@ import com.korn.portfolio.randomtrivia.network.model.ResponseCode
 import com.korn.portfolio.randomtrivia.repository.GameOption
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.GameFetchStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val prepareText = "Preparing to fetch"
@@ -54,20 +56,6 @@ class LoadingBeforePlayingViewModel(
     val fetchStatus: StateFlow<GameFetchStatus> get() = mutableFetchStatus
     private val mutableFetchStatus = MutableStateFlow<GameFetchStatus>(GameFetchStatus.Loading)
 
-    init {
-        viewModelScope.launch {
-            fetchStatus.collect {
-                if (it is GameFetchStatus.Success) {
-                    val tmpGame = game
-                    if (tmpGame != null) {
-                        delay(1000)  // Let user sees full progress bar.
-                        onSuccess(tmpGame)
-                    }
-                }
-            }
-        }
-    }
-
     var statusText: String by mutableStateOf(prepareText)
         private set
 
@@ -81,8 +69,6 @@ class LoadingBeforePlayingViewModel(
         fetchJob.cancel()
         action()
     }
-
-    private var game: Game? = null
 
     fun fetch() {
         viewModelScope.launch {
@@ -130,7 +116,10 @@ class LoadingBeforePlayingViewModel(
                         is GameFetchStatus.Success -> {
                             progress = 1f
                             statusText = "Finished"
-                            game = f.game
+                            delay(1000)
+                            withContext(Dispatchers.Main) {
+                                onSuccess(f.game)
+                            }
                         }
                     }
                 } catch (_: CancellationException) {}
