@@ -10,17 +10,34 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.korn.portfolio.randomtrivia.ui.screen.MainScreen
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Make edgeToEdge.detectDarkMode follows custom dark mode
+        // Set splash screen timeout
+        val durationSecond = 3
+        var count = 0
+        lifecycleScope.launch {
+            (1..durationSecond).asFlow().collect {
+                delay(1000)
+                count = it
+            }
+        }
+        splashScreen.setKeepOnScreenCondition {
+            count < durationSecond
+        }
+
+        // Enable edgeToEdge and make detectDarkMode follows custom dark mode
         // and set system bar color
         val themeViewModel: ThemeViewModel by viewModels()
         lifecycleScope.launch {

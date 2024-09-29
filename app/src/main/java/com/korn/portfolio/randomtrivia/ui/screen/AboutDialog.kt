@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,47 +36,41 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutDialog(onDismissRequest: () -> Unit) {
-    BasicAlertDialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text("About this app", style = MaterialTheme.typography.titleMedium)
-                    },
-                    navigationIcon = {
-                        IconButton({ onDismissRequest() }) {
-                            Icon(Icons.Default.Close, "Close setting menu")
-                        }
+fun AboutScreen(onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("About this app", style = MaterialTheme.typography.titleMedium)
+                },
+                navigationIcon = {
+                    IconButton(onBack) {
+                        Icon(Icons.Default.Close, "Close setting menu")
                     }
-                )
-            }
-        ) { paddingValues ->
-            Column(
-                Modifier
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Credits(Modifier.padding(vertical = 8.dp))
-                Spacer(Modifier.height(24.dp))
-                AppDescription()
-                Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    LogoWithAppName()
                 }
-                LicenseIndication()
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            Modifier
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+        ) {
+            Credits(Modifier.padding(vertical = 8.dp))
+            Spacer(Modifier.height(24.dp))
+            AppDescription()
+            Box(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                LogoWithAppName()
             }
+            LicenseIndication()
         }
     }
 }
@@ -181,6 +174,6 @@ private fun ColumnScope.LicenseIndication() {
 @Composable
 fun AboutDialogPreview() {
     RandomTriviaTheme {
-        AboutDialog(onDismissRequest = {})
+        AboutScreen {}
     }
 }

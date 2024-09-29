@@ -11,15 +11,13 @@ sealed interface BottomNav {
     val icon: Int
 }
 
-sealed interface SubNav
-
 @Serializable
 data object Categories : BottomNav {
     override val title = "Categories"
     override val icon = R.drawable.ic_lists
 
-    @Serializable data object Default : SubNav
-    @Serializable data class Questions(val categoryId: Int) : SubNav
+    @Serializable data object Default
+    @Serializable data class Questions(val categoryId: Int)
 }
 
 @Serializable
@@ -44,3 +42,4 @@ data object History : BottomNav {
 }
 
 @Serializable data object Inspect
+@Serializable data object About

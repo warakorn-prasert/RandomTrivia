@@ -56,6 +56,7 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
 @Composable
 fun Categories(
     navToQuestions: (categoryId: Int) -> Unit,
+    navToAboutScreen: () -> Unit,
     onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
@@ -73,6 +74,7 @@ fun Categories(
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
         fetchStatus = viewModel.fetchStatus, fetchCategories = viewModel::fetchCategories,
         navToQuestions = navToQuestions,
+        navToAboutScreen = navToAboutScreen,
         onShowSortMenuChange = onShowSortMenuChange
     )
 }
@@ -94,6 +96,7 @@ private fun Categories(
     fetchCategories: () -> Unit,
 
     navToQuestions: (categoryId: Int) -> Unit,
+    navToAboutScreen: () -> Unit,
 
     onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
@@ -102,7 +105,8 @@ private fun Categories(
             SearchableTopBar(
                 searchWord = searchWord,
                 onChange = setSearchWord,
-                hint = "Search for categories"
+                hint = "Search for categories",
+                navToAboutScreen = navToAboutScreen
             )
         }
     ) { paddingValues ->
@@ -253,6 +257,7 @@ private fun CategoriesPreview() {
         sort = CategorySort.NAME, setSort = {},
         reverseSort = false, setReverseSort = {},
         fetchStatus = FetchStatus.Success, fetchCategories = {},
-        navToQuestions = {}
+        navToQuestions = {},
+        navToAboutScreen = {}
     )
 }

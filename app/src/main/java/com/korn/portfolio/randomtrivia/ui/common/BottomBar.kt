@@ -17,6 +17,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.korn.portfolio.randomtrivia.ui.navigation.BottomNav
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Play
@@ -26,6 +27,15 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 private val bottomNavs = listOf(Categories, Play, History)
 
+fun NavController.navigateBottomNav(bottomNav: BottomNav) {
+    navigate(bottomNav) {
+        // Pop up to the start destination of the graph to
+        // avoid building up a large stack of destinations
+        // on the back stack as users select items
+        popUpTo(graph.findStartDestination().id)
+    }
+}
+
 @Composable
 fun BottomBar(navController: NavController) {
     BottomAppBar(
@@ -34,22 +44,11 @@ fun BottomBar(navController: NavController) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
         bottomNavs.forEach { bottomNav ->
+            val selected = currentDestination?.hierarchy?.any { it.hasRoute(bottomNav::class) } == true
             NavigationBarItem(
-                selected = currentDestination?.hierarchy?.any { it.hasRoute(bottomNav::class) } == true,
+                selected = selected,
                 onClick = {
-                    navController.navigate(bottomNav) {
-                        // Pop up to the start destination of the graph to
-                        // avoid building up a large stack of destinations
-                        // on the back stack as users select items
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        // Avoid multiple copies of the same destination when
-                        // reselecting the same item
-                        launchSingleTop = true
-                        // Restore state when reselecting a previously selected item
-                        restoreState = true
-                    }
+                    if (!selected) navController.navigateBottomNav(bottomNav)
                 },
                 icon = {
                     Icon(

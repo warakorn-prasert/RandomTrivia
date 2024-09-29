@@ -22,6 +22,8 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.korn.portfolio.randomtrivia.ui.common.BottomBar
+import com.korn.portfolio.randomtrivia.ui.common.navigateBottomNav
+import com.korn.portfolio.randomtrivia.ui.navigation.About
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
@@ -52,6 +54,16 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 .padding(bottom = paddingValues.calculateBottomPadding())
         ) {
             navigation<Categories>(startDestination = Categories.Default) {
+                composable<About> {
+                    LaunchedEffect(Unit) {
+                        requestFullScreen()
+                    }
+                    AboutScreen(
+                        onBack = {
+                            navController.navigateUp()
+                        }
+                    )
+                }
                 composable<Categories.Default> {
                     LaunchedEffect(Unit) {
                         dismissFullScreen()
@@ -60,6 +72,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         navToQuestions = { categoryId ->
                             navController.navigate(Categories.Questions(categoryId))
                         },
+                        navToAboutScreen = { navController.navigate(About) },
                         onShowSortMenuChange = {
                             if (it) themeViewModel.enableCustomNavBarColor(bottomSheetColor)
                             else themeViewModel.disableCustomNavBarColor()
@@ -77,6 +90,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                                 popUpTo(Categories.Default) { inclusive = true }
                             }
                         },
+                        navToAboutScreen = { navController.navigate(About) },
                         onShowSortMenuChange = {
                             if (it) themeViewModel.enableCustomNavBarColor(bottomSheetColor)
                             else themeViewModel.disableCustomNavBarColor()
@@ -157,7 +171,9 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         },
                         onInspect = { game ->
                             sharedViewModel.game = game
-                            navController.navigate(Inspect)
+                            navController.navigate(Inspect) {
+                                popUpTo(Inspect) { inclusive = true }
+                            }
                         }
                     )
                 }
@@ -176,6 +192,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             sharedViewModel.game = game
                             navController.navigate(Inspect)
                         },
+                        navToAboutScreen = { navController.navigate(About) },
                         onShowSortMenuChange = {
                             if (it) themeViewModel.enableCustomNavBarColor(bottomSheetColor)
                             else themeViewModel.disableCustomNavBarColor()
@@ -222,7 +239,9 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         },
                         onInspect = { game ->
                             sharedViewModel.game = game
-                            navController.navigate(Inspect)
+                            navController.navigate(Inspect) {
+                                popUpTo(Inspect) { inclusive = true }
+                            }
                         }
                     )
                 }
@@ -235,9 +254,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 Inspect(
                     onBack = {
                         themeViewModel.disableCustomNavBarColor()
-                        navController.navigate(History) {
-                            popUpTo(History) { inclusive = true }
-                        }
+                        navController.navigateBottomNav(History)
                     },
                     onReplay = { _ ->
                         navController.navigate(History.Replay) {

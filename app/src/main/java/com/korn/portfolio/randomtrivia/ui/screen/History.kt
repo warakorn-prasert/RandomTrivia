@@ -110,6 +110,7 @@ fun Game.asDisplay() =
 fun PastGames(
     onReplay: (Game) -> Unit,
     onInspect: (Game) -> Unit,
+    navToAboutScreen: () -> Unit,
     onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     val viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
@@ -127,6 +128,7 @@ fun PastGames(
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
         games = games,
         deleteGame = viewModel::deleteGame,
+        navToAboutScreen = navToAboutScreen,
         onShowSortMenuChange = onShowSortMenuChange
     )
 }
@@ -143,6 +145,8 @@ private fun PastGames(
     games: List<Game>,
     deleteGame: (gameId: UUID) -> Unit,
 
+    navToAboutScreen: () -> Unit,
+
     onShowSortMenuChange: (Boolean) -> Unit = {}
 ) {
     Scaffold(
@@ -150,9 +154,10 @@ private fun PastGames(
             SearchableTopBar(
                 searchWord = "",
                 onChange = {},
+                navToAboutScreen = navToAboutScreen,
                 hint = "",
                 title = "Random Trivia",
-                hideSearchButton = true
+                hideSearchButton = true,
             )
         }
     ) { paddingValues ->
@@ -320,7 +325,8 @@ private fun PastGamesPreview() {
             sort = HistorySort.MOST_RECENT, setSort = {},
             reverseSort = false, setReverseSort = {},
             games = List(2) { getGame(totalQuestions = 10, played = true) },
-            deleteGame = {}
+            deleteGame = {},
+            navToAboutScreen = {}
         )
     }
 }
