@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.RandomTrivia" parent="Theme.SplashScreen.IconBackground">
+
+        <!--    Ref.: https://developer.android.com/develop/ui/views/launch/splash-screen#getting-started     -->
+        <item name="android:windowSplashScreenBackground">@color/black</item>
+        <!--    If icon does not appear, run the app from emulator/device, not Android Studio. See: https://stackoverflow.com/a/69831106    -->
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#3DDC84</item>
+
+        <!--    API >= 31 will automatically use action bar theme which appears in compose layout somehow.     -->
+        <item name="postSplashScreenTheme">@style/Theme.AppCompat</item>
+    </style>
+</resources>
