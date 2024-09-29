@@ -17,6 +17,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.korn.portfolio.randomtrivia.ui.navigation.BottomNav
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Play
@@ -25,6 +26,15 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 // Ref. : https://developer.android.com/develop/ui/compose/navigation#bottom-nav
 
 private val bottomNavs = listOf(Categories, Play, History)
+
+fun NavController.navigateBottomNav(bottomNav: BottomNav) {
+    navigate(bottomNav) {
+        // Pop up to the start destination of the graph to
+        // avoid building up a large stack of destinations
+        // on the back stack as users select items
+        popUpTo(graph.findStartDestination().id)
+    }
+}
 
 @Composable
 fun BottomBar(navController: NavController) {
@@ -38,13 +48,7 @@ fun BottomBar(navController: NavController) {
             NavigationBarItem(
                 selected = selected,
                 onClick = {
-                    if (!selected)
-                        navController.navigate(bottomNav) {
-                            // Pop up to the start destination of the graph to
-                            // avoid building up a large stack of destinations
-                            // on the back stack as users select items
-                            popUpTo(navController.graph.findStartDestination().id)
-                        }
+                    if (!selected) navController.navigateBottomNav(bottomNav)
                 },
                 icon = {
                     Icon(

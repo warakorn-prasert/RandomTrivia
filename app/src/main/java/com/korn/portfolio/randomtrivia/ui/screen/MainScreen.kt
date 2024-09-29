@@ -22,6 +22,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.korn.portfolio.randomtrivia.ui.common.BottomBar
+import com.korn.portfolio.randomtrivia.ui.common.navigateBottomNav
 import com.korn.portfolio.randomtrivia.ui.navigation.About
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
 import com.korn.portfolio.randomtrivia.ui.navigation.History
@@ -253,9 +254,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 Inspect(
                     onBack = {
                         themeViewModel.disableCustomNavBarColor()
-                        navController.navigate(History) {
-                            popUpTo(History) { inclusive = true }
-                        }
+                        navController.navigateBottomNav(History)
                     },
                     onReplay = { _ ->
                         navController.navigate(History.Replay) {
