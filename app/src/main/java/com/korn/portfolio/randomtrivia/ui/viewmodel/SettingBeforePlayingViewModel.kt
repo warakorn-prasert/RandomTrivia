@@ -291,6 +291,7 @@ class SettingBeforePlayingViewModel(
                         else -> total
                     }
                 }
+                .coerceAtMost(MAX_AMOUNT)
         }
 
     override fun selectCategory(category: Category?) {
