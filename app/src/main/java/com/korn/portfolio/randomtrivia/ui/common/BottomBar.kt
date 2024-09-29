@@ -34,22 +34,17 @@ fun BottomBar(navController: NavController) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
         bottomNavs.forEach { bottomNav ->
+            val selected = currentDestination?.hierarchy?.any { it.hasRoute(bottomNav::class) } == true
             NavigationBarItem(
-                selected = currentDestination?.hierarchy?.any { it.hasRoute(bottomNav::class) } == true,
+                selected = selected,
                 onClick = {
-                    navController.navigate(bottomNav) {
-                        // Pop up to the start destination of the graph to
-                        // avoid building up a large stack of destinations
-                        // on the back stack as users select items
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                    if (!selected)
+                        navController.navigate(bottomNav) {
+                            // Pop up to the start destination of the graph to
+                            // avoid building up a large stack of destinations
+                            // on the back stack as users select items
+                            popUpTo(navController.graph.findStartDestination().id)
                         }
-                        // Avoid multiple copies of the same destination when
-                        // reselecting the same item
-                        launchSingleTop = true
-                        // Restore state when reselecting a previously selected item
-                        restoreState = true
-                    }
                 },
                 icon = {
                     Icon(

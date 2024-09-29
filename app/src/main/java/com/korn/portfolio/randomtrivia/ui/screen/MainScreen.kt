@@ -170,7 +170,9 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         },
                         onInspect = { game ->
                             sharedViewModel.game = game
-                            navController.navigate(Inspect)
+                            navController.navigate(Inspect) {
+                                popUpTo(Inspect) { inclusive = true }
+                            }
                         }
                     )
                 }
@@ -236,7 +238,9 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         },
                         onInspect = { game ->
                             sharedViewModel.game = game
-                            navController.navigate(Inspect)
+                            navController.navigate(Inspect) {
+                                popUpTo(Inspect) { inclusive = true }
+                            }
                         }
                     )
                 }
