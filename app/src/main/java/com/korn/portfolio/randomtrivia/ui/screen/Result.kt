@@ -3,6 +3,8 @@
 package com.korn.portfolio.randomtrivia.ui.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -36,6 +43,7 @@ import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ResultViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun Result(
@@ -93,14 +101,43 @@ fun Result(
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("${viewModel.score} / ${viewModel.maxScore}", style = MaterialTheme.typography.displayMedium)
+            // blinking
+            var animState by remember { mutableStateOf(false) }
+            val duration = 300L
+            val color by animateColorAsState(
+                targetValue =
+                    if (animState) MaterialTheme.colorScheme.tertiary
+                    else MaterialTheme.colorScheme.onBackground,
+                animationSpec = tween(duration.toInt())
+            )
+            LaunchedEffect(Unit) {
+                repeat(5) {
+                    delay(duration)
+                    animState = true
+                    delay(duration)
+                    animState = false
+                }
+            }
+
+            Text(
+                text = "${viewModel.score} / ${viewModel.maxScore}",
+                color = color,
+                style = MaterialTheme.typography.displayMedium
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(painterResource(R.drawable.ic_timer), "Timer icon")
-                    Text(hhmmssFrom(viewModel.totalTimeSecond))
+                    Icon(
+                        painter = painterResource(R.drawable.ic_timer),
+                        contentDescription = "Timer icon",
+                        tint = color
+                    )
+                    Text(
+                        text = hhmmssFrom(viewModel.totalTimeSecond),
+                        color = color
+                    )
                 }
             }
         }
