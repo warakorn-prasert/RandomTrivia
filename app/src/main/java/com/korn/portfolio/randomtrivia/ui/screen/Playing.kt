@@ -4,6 +4,8 @@ package com.korn.portfolio.randomtrivia.ui.screen
 
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,9 +37,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -254,27 +260,48 @@ private fun AnswerButtons(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.width(IntrinsicSize.Max),
+        modifier = modifier.width(IntrinsicSize.Max),  // to have same width
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
     ) {
         answers.forEachIndexed { idx, answer ->
             val state = AnswerButtonState.getState(userAnswer, answer)
             ElevatedCard(
                 onClick = { answerAction(answer) },
-                modifier = Modifier
-                    .fillMaxWidth(),
                 colors = CardDefaults.elevatedCardColors().copy(
-                    containerColor = state.containerColor(),
+                    containerColor =
+                        if (state == AnswerButtonState.ANSWERED) MaterialTheme.colorScheme.surface
+                        else state.containerColor(),
                     contentColor = state.contentColor()
                 )
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.Top
+                val fillColor = state.containerColor()
+                val fillPercent by animateFloatAsState(
+                    targetValue = if (state == AnswerButtonState.ANSWERED) 1f else 0f,
+                    animationSpec = tween(1000)
+                )
+                Box(
+                    Modifier
+                        .height(IntrinsicSize.Max)
+                        .fillMaxWidth()
+                        .drawBehind {
+                            drawRect(
+                                color = fillColor,
+                                size = Size(
+                                    width = this.size.width * fillPercent,
+                                    height = this.size.height
+                                )
+                            )
+                        }
                 ) {
-                    Text("${idx + 1}.")
-                    Text(answer)
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text("${idx + 1}.")
+                        Text(answer)
+                    }
                 }
             }
         }
