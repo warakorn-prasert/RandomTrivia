@@ -29,29 +29,10 @@ const val MAX_AMOUNT = 50
 const val MIN_AMOUNT = 1
 
 data class GameSetting(
-    val category: Category?,  // null = random  // TODO : Change to categoryId
+    val category: Category?,  // null = random
     val difficulty: Difficulty?,  // null = random
     val amount: Int
-) {
-    // TODO (maybe) : Remove downloadable property from Category to use default equals()
-    // Ignore category name and downloadable
-    override fun equals(other: Any?): Boolean {
-        return if (other !is GameSetting) super.equals(other)
-        else {
-            val cat = category?.id == other.category?.id
-            val diff = difficulty == other.difficulty
-            val amount = amount == other.amount
-            cat && diff && amount
-        }
-    }
-
-    override fun hashCode(): Int {
-        var result = category?.id.hashCode()
-        result = 31 * result + (difficulty?.hashCode() ?: 0)
-        result = 31 * result + amount
-        return result
-    }
-}
+)
 
 private val allDifficulties: List<Difficulty?> = listOf(null) + Difficulty.entries
 
