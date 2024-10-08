@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -29,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +46,7 @@ import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
+import kotlinx.coroutines.launch
 
 private enum class InspectAnswerButtonState(
     val containerColor: @Composable () -> Color,
@@ -87,72 +92,91 @@ fun Inspect(
     game: Game
 ) {
     BackHandler(onBack = onBack)
+    val pagerState = rememberPagerState(pageCount = { game.questions.size })
     var currentIdx by remember { mutableIntStateOf(0) }
-        ScrimmableBottomSheetScaffold(
-            sheetContent = { paddingValues, spaceUnderPeekContent ->
-                QuestionSelector(
-                    currentIdx = currentIdx,
-                    questions = game.questions,
-                    selectAction = { currentIdx = it },
-                    paddingValues = paddingValues,
-                    isInspecting = true,
-                    spaceUnderQuestionIdx = spaceUnderPeekContent
-                )
-            },
-            sheetContentPeekHeight = 56.dp,
-            topBar = {
-                TopAppBar(
-                    title = {},
-                    navigationIcon = {
-                        IconButtonWithText(
-                            onClick = onBack,
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Button to return to main menu.",
-                            text = "Exit"
-                        )
-                    },
-                    actions = {
-                        IconButtonWithText(
-                            onClick = { onReplay(game) },
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Replay button.",
-                            text = "Replay"
-                        )
+    ScrimmableBottomSheetScaffold(
+        sheetContent = { paddingValues, spaceUnderPeekContent ->
+            val scope = rememberCoroutineScope()
+            QuestionSelector(
+                currentIdx = currentIdx,
+                questions = game.questions,
+                selectAction = { idx ->
+                    currentIdx = idx
+                    scope.launch {
+                        pagerState.animateScrollToPage(idx)
                     }
-                )
-            }
-        ) { paddingValues ->
-            Column(
+                },
+                paddingValues = paddingValues,
+                isInspecting = true,
+                spaceUnderQuestionIdx = spaceUnderPeekContent
+            )
+        },
+        sheetContentPeekHeight = 56.dp,
+        topBar = {
+            TopAppBar(
+                title = {},
+                navigationIcon = {
+                    IconButtonWithText(
+                        onClick = onBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Button to return to main menu.",
+                        text = "Exit"
+                    )
+                },
+                actions = {
+                    IconButtonWithText(
+                        onClick = { onReplay(game) },
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Replay button.",
+                        text = "Replay"
+                    )
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val question = game.questions[currentIdx]
+            GameStatus(
+                second = game.detail.totalTimeSecond,
+                category = question.category,
+                difficulty = question.question.difficulty,
                 modifier = Modifier
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp)
-                    .fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp)
+                    .fillMaxWidth()
+            )
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                pageSpacing = 16.dp,
+                userScrollEnabled = false
             ) {
-                val question = game.questions[currentIdx]
-                GameStatus(
-                    second = game.detail.totalTimeSecond,
-                    category = question.category,
-                    difficulty = question.question.difficulty,
-                    modifier = Modifier
-                        .padding(top = 8.dp, bottom = 16.dp)
-                        .fillMaxWidth()
-                )
-                QuestionStatementCard(
-                    questionStatement = question.question.question,
-                    modifier = Modifier
-                        .weight(1f)
-                        .wrapContentSize()
-                )
-                InspectAnswerButtons(
-                    userAnswer = question.answer.answer,
-                    answers = question.question.run { incorrectAnswers + correctAnswer },
-                    correctAnswer = question.question.correctAnswer,
-                    modifier = Modifier
-                        .padding(vertical = 16.dp)
-                )
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    QuestionStatementCard(
+                        questionStatement = question.question.question,
+                        modifier = Modifier
+                            .weight(1f)
+                            .wrapContentSize()
+                    )
+                    InspectAnswerButtons(
+                        userAnswer = question.answer.answer,
+                        answers = question.question.run { incorrectAnswers + correctAnswer },
+                        correctAnswer = question.question.correctAnswer,
+                        modifier = Modifier
+                            .padding(vertical = 16.dp)
+                    )
+                }
             }
         }
+    }
 }
 
 @Composable

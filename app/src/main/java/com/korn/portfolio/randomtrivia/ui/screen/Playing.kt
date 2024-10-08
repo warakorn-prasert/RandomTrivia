@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +41,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,6 +66,7 @@ import com.korn.portfolio.randomtrivia.ui.previewdata.getGameQuestion
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.PlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
+import kotlinx.coroutines.launch
 
 enum class AnswerButtonState(
     val containerColor: @Composable () -> Color,
@@ -114,12 +119,19 @@ private fun Playing(
     answerAction: (String) -> Unit
 ) {
     BackHandler(onBack = exitAction)
+    val pagerState = rememberPagerState(pageCount = { questions.size })
     ScrimmableBottomSheetScaffold(
         sheetContent = { paddingValues, spaceUnderPeekContent ->
+            val scope = rememberCoroutineScope()
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = questions,
-                selectAction = selectQuestion,
+                selectAction = { idx ->
+                    selectQuestion(idx)
+                    scope.launch {
+                        pagerState.animateScrollToPage(idx)
+                    }
+                },
                 paddingValues = paddingValues,
                 spaceUnderQuestionIdx = spaceUnderPeekContent
             )
@@ -151,7 +163,6 @@ private fun Playing(
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -161,22 +172,34 @@ private fun Playing(
                 category = question.category,
                 difficulty = question.question.difficulty,
                 modifier = Modifier
-                    .padding(top = 8.dp, bottom = 16.dp)
+                    .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp)
                     .fillMaxWidth()
             )
-            QuestionStatementCard(
-                questionStatement = question.question.question,
-                modifier = Modifier
-                    .weight(1f)
-                    .wrapContentSize()
-            )
-            AnswerButtons(
-                userAnswer = question.answer.answer,
-                answers = question.question.run { incorrectAnswers + correctAnswer },
-                answerAction = answerAction,
-                modifier = Modifier
-                    .padding(vertical = 16.dp)
-            )
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                pageSpacing = 16.dp,
+                userScrollEnabled = false
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    QuestionStatementCard(
+                        questionStatement = question.question.question,
+                        modifier = Modifier
+                            .weight(1f)
+                            .wrapContentSize()
+                    )
+                    AnswerButtons(
+                        userAnswer = question.answer.answer,
+                        answers = question.question.run { incorrectAnswers + correctAnswer },
+                        answerAction = answerAction,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+            }
         }
     }
 }
