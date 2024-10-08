@@ -2,6 +2,9 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,9 +36,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ColorFilter
@@ -118,7 +124,13 @@ private fun Categories(
         Column(Modifier.padding(paddingValues)) {
             val listState = rememberLazyListState()
             LaunchedEffect(searchWord, filter, reverseSort, sort) {
-                listState.scrollToItem(0)
+                listState.animateScrollToItem(0)
+            }
+            val itemsInView by remember {
+                derivedStateOf {
+                    listState.layoutInfo
+                        .visibleItemsInfo.map { it.key as Int }
+                }
             }
 
             CategoriesFilterSortMenuBar(
@@ -149,16 +161,27 @@ private fun Categories(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(categories, key = { it.id }) { (name, total, totalPlayed, id, isPlayed) ->
-                    CategoryCard(
-                        categoryName = name,
-                        totalQuestions = total,
-                        playedQuestions = totalPlayed,
-                        isPlayed = isPlayed,
-                        onClick = {
-                            navToQuestions(id)
-                        },
-                        modifier = Modifier.fillMaxWidth()
+                    val isInView = id in itemsInView
+                    val alpha by animateFloatAsState(
+                        targetValue = if (isInView) 1f else 0f,
+                        animationSpec = tween(
+                            durationMillis = 600,
+                            delayMillis = 50,
+                            easing = LinearOutSlowInEasing
+                        )
                     )
+                    Box(Modifier.alpha(alpha)) {
+                        CategoryCard(
+                            categoryName = name,
+                            totalQuestions = total,
+                            playedQuestions = totalPlayed,
+                            isPlayed = isPlayed,
+                            onClick = {
+                                navToQuestions(id)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }

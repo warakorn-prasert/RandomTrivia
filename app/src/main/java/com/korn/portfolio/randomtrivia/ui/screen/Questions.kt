@@ -3,8 +3,12 @@
 package com.korn.portfolio.randomtrivia.ui.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,12 +31,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.coerceAtLeast
@@ -137,7 +143,13 @@ private fun Questions(
 
             val listState = rememberLazyListState()
             LaunchedEffect(searchWord, filter, sort, reverseSort) {
-                listState.scrollToItem(0)
+                listState.animateScrollToItem(0)
+            }
+            val itemsInView by remember {
+                derivedStateOf {
+                    listState.layoutInfo
+                        .visibleItemsInfo.map { it.key as UUID }
+                }
             }
 
             QuestionsFilterSortMenuBar(
@@ -163,7 +175,18 @@ private fun Questions(
                     items = questions.process(filter, searchWord, sort, reverseSort),
                     key = { it.id }
                 ) {
-                    QuestionCard(it)
+                    val isInView = it.id in itemsInView
+                    val alpha by animateFloatAsState(
+                        targetValue = if (isInView) 1f else 0f,
+                        animationSpec = tween(
+                            durationMillis = 600,
+                            delayMillis = 50,
+                            easing = LinearOutSlowInEasing
+                        )
+                    )
+                    Box(Modifier.alpha(alpha)) {
+                        QuestionCard(it)
+                    }
                 }
             }
         }

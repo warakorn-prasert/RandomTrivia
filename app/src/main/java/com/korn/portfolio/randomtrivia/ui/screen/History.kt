@@ -2,6 +2,9 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -27,13 +31,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -175,16 +182,39 @@ private fun PastGames(
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("No game played yet.")
                 }
-            LazyColumn {
+
+            val listState = rememberLazyListState()
+            LaunchedEffect(filter, reverseSort, sort) {
+                listState.animateScrollToItem(0)
+            }
+            val itemsInView by remember {
+                derivedStateOf {
+                    listState.layoutInfo
+                        .visibleItemsInfo.map { it.key as UUID }
+                }
+            }
+
+            LazyColumn(state = listState) {
                 itemsIndexed(games, key = { _, game -> game.detail.gameId }) { idx, game ->
-                    if (idx > 0)
-                        HorizontalDivider()
-                    GameDisplayItem(
-                        game = game,
-                        inspectAction = { onInspect(game) },
-                        replayAction = { onReplay(game) },
-                        deleteAction = { deleteGame(game.detail.gameId) }
+                    val isInView = game.detail.gameId in itemsInView
+                    val alpha by animateFloatAsState(
+                        targetValue = if (isInView) 1f else 0f,
+                        animationSpec = tween(
+                            durationMillis = 600,
+                            delayMillis = 50,
+                            easing = LinearOutSlowInEasing
+                        )
                     )
+                    Box(Modifier.alpha(alpha)) {
+                        if (idx > 0)
+                            HorizontalDivider()
+                        GameDisplayItem(
+                            game = game,
+                            inspectAction = { onInspect(game) },
+                            replayAction = { onReplay(game) },
+                            deleteAction = { deleteGame(game.detail.gameId) }
+                        )
+                    }
                 }
             }
         }
