@@ -87,6 +87,7 @@ private enum class InspectAnswerButtonState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Inspect(
+    modifier: Modifier = Modifier,
     onBack: () -> Unit,
     onReplay: (Game) -> Unit,
     game: Game
@@ -95,6 +96,7 @@ fun Inspect(
     val pagerState = rememberPagerState(pageCount = { game.questions.size })
     var currentIdx by remember { mutableIntStateOf(0) }
     ScrimmableBottomSheetScaffold(
+        modifier = modifier,
         sheetContent = { paddingValues, spaceUnderPeekContent ->
             val scope = rememberCoroutineScope()
             QuestionSelector(

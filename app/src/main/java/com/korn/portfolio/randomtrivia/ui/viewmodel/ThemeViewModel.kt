@@ -7,7 +7,6 @@ import android.content.res.Configuration
 import android.os.Build
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -28,8 +27,6 @@ import com.korn.portfolio.randomtrivia.ui.theme.SourceColor
 import com.korn.portfolio.randomtrivia.ui.theme.TriviaAppColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.combineTransform
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -196,38 +193,6 @@ class ThemeViewModel : ViewModel() {
                         it[CONTRAST_LEVEL_VALUE] = value.value
                 }
             }
-        }
-    }
-
-    private val customNavBarColor = MutableStateFlow<Int?>(null)
-
-    fun getSystemBarData(context: Context): Flow<Triple<Boolean, Int, Int>> =
-        combine(
-            getIsDark(context),
-            getSourceColor(context),
-            getContrastLevel(context),
-            customNavBarColor,
-        ) { isDark, sourceColor, contrastLevel, customNavBarColor ->
-            val isDarkValue = getIsDarkValue(context, isDark)
-            val colorScheme = dynamicColorScheme(
-                getSourceColorValue(sourceColor),
-                isDarkValue,
-                getContrastLevelValue(context, contrastLevel).toDouble()
-            )
-            val statusBarColor = colorScheme.surface.toArgb()
-            val navBarColor = customNavBarColor ?: statusBarColor
-            Triple(isDarkValue, statusBarColor, navBarColor)
-        }
-
-    fun enableCustomNavBarColor(color: Color) {
-        viewModelScope.launch {
-            customNavBarColor.emit(color.toArgb())
-        }
-    }
-
-    fun disableCustomNavBarColor() {
-        viewModelScope.launch {
-            customNavBarColor.emit(null)
         }
     }
 }

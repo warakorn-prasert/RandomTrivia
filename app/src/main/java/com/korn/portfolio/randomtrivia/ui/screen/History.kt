@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -115,10 +116,10 @@ fun Game.asDisplay() =
 
 @Composable
 fun PastGames(
+    modifier: Modifier = Modifier,
     onReplay: (Game) -> Unit,
     onInspect: (Game) -> Unit,
-    navToAboutScreen: () -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     val viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
 
@@ -128,6 +129,7 @@ fun PastGames(
     val games by viewModel.games.collectAsState(emptyList())
 
     PastGames(
+        modifier = modifier,
         onReplay = onReplay,
         onInspect = onInspect,
         filter = filter, setFilter = viewModel::setFilter,
@@ -135,13 +137,14 @@ fun PastGames(
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
         games = games,
         deleteGame = viewModel::deleteGame,
-        navToAboutScreen = navToAboutScreen,
-        onShowSortMenuChange = onShowSortMenuChange
+        navToAboutScreen = navToAboutScreen
     )
 }
 
 @Composable
 private fun PastGames(
+    modifier: Modifier = Modifier,
+
     onReplay: (Game) -> Unit,
     onInspect: (Game) -> Unit,
 
@@ -152,11 +155,10 @@ private fun PastGames(
     games: List<Game>,
     deleteGame: (gameId: UUID) -> Unit,
 
-    navToAboutScreen: () -> Unit,
-
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             SearchableTopBar(
                 searchWord = "",
@@ -166,7 +168,8 @@ private fun PastGames(
                 title = "Random Trivia",
                 hideSearchButton = true,
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             HistoryFilterSortMenuBar(
@@ -175,8 +178,7 @@ private fun PastGames(
                 sort,
                 setSort,
                 reverseSort,
-                setReverseSort,
-                onShowSortMenuChange = onShowSortMenuChange
+                setReverseSort
             )
             if (games.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
@@ -228,8 +230,7 @@ private fun HistoryFilterSortMenuBar(
     sort: HistorySort,
     onSortSelect: (HistorySort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit
+    onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
@@ -260,8 +261,7 @@ private fun HistoryFilterSortMenuBar(
                     )
                 }
             }
-        },
-        onShowSortMenuChange = onShowSortMenuChange
+        }
     )
 }
 

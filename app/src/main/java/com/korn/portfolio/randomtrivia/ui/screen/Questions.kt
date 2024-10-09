@@ -99,32 +99,33 @@ private fun List<Question>.process(
 
 @Composable
 fun Questions(
+    modifier: Modifier = Modifier,
     categoryId: Int,
     onBack: () -> Unit,
-    navToAboutScreen: () -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
     Questions(
+        modifier = modifier,
         categoryName = viewModel.categoryName,
         questions = viewModel.questions,
         onBack = onBack,
-        navToAboutScreen = navToAboutScreen,
-        onShowSortMenuChange = onShowSortMenuChange
+        navToAboutScreen = navToAboutScreen
     )
 }
 
 @Composable
 private fun Questions(
+    modifier: Modifier = Modifier,
     categoryName: String,
     questions: List<Question>,
     onBack: () -> Unit,
-    navToAboutScreen: () -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     var searchWord by remember { mutableStateOf("") }
     BackHandler(onBack = onBack)
     Scaffold(
+        modifier = modifier,
         topBar = {
             SearchableTopBarWithBackButton(
                 searchWord = searchWord,
@@ -134,7 +135,8 @@ private fun Questions(
                 title = categoryName,
                 onBackButtonClick = onBack
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             var filter by remember { mutableStateOf(QuestionFilter.ALL) }
@@ -155,8 +157,7 @@ private fun Questions(
             QuestionsFilterSortMenuBar(
                 filter, { filter = it },
                 sort, { sort = it },
-                reverseSort, { reverseSort = it },
-                onShowSortMenuChange = onShowSortMenuChange
+                reverseSort, { reverseSort = it }
             )
             val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
             val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -200,8 +201,7 @@ private fun QuestionsFilterSortMenuBar(
     sort: QuestionSort,
     onSortSelect: (QuestionSort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
@@ -232,8 +232,7 @@ private fun QuestionsFilterSortMenuBar(
                     )
                 }
             }
-        },
-        onShowSortMenuChange = onShowSortMenuChange
+        }
     )
 }
 

@@ -89,12 +89,14 @@ enum class AnswerButtonState(
 
 @Composable
 fun Playing(
+    modifier: Modifier = Modifier,
     game: Game,
     onExit: () -> Unit,
     onSubmit: (Game) -> Unit
 ) {
     val viewModel: PlayingViewModel = viewModel(factory = PlayingViewModel.Factory(game))
     Playing(
+        modifier = modifier,
         exitAction = { viewModel.exit(onExit) },
         submitAction = { viewModel.submit(onSubmit) },
         currentIdx = viewModel.currentIdx,
@@ -109,6 +111,7 @@ fun Playing(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Playing(
+    modifier: Modifier = Modifier,
     exitAction: () -> Unit,
     submitAction: () -> Unit,
     currentIdx: Int,
@@ -121,6 +124,7 @@ private fun Playing(
     BackHandler(onBack = exitAction)
     val pagerState = rememberPagerState(pageCount = { questions.size })
     ScrimmableBottomSheetScaffold(
+        modifier = modifier,
         sheetContent = { paddingValues, spaceUnderPeekContent ->
             val scope = rememberCoroutineScope()
             QuestionSelector(

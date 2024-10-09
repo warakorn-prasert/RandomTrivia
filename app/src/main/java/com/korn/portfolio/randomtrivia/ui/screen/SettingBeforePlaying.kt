@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -86,6 +87,7 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
 
 @Composable
 fun SettingBeforePlaying(
+    modifier: Modifier = Modifier,
     onSubmit: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit
 ) {
     val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
@@ -107,6 +109,7 @@ fun SettingBeforePlaying(
     val maxAmount by viewModel.maxAmount.collectAsState(MAX_AMOUNT)
 
     SettingBeforePlaying(
+        modifier = modifier,
         submitAction = { viewModel.submit(onSubmit) },
         canStartGame = canStartGame,
         canAddMoreSetting = canAddMoreSetting,
@@ -133,6 +136,7 @@ fun SettingBeforePlaying(
 
 @Composable
 fun SettingBeforePlaying(
+    modifier: Modifier = Modifier,
     submitAction: () -> Unit,
     canStartGame: Boolean,
     onlineMode: Boolean,
@@ -157,6 +161,7 @@ fun SettingBeforePlaying(
 ) {
     var showDialog by remember { mutableStateOf(false) }
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopBarWithStartButton(
                 enabled = canStartGame,
@@ -168,7 +173,8 @@ fun SettingBeforePlaying(
                 enabled = canAddMoreSetting,
                 onClick = { showDialog = true }
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             OnlineModeToggleMenu(

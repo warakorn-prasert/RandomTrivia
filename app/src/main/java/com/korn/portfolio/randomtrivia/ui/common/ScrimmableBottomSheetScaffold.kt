@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScrimmableBottomSheetScaffold(
+    modifier: Modifier = Modifier,
     sheetContent: @Composable ColumnScope.(
         PaddingValues,
         spaceUnderPeekContent: @Composable () -> Unit) -> Unit,
@@ -67,28 +68,27 @@ fun ScrimmableBottomSheetScaffold(
             skipHiddenState = true
         )
     )
-    val sheetPeekHeight = 48.dp /* (handle) */ + sheetContentPeekHeight
+    val navBarHeightPx = WindowInsets.navigationBars.getBottom(density).toFloat()
+    val navBarHeight = with(density) { navBarHeightPx.toDp() }
+    val sheetPeekHeight = 48.dp /* (handle) */ + sheetContentPeekHeight + navBarHeight
     val configuration = LocalConfiguration.current
     var showScrim by remember { mutableStateOf(false) }
     BottomSheetScaffold(
+        modifier = modifier,
         sheetContent = {
-            sheetContent(PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-                val heightBetween: Float by animateFloatAsState(
-                    if (showScrim)
-                        0f
-                    else
-                        WindowInsets.navigationBars.getBottom(density).toFloat()
-                )
-                Spacer(Modifier.height(
-                    with(density) { heightBetween.toDp() }
-                ))
-                val scope = rememberCoroutineScope()
-                BackHandler(showScrim) {
-                    scope.launch {
-                        scaffoldSheetState.bottomSheetState.partialExpand()
-                    }
+            val scope = rememberCoroutineScope()
+            BackHandler(showScrim) {  // overrides BackHandler inside BottomSheetScaffold's content
+                scope.launch {
+                    scaffoldSheetState.bottomSheetState.partialExpand()
                 }
             }
+            val heightBetweenPx by animateFloatAsState(if (showScrim) 0f else navBarHeightPx)
+            val heightBetween = with(density) { heightBetweenPx.toDp() }
+            sheetContent(PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                Spacer(Modifier.height(heightBetween))
+            }
+            val inverseHeightBetween = navBarHeight - heightBetween
+            Spacer(Modifier.height(inverseHeightBetween))
         },
         scaffoldState = scaffoldSheetState,
         sheetPeekHeight = sheetPeekHeight,

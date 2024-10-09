@@ -66,9 +66,9 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
 
 @Composable
 fun Categories(
+    modifier: Modifier = Modifier,
     navToQuestions: (categoryId: Int) -> Unit,
-    navToAboutScreen: () -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
     val searchWord by viewModel.searchWord.collectAsState()
@@ -78,6 +78,7 @@ fun Categories(
     val sort by viewModel.sort.collectAsState()
     val reverseSort by viewModel.reverseSort.collectAsState()
     Categories(
+        modifier = modifier,
         searchWord = searchWord, setSearchWord = viewModel::setSearchWord,
         categories = categories,
         filter = filter, setFilter = viewModel::setFilter,
@@ -85,13 +86,14 @@ fun Categories(
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
         fetchStatus = viewModel.fetchStatus, fetchCategories = viewModel::fetchCategories,
         navToQuestions = navToQuestions,
-        navToAboutScreen = navToAboutScreen,
-        onShowSortMenuChange = onShowSortMenuChange
+        navToAboutScreen = navToAboutScreen
     )
 }
 
 @Composable
 private fun Categories(
+    modifier: Modifier = Modifier,
+
     searchWord: String,
     setSearchWord: (String) -> Unit,
 
@@ -107,11 +109,10 @@ private fun Categories(
     fetchCategories: () -> Unit,
 
     navToQuestions: (categoryId: Int) -> Unit,
-    navToAboutScreen: () -> Unit,
-
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             SearchableTopBar(
                 searchWord = searchWord,
@@ -119,7 +120,8 @@ private fun Categories(
                 hint = "Search for categories",
                 navToAboutScreen = navToAboutScreen
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             val listState = rememberLazyListState()
@@ -136,8 +138,7 @@ private fun Categories(
             CategoriesFilterSortMenuBar(
                 filter, setFilter,
                 sort, setSort,
-                reverseSort, setReverseSort,
-                onShowSortMenuChange = onShowSortMenuChange
+                reverseSort, setReverseSort
             )
             FetchStatusBar(
                 fetchStatus,
@@ -195,8 +196,7 @@ private fun CategoriesFilterSortMenuBar(
     sort: CategorySort,
     onSortSelect: (CategorySort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
@@ -227,8 +227,7 @@ private fun CategoriesFilterSortMenuBar(
                     )
                 }
             }
-        },
-        onShowSortMenuChange = onShowSortMenuChange,
+        }
     )
 }
 

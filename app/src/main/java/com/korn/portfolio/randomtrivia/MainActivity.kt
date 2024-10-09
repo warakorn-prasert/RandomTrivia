@@ -1,6 +1,6 @@
 package com.korn.portfolio.randomtrivia
 
-import android.os.Build
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -38,28 +38,21 @@ class MainActivity : ComponentActivity() {
         }
 
         // Enable edgeToEdge and make detectDarkMode follows custom dark mode
-        // and set system bar color
         val themeViewModel: ThemeViewModel by viewModels()
         lifecycleScope.launch {
-            themeViewModel.getSystemBarData(this@MainActivity)
-                .collect { (isDark, statusBarColor, navBarColor) ->
-                    enableEdgeToEdge(
-                        statusBarStyle = SystemBarStyle.auto(
-                            lightScrim = statusBarColor,
-                            darkScrim = statusBarColor,
-                            detectDarkMode = { _ -> isDark }
-                        ),
-                        navigationBarStyle = SystemBarStyle.auto(
-                            lightScrim = navBarColor,
-                            darkScrim = navBarColor,
-                            detectDarkMode = { _ -> isDark }
-                        )
-                    )
-                    if (Build.VERSION.SDK_INT >= 29) {
-                        window.statusBarColor = statusBarColor
-                        window.navigationBarColor = navBarColor
+            themeViewModel.getIsDark(this@MainActivity).collect { isDark ->
+                val systemBarStyle = SystemBarStyle.auto(
+                    lightScrim = Color.TRANSPARENT,
+                    darkScrim = Color.TRANSPARENT,
+                    detectDarkMode = { _ ->
+                        themeViewModel.getIsDarkValue(this@MainActivity, isDark)
                     }
-                }
+                )
+                enableEdgeToEdge(
+                    statusBarStyle = systemBarStyle,
+                    navigationBarStyle = systemBarStyle
+                )
+            }
         }
 
         setContent {

@@ -3,10 +3,8 @@
 package com.korn.portfolio.randomtrivia.ui.screen
 
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,7 +27,6 @@ import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
 import com.korn.portfolio.randomtrivia.ui.navigation.Play
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SharedViewModel
-import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
@@ -41,27 +38,19 @@ fun MainScreen(modifier: Modifier = Modifier) {
 
     Scaffold(
         modifier = modifier,
-        bottomBar = { if (showBottomBar) BottomBar(navController) }
+        bottomBar = { if (showBottomBar) BottomBar(navController) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         val sharedViewModel: SharedViewModel = viewModel()
-        val themeViewModel: ThemeViewModel = viewModel()
-        val bottomSheetColor = MaterialTheme.colorScheme.surfaceContainerLow
-        NavHost(
-            navController = navController,
-            startDestination = Categories,
-            modifier = Modifier
-                .consumeWindowInsets(WindowInsets.navigationBars)
-                .padding(bottom = paddingValues.calculateBottomPadding())
-        ) {
+        NavHost(navController = navController, startDestination = Categories) {
             navigation<Categories>(startDestination = Categories.Default) {
                 composable<About> {
                     LaunchedEffect(Unit) {
                         requestFullScreen()
                     }
                     AboutScreen(
-                        onBack = {
-                            navController.navigateUp()
-                        }
+                        modifier = Modifier.padding(paddingValues),
+                        onBack = { navController.navigateUp() }
                     )
                 }
                 composable<Categories.Default> {
@@ -69,14 +58,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         dismissFullScreen()
                     }
                     Categories(
+                        modifier = Modifier.padding(paddingValues),
                         navToQuestions = { categoryId ->
                             navController.navigate(Categories.Questions(categoryId))
                         },
-                        navToAboutScreen = { navController.navigate(About) },
-                        onShowSortMenuChange = {
-                            if (it) themeViewModel.enableCustomNavBarColor(bottomSheetColor)
-                            else themeViewModel.disableCustomNavBarColor()
-                        }
+                        navToAboutScreen = { navController.navigate(About) }
                     )
                 }
                 composable<Categories.Questions> { backStackEntry ->
@@ -84,17 +70,14 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         dismissFullScreen()
                     }
                     Questions(
+                        modifier = Modifier.padding(paddingValues),
                         categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId,
                         onBack = {
                             navController.navigate(Categories.Default) {
                                 popUpTo(Categories.Default) { inclusive = true }
                             }
                         },
-                        navToAboutScreen = { navController.navigate(About) },
-                        onShowSortMenuChange = {
-                            if (it) themeViewModel.enableCustomNavBarColor(bottomSheetColor)
-                            else themeViewModel.disableCustomNavBarColor()
-                        }
+                        navToAboutScreen = { navController.navigate(About) }
                     )
                 }
             }
@@ -104,6 +87,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         dismissFullScreen()
                     }
                     SettingBeforePlaying(
+                        modifier = Modifier.padding(paddingValues),
                         onSubmit = { onlineMode, settings ->
                             sharedViewModel.onlineMode = onlineMode
                             sharedViewModel.settings = settings
@@ -116,6 +100,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         requestFullScreen()
                     }
                     LoadingBeforePlaying(
+                        modifier = Modifier.systemBarsPadding(),
                         onlineMode = sharedViewModel.onlineMode,
                         settings = sharedViewModel.settings,
                         onCancel = {
@@ -134,19 +119,16 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 composable<Play.Playing> {
                     LaunchedEffect(Unit) {
                         requestFullScreen()
-                        themeViewModel.enableCustomNavBarColor(bottomSheetColor)
                     }
                     Playing(
                         game = sharedViewModel.game,
                         onExit = {
-                            themeViewModel.disableCustomNavBarColor()
                             navController.navigate(Play.Setting) {
                                 popUpTo(Play.Setting) { inclusive = true }
                             }
                         },
                         onSubmit = { game ->
                             sharedViewModel.game = game
-                            themeViewModel.disableCustomNavBarColor()
                             navController.navigate(Play.Result) {
                                 popUpTo(Play.Result) { inclusive = true }
                             }
@@ -184,6 +166,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         dismissFullScreen()
                     }
                     PastGames(
+                        modifier = Modifier.padding(paddingValues),
                         onReplay = { game ->
                             sharedViewModel.game = game
                             navController.navigate(History.Replay)
@@ -192,28 +175,21 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             sharedViewModel.game = game
                             navController.navigate(Inspect)
                         },
-                        navToAboutScreen = { navController.navigate(About) },
-                        onShowSortMenuChange = {
-                            if (it) themeViewModel.enableCustomNavBarColor(bottomSheetColor)
-                            else themeViewModel.disableCustomNavBarColor()
-                        }
+                        navToAboutScreen = { navController.navigate(About) }
                     )
                 }
                 composable<History.Replay> {
                     LaunchedEffect(Unit) {
                         requestFullScreen()
-                        themeViewModel.enableCustomNavBarColor(bottomSheetColor)
                     }
                     Playing(
                         game = sharedViewModel.game,
                         onExit = {
-                            themeViewModel.disableCustomNavBarColor()
                             navController.navigate(History.Default) {
                                 popUpTo(History.Default) { inclusive = true }
                             }
                         },
                         onSubmit = { game ->
-                            themeViewModel.disableCustomNavBarColor()
                             sharedViewModel.game = game
                             navController.navigate(History.Result) {
                                 popUpTo(History.Result) { inclusive = true }
@@ -249,11 +225,9 @@ fun MainScreen(modifier: Modifier = Modifier) {
             composable<Inspect> {
                 LaunchedEffect(Unit) {
                     requestFullScreen()
-                    themeViewModel.enableCustomNavBarColor(bottomSheetColor)
                 }
                 Inspect(
                     onBack = {
-                        themeViewModel.disableCustomNavBarColor()
                         navController.navigateBottomNav(History)
                     },
                     onReplay = { _ ->

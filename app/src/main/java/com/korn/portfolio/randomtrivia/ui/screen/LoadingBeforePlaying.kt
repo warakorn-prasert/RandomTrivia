@@ -54,6 +54,7 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewMode
 
 @Composable
 fun LoadingBeforePlaying(
+    modifier: Modifier = Modifier,
     onlineMode: Boolean,
     settings: List<GameSetting>,
     onCancel: () -> Unit,
@@ -66,6 +67,7 @@ fun LoadingBeforePlaying(
     )
     val fetchStatus by viewModel.fetchStatus.collectAsState()
     LoadingBeforePlaying(
+        modifier = modifier,
         cancelAction = { viewModel.cancel(onCancel) },
         progress = viewModel.progress,
         fetchStatus = fetchStatus,
@@ -75,7 +77,8 @@ fun LoadingBeforePlaying(
 }
 
 @Composable
-fun LoadingBeforePlaying(
+private fun LoadingBeforePlaying(
+    modifier: Modifier = Modifier,
     cancelAction: () -> Unit,
     progress: Float,
     fetchStatus: GameFetchStatus,
@@ -83,11 +86,7 @@ fun LoadingBeforePlaying(
     fetchAction: () -> Unit
 ) {
     BackHandler(onBack = cancelAction)
-    Column(
-        Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.statusBars)
-    ) {
+    Column(modifier) {
         Box(
             modifier = Modifier
                 .padding(start = 4.dp)
