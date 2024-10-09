@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.common
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
@@ -81,6 +82,12 @@ fun ScrimmableBottomSheetScaffold(
                 Spacer(Modifier.height(
                     with(density) { heightBetween.toDp() }
                 ))
+                val scope = rememberCoroutineScope()
+                BackHandler(showScrim) {
+                    scope.launch {
+                        scaffoldSheetState.bottomSheetState.partialExpand()
+                    }
+                }
             }
         },
         scaffoldState = scaffoldSheetState,
