@@ -63,10 +63,13 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryDisplay
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun Categories(
     modifier: Modifier = Modifier,
+    fetchStatus: StateFlow<FetchStatus>,
+    fetchCategories: () -> Unit,
     navToQuestions: (categoryId: Int) -> Unit,
     navToAboutScreen: () -> Unit
 ) {
@@ -77,6 +80,9 @@ fun Categories(
     val filter by viewModel.filter.collectAsState()
     val sort by viewModel.sort.collectAsState()
     val reverseSort by viewModel.reverseSort.collectAsState()
+
+    val fetchStatusValue by fetchStatus.collectAsState()
+
     Categories(
         modifier = modifier,
         searchWord = searchWord, setSearchWord = viewModel::setSearchWord,
@@ -84,7 +90,7 @@ fun Categories(
         filter = filter, setFilter = viewModel::setFilter,
         sort = sort, setSort = viewModel::setSort,
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
-        fetchStatus = viewModel.fetchStatus, fetchCategories = viewModel::fetchCategories,
+        fetchStatus = fetchStatusValue, fetchCategories = fetchCategories,
         navToQuestions = navToQuestions,
         navToAboutScreen = navToAboutScreen
     )

@@ -1,8 +1,5 @@
 package com.korn.portfolio.randomtrivia.ui.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -14,8 +11,6 @@ import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
-import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -59,13 +54,6 @@ enum class CategorySort(
 class CategoriesViewModel(
     private val triviaRepository: TriviaRepository
 ) : ViewModel() {
-
-    var fetchStatus: FetchStatus by mutableStateOf(FetchStatus.Success)
-        private set
-
-    init {
-        if (neverFetch) fetchCategories()
-    }
 
     val searchWord: StateFlow<String> get() = mutableSearchWord
     val filter: StateFlow<CategoryFilter> get() = mutableFilter
@@ -123,22 +111,6 @@ class CategoriesViewModel(
                 if (newReverse) all.reversed()
                 else all
             }
-
-    fun fetchCategories() {
-        viewModelScope.launch {
-            fetchStatus = FetchStatus.Loading
-            delay(1000L)  // make progress indicator not look flickering
-            fetchStatus = try {
-                triviaRepository.fetchCategories()
-                FetchStatus.Success
-            } catch (_: Exception) {
-                FetchStatus.Error("Failed to load new categories")
-            }
-        }
-    }
-
-    private val neverFetch: Boolean
-        get() = triviaRepository.remoteCategories.value.isNullOrEmpty()
 
     // local categories that have saved questions
     private val playedCategories: Flow<List<Pair<Category, QuestionCount>>>

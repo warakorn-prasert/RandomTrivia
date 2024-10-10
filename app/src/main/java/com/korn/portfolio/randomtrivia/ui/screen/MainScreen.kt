@@ -26,7 +26,7 @@ import com.korn.portfolio.randomtrivia.ui.navigation.Categories
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
 import com.korn.portfolio.randomtrivia.ui.navigation.Play
-import com.korn.portfolio.randomtrivia.ui.viewmodel.SharedViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.MainViewModel
 
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
@@ -41,7 +41,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
         bottomBar = { if (showBottomBar) BottomBar(navController) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
-        val sharedViewModel: SharedViewModel = viewModel()
+        val mainViewModel: MainViewModel = viewModel(factory = MainViewModel.Factory)
         NavHost(navController = navController, startDestination = Categories) {
             navigation<Categories>(startDestination = Categories.Default) {
                 composable<About> {
@@ -59,6 +59,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     }
                     Categories(
                         modifier = Modifier.padding(paddingValues),
+                        fetchStatus = mainViewModel.categoriesFetchStatus,
+                        fetchCategories = mainViewModel::fetchCategories,
                         navToQuestions = { categoryId ->
                             navController.navigate(Categories.Questions(categoryId))
                         },
@@ -88,9 +90,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     }
                     SettingBeforePlaying(
                         modifier = Modifier.padding(paddingValues),
+                        categoriesFetchStatus = mainViewModel.categoriesFetchStatus,
+                        fetchCategories = mainViewModel::fetchCategories,
                         onSubmit = { onlineMode, settings ->
-                            sharedViewModel.onlineMode = onlineMode
-                            sharedViewModel.settings = settings
+                            mainViewModel.onlineMode = onlineMode
+                            mainViewModel.settings = settings
                             navController.navigate(Play.Loading)
                         }
                     )
@@ -101,15 +105,15 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     }
                     LoadingBeforePlaying(
                         modifier = Modifier.systemBarsPadding(),
-                        onlineMode = sharedViewModel.onlineMode,
-                        settings = sharedViewModel.settings,
+                        onlineMode = mainViewModel.onlineMode,
+                        settings = mainViewModel.settings,
                         onCancel = {
                             navController.navigate(Play.Setting) {
                                 popUpTo(Play.Setting) { inclusive = true }
                             }
                         },
                         onStart = { game ->
-                            sharedViewModel.game = game
+                            mainViewModel.game = game
                             navController.navigate(Play.Playing) {
                                 popUpTo(Play.Playing) { inclusive = true }
                             }
@@ -121,14 +125,14 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         requestFullScreen()
                     }
                     Playing(
-                        game = sharedViewModel.game,
+                        game = mainViewModel.game,
                         onExit = {
                             navController.navigate(Play.Setting) {
                                 popUpTo(Play.Setting) { inclusive = true }
                             }
                         },
                         onSubmit = { game ->
-                            sharedViewModel.game = game
+                            mainViewModel.game = game
                             navController.navigate(Play.Result) {
                                 popUpTo(Play.Result) { inclusive = true }
                             }
@@ -140,7 +144,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         requestFullScreen()
                     }
                     Result(
-                        game = sharedViewModel.game,
+                        game = mainViewModel.game,
                         onExit = {
                             navController.navigate(Play.Setting) {
                                 popUpTo(Play.Setting) { inclusive = true }
@@ -152,7 +156,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             }
                         },
                         onInspect = { game ->
-                            sharedViewModel.game = game
+                            mainViewModel.game = game
                             navController.navigate(Inspect) {
                                 popUpTo(Inspect) { inclusive = true }
                             }
@@ -168,11 +172,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     PastGames(
                         modifier = Modifier.padding(paddingValues),
                         onReplay = { game ->
-                            sharedViewModel.game = game
+                            mainViewModel.game = game
                             navController.navigate(History.Replay)
                         },
                         onInspect = { game ->
-                            sharedViewModel.game = game
+                            mainViewModel.game = game
                             navController.navigate(Inspect)
                         },
                         navToAboutScreen = { navController.navigate(About) }
@@ -183,14 +187,14 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         requestFullScreen()
                     }
                     Playing(
-                        game = sharedViewModel.game,
+                        game = mainViewModel.game,
                         onExit = {
                             navController.navigate(History.Default) {
                                 popUpTo(History.Default) { inclusive = true }
                             }
                         },
                         onSubmit = { game ->
-                            sharedViewModel.game = game
+                            mainViewModel.game = game
                             navController.navigate(History.Result) {
                                 popUpTo(History.Result) { inclusive = true }
                             }
@@ -202,7 +206,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         requestFullScreen()
                     }
                     Result(
-                        game = sharedViewModel.game,
+                        game = mainViewModel.game,
                         onExit = {
                             navController.navigate(History.Default) {
                                 popUpTo(History.Default) { inclusive = true }
@@ -214,7 +218,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             }
                         },
                         onInspect = { game ->
-                            sharedViewModel.game = game
+                            mainViewModel.game = game
                             navController.navigate(Inspect) {
                                 popUpTo(Inspect) { inclusive = true }
                             }
@@ -235,7 +239,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             popUpTo(History.Replay) { inclusive = true }
                         }
                     },
-                    game = sharedViewModel.game
+                    game = mainViewModel.game
                 )
             }
         }

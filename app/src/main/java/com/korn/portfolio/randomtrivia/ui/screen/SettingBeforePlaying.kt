@@ -84,10 +84,13 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.MAX_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.MIN_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun SettingBeforePlaying(
     modifier: Modifier = Modifier,
+    categoriesFetchStatus: StateFlow<FetchStatus>,
+    fetchCategories: () -> Unit,
     onSubmit: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit
 ) {
     val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
@@ -95,10 +98,10 @@ fun SettingBeforePlaying(
     val canStartGame by viewModel.canStartGame.collectAsState(false)
     val onlineMode by viewModel.onlineMode.collectAsState()
 
-    val canAddMoreSetting by viewModel.canAddMoreSetting.collectAsState(false)
+    val canAddMoreSetting by viewModel.canAddMoreSetting(categoriesFetchStatus).collectAsState(false)
     val settings by viewModel.settings.collectAsState()
 
-    val fetchStatus by viewModel.categoriesFetchStatus.collectAsState()
+    val categoriesFetchStatusValue by categoriesFetchStatus.collectAsState()
     val questionCountFetchStatus by viewModel.questionCountFetchStatus.collectAsState()
 
     val category by viewModel.category.collectAsState()
@@ -116,9 +119,11 @@ fun SettingBeforePlaying(
         settings = settings,
         removeSetting = viewModel::removeSetting,
         onlineMode = onlineMode,
-        changeOnlineMode = viewModel::changeOnlineMode,
-        fetchStatus = fetchStatus,
-        fetchCategories = viewModel::fetchCategories,
+        changeOnlineMode = {
+            viewModel.changeOnlineMode(it, categoriesFetchStatusValue, fetchCategories)
+        },
+        fetchStatus = categoriesFetchStatusValue,
+        fetchCategories = fetchCategories,
         questionCountFetchStatus = questionCountFetchStatus,
         fetchQuestionCount = viewModel::fetchQuestionCountIfNeedTo,
         addSetting = viewModel::addSetting,
@@ -198,10 +203,11 @@ fun SettingBeforePlaying(
                 selectDifficulty = selectDifficulty,
                 selectAmount = selectAmount
             )
-            FetchStatusBar(
-                fetchStatus = fetchStatus,
-                retryAction = fetchCategories
-            )
+            if (onlineMode)
+                FetchStatusBar(
+                    fetchStatus = fetchStatus,
+                    retryAction = fetchCategories
+                )
             if (settings.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("Add game setting.")
