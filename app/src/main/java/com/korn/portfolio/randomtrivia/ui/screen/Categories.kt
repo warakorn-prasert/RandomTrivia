@@ -160,10 +160,10 @@ private fun Categories(
             LazyColumn(
                 state = listState,
                 contentPadding = PaddingValues(
-                    start = 8.dp,
-                    top = 16.dp,
-                    end = 8.dp,
-                    bottom = (imePadding - navBarPadding - bottomBarPadding + 16.dp).coerceAtLeast(16.dp)
+                    start = 16.dp,
+                    top = 8.dp,
+                    end = 16.dp,
+                    bottom = (imePadding - navBarPadding - bottomBarPadding + 8.dp).coerceAtLeast(8.dp)
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {

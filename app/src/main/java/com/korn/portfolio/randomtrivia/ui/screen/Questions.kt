@@ -165,12 +165,12 @@ private fun Questions(
             LazyColumn(
                 state = listState,
                 contentPadding = PaddingValues(
-                    start = 8.dp,
-                    top = 16.dp,
-                    end = 8.dp,
-                    bottom = (imePadding - navBarPadding - bottomBarPadding + 16.dp).coerceAtLeast(16.dp)
+                    start = 16.dp,
+                    top = 8.dp,
+                    end = 16.dp,
+                    bottom = (imePadding - navBarPadding - bottomBarPadding + 8.dp).coerceAtLeast(8.dp)
                 ),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(
                     items = questions.process(filter, searchWord, sort, reverseSort),
@@ -240,9 +240,7 @@ private fun QuestionsFilterSortMenuBar(
 private fun QuestionCard(question: Question, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     Column(
-        modifier = modifier
-            .padding(vertical = 8.dp)
-            .clickable { expanded = !expanded },
+        modifier = modifier.clickable { expanded = !expanded },
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

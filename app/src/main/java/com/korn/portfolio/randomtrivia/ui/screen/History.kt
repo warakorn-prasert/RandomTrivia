@@ -9,11 +9,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -30,7 +32,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,7 +46,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
@@ -196,7 +196,10 @@ private fun PastGames(
                 }
             }
 
-            LazyColumn(state = listState) {
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
                 itemsIndexed(games, key = { _, game -> game.detail.gameId }) { idx, game ->
                     val isInView = game.detail.gameId in itemsInView
                     val alpha by animateFloatAsState(
@@ -207,14 +210,15 @@ private fun PastGames(
                             easing = LinearOutSlowInEasing
                         )
                     )
-                    Box(Modifier.alpha(alpha)) {
+                    Column(Modifier.alpha(alpha)) {
                         if (idx > 0)
-                            HorizontalDivider()
+                            HorizontalDivider(Modifier.padding(vertical = 8.dp))
                         GameDisplayItem(
                             game = game,
                             inspectAction = { onInspect(game) },
                             replayAction = { onReplay(game) },
-                            deleteAction = { deleteGame(game.detail.gameId) }
+                            deleteAction = { deleteGame(game.detail.gameId) },
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
@@ -270,13 +274,11 @@ private fun GameDisplayItem(
     game: Game,
     inspectAction: () -> Unit,
     replayAction: () -> Unit,
-    deleteAction: () -> Unit
+    deleteAction: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
-            .minimumInteractiveComponentSize()
-            .fillMaxWidth()
-            .padding(start = 16.dp, top = 12.dp, end = 4.dp, bottom = 16.dp),
+        modifier = modifier,
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -302,7 +304,10 @@ private fun GameDisplayItem(
         }
         Column {
             var showMenu by remember { mutableStateOf(false) }
-            IconButton({ showMenu = true }) {
+            IconButton(
+                onClick = { showMenu = true },
+                modifier = Modifier.offset(x = 12.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = null,
@@ -311,8 +316,7 @@ private fun GameDisplayItem(
             if (showMenu) {
                 DropdownMenu(
                     expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    offset = DpOffset(x = (-12).dp, y = 0.dp)
+                    onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
                         text = { Text("Inspect") },

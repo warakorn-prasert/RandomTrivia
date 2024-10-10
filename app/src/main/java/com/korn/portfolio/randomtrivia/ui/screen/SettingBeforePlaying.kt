@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -464,7 +465,7 @@ private fun SettingListItems(
         Modifier
             .verticalScroll(rememberScrollState())
             .fillMaxSize()
-            .padding(start = 16.dp, end = 8.dp)
+            .padding(horizontal = 16.dp)
     ) {
         settings.forEachIndexed { idx, setting ->
             SettingListItem(setting, removeAction, Modifier.padding(vertical = 8.dp))
@@ -485,7 +486,10 @@ private fun SettingListItem(
             Text(setting.category.displayName, fontWeight = FontWeight.Bold)
             Text("${setting.difficulty.displayName}, ${setting.amount}")
         }
-        IconButton({ removeAction(setting) }) {
+        IconButton(
+            onClick = { removeAction(setting) },
+            modifier = Modifier.offset(x = 12.dp)
+        ) {
             Icon(Icons.Default.Close, "Button to remove game setting item.")
         }
     }

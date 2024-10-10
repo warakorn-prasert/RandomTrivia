@@ -46,7 +46,7 @@ fun <T> FilterSortMenuBar(
     Row (
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 8.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         var showSortMenu by remember { mutableStateOf(false) }
