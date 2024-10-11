@@ -2,11 +2,14 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,11 +20,12 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -56,6 +60,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,7 +90,11 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.MAX_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.MIN_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+private const val deleteAnimDuration = 500
 
 @Composable
 fun SettingBeforePlaying(
@@ -461,17 +470,45 @@ private fun SettingListItems(
     settings: List<GameSetting>,
     removeAction: (GameSetting) -> Unit
 ) {
-    Column(
-        Modifier
-            .verticalScroll(rememberScrollState())
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-    ) {
-        settings.forEachIndexed { idx, setting ->
-            SettingListItem(setting, removeAction, Modifier.padding(vertical = 8.dp))
-            if (idx < settings.size - 1) HorizontalDivider()
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(settings.size) {
+        scope.launch {
+            listState.animateScrollToItem(settings.size - 1)
         }
-        Spacer(Modifier.height((56 + 16 * 2).dp))  // FAB
+    }
+    LazyColumn(
+        state = listState,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        itemsIndexed(
+            items = settings,
+            key = { _, setting -> setting.run { "${ category?.id }$difficulty$amount" } }
+        ) { idx, setting ->
+            Column(Modifier.animateContentSize(tween(deleteAnimDuration))) {
+                var deleting by remember { mutableStateOf(false) }
+                if (!deleting) {
+                    SettingListItem(
+                        setting = setting,
+                        removeAction = {
+                            scope.launch {
+                                deleting = true
+                                delay(deleteAnimDuration.toLong())
+                                removeAction(it)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (idx < settings.size - 1) {
+                        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    }
+                }
+            }
+
+        }
+        item {
+            Spacer(Modifier.height((56 + 16).dp))  // FAB
+        }
     }
 }
 

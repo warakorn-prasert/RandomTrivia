@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -39,6 +40,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,8 +62,12 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistorySort
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
+
+private const val deleteAnimDuration = 500
 
 data class GameDisplay(
     val day: Int,
@@ -196,6 +202,7 @@ private fun PastGames(
                 }
             }
 
+            val scope = rememberCoroutineScope()
             LazyColumn(
                 state = listState,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
@@ -210,16 +217,29 @@ private fun PastGames(
                             easing = LinearOutSlowInEasing
                         )
                     )
-                    Column(Modifier.alpha(alpha)) {
-                        if (idx > 0)
-                            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                        GameDisplayItem(
-                            game = game,
-                            inspectAction = { onInspect(game) },
-                            replayAction = { onReplay(game) },
-                            deleteAction = { deleteGame(game.detail.gameId) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    Column(
+                        Modifier
+                            .alpha(alpha)
+                            .animateContentSize(tween(deleteAnimDuration))
+                    ) {
+                        var deleting by remember { mutableStateOf(false) }
+                        if (!deleting) {
+                            GameDisplayItem(
+                                game = game,
+                                inspectAction = { onInspect(game) },
+                                replayAction = { onReplay(game) },
+                                deleteAction = {
+                                    scope.launch {
+                                        deleting = true
+                                        delay(deleteAnimDuration.toLong())
+                                        deleteGame(game.detail.gameId)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            if (idx < games.size - 1)
+                                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                        }
                     }
                 }
             }
