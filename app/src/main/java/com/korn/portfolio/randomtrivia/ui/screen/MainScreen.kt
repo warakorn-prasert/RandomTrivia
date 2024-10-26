@@ -50,7 +50,7 @@ fun MainScreen(
                         requestFullScreen()
                     }
                     AboutScreen(
-                        modifier = Modifier.padding(paddingValues),
+                        modifier = Modifier.systemBarsPadding(),
                         onBack = { navController.navigateUp() }
                     )
                 }
