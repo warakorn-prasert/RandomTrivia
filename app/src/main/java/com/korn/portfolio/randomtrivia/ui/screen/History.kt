@@ -2,17 +2,25 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -25,19 +33,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
@@ -52,8 +62,12 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistorySort
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
+
+private const val deleteAnimDuration = 500
 
 data class GameDisplay(
     val day: Int,
@@ -108,10 +122,10 @@ fun Game.asDisplay() =
 
 @Composable
 fun PastGames(
+    modifier: Modifier = Modifier,
     onReplay: (Game) -> Unit,
     onInspect: (Game) -> Unit,
-    navToAboutScreen: () -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     val viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
 
@@ -121,6 +135,7 @@ fun PastGames(
     val games by viewModel.games.collectAsState(emptyList())
 
     PastGames(
+        modifier = modifier,
         onReplay = onReplay,
         onInspect = onInspect,
         filter = filter, setFilter = viewModel::setFilter,
@@ -128,13 +143,14 @@ fun PastGames(
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
         games = games,
         deleteGame = viewModel::deleteGame,
-        navToAboutScreen = navToAboutScreen,
-        onShowSortMenuChange = onShowSortMenuChange
+        navToAboutScreen = navToAboutScreen
     )
 }
 
 @Composable
 private fun PastGames(
+    modifier: Modifier = Modifier,
+
     onReplay: (Game) -> Unit,
     onInspect: (Game) -> Unit,
 
@@ -145,11 +161,10 @@ private fun PastGames(
     games: List<Game>,
     deleteGame: (gameId: UUID) -> Unit,
 
-    navToAboutScreen: () -> Unit,
-
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             SearchableTopBar(
                 searchWord = "",
@@ -159,7 +174,8 @@ private fun PastGames(
                 title = "Random Trivia",
                 hideSearchButton = true,
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             HistoryFilterSortMenuBar(
@@ -168,23 +184,63 @@ private fun PastGames(
                 sort,
                 setSort,
                 reverseSort,
-                setReverseSort,
-                onShowSortMenuChange = onShowSortMenuChange
+                setReverseSort
             )
             if (games.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("No game played yet.")
                 }
-            LazyColumn {
+
+            val listState = rememberLazyListState()
+            LaunchedEffect(filter, reverseSort, sort) {
+                listState.animateScrollToItem(0)
+            }
+            val itemsInView by remember {
+                derivedStateOf {
+                    listState.layoutInfo
+                        .visibleItemsInfo.map { it.key as UUID }
+                }
+            }
+
+            val scope = rememberCoroutineScope()
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
                 itemsIndexed(games, key = { _, game -> game.detail.gameId }) { idx, game ->
-                    if (idx > 0)
-                        HorizontalDivider()
-                    GameDisplayItem(
-                        game = game,
-                        inspectAction = { onInspect(game) },
-                        replayAction = { onReplay(game) },
-                        deleteAction = { deleteGame(game.detail.gameId) }
+                    val isInView = game.detail.gameId in itemsInView
+                    val alpha by animateFloatAsState(
+                        targetValue = if (isInView) 1f else 0f,
+                        animationSpec = tween(
+                            durationMillis = 600,
+                            delayMillis = 50,
+                            easing = LinearOutSlowInEasing
+                        )
                     )
+                    Column(
+                        Modifier
+                            .alpha(alpha)
+                            .animateContentSize(tween(deleteAnimDuration))
+                    ) {
+                        var deleting by remember { mutableStateOf(false) }
+                        if (!deleting) {
+                            GameDisplayItem(
+                                game = game,
+                                inspectAction = { onInspect(game) },
+                                replayAction = { onReplay(game) },
+                                deleteAction = {
+                                    scope.launch {
+                                        deleting = true
+                                        delay(deleteAnimDuration.toLong())
+                                        deleteGame(game.detail.gameId)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            if (idx < games.size - 1)
+                                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                        }
+                    }
                 }
             }
         }
@@ -198,8 +254,7 @@ private fun HistoryFilterSortMenuBar(
     sort: HistorySort,
     onSortSelect: (HistorySort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit
+    onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
@@ -230,8 +285,7 @@ private fun HistoryFilterSortMenuBar(
                     )
                 }
             }
-        },
-        onShowSortMenuChange = onShowSortMenuChange
+        }
     )
 }
 
@@ -240,13 +294,11 @@ private fun GameDisplayItem(
     game: Game,
     inspectAction: () -> Unit,
     replayAction: () -> Unit,
-    deleteAction: () -> Unit
+    deleteAction: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
-            .minimumInteractiveComponentSize()
-            .fillMaxWidth()
-            .padding(start = 16.dp, top = 12.dp, end = 4.dp, bottom = 16.dp),
+        modifier = modifier,
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -272,7 +324,10 @@ private fun GameDisplayItem(
         }
         Column {
             var showMenu by remember { mutableStateOf(false) }
-            IconButton({ showMenu = true }) {
+            IconButton(
+                onClick = { showMenu = true },
+                modifier = Modifier.offset(x = 12.dp)
+            ) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = null,
@@ -281,8 +336,7 @@ private fun GameDisplayItem(
             if (showMenu) {
                 DropdownMenu(
                     expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    offset = DpOffset(x = (-12).dp, y = 0.dp)
+                    onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
                         text = { Text("Inspect") },

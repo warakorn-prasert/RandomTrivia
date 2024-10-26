@@ -38,6 +38,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.ui.screen.SettingDialog
@@ -174,7 +175,8 @@ private fun SearchableTopBarDefault(
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
+                        onDismissRequest = { menuExpanded = false },
+                        offset = DpOffset(x = (-12).dp, y = 0.dp)
                     ) {
                         DropdownMenuItem(
                             text = { Text("Setting") },

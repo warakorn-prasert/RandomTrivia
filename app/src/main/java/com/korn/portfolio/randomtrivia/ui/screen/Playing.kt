@@ -4,19 +4,25 @@ package com.korn.portfolio.randomtrivia.ui.screen
 
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -34,9 +40,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -56,6 +66,7 @@ import com.korn.portfolio.randomtrivia.ui.previewdata.getGameQuestion
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.PlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
+import kotlinx.coroutines.launch
 
 enum class AnswerButtonState(
     val containerColor: @Composable () -> Color,
@@ -78,12 +89,14 @@ enum class AnswerButtonState(
 
 @Composable
 fun Playing(
+    modifier: Modifier = Modifier,
     game: Game,
     onExit: () -> Unit,
     onSubmit: (Game) -> Unit
 ) {
     val viewModel: PlayingViewModel = viewModel(factory = PlayingViewModel.Factory(game))
     Playing(
+        modifier = modifier,
         exitAction = { viewModel.exit(onExit) },
         submitAction = { viewModel.submit(onSubmit) },
         currentIdx = viewModel.currentIdx,
@@ -98,6 +111,7 @@ fun Playing(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Playing(
+    modifier: Modifier = Modifier,
     exitAction: () -> Unit,
     submitAction: () -> Unit,
     currentIdx: Int,
@@ -108,12 +122,20 @@ private fun Playing(
     answerAction: (String) -> Unit
 ) {
     BackHandler(onBack = exitAction)
+    val pagerState = rememberPagerState(pageCount = { questions.size })
     ScrimmableBottomSheetScaffold(
+        modifier = modifier,
         sheetContent = { paddingValues, spaceUnderPeekContent ->
+            val scope = rememberCoroutineScope()
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = questions,
-                selectAction = selectQuestion,
+                selectAction = { idx ->
+                    selectQuestion(idx)
+                    scope.launch {
+                        pagerState.animateScrollToPage(idx)
+                    }
+                },
                 paddingValues = paddingValues,
                 spaceUnderQuestionIdx = spaceUnderPeekContent
             )
@@ -145,7 +167,6 @@ private fun Playing(
         Column(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -155,22 +176,34 @@ private fun Playing(
                 category = question.category,
                 difficulty = question.question.difficulty,
                 modifier = Modifier
-                    .padding(top = 8.dp, bottom = 16.dp)
+                    .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp)
                     .fillMaxWidth()
             )
-            QuestionStatementCard(
-                questionStatement = question.question.question,
-                modifier = Modifier
-                    .weight(1f)
-                    .wrapContentSize()
-            )
-            AnswerButtons(
-                userAnswer = question.answer.answer,
-                answers = question.question.run { incorrectAnswers + correctAnswer },
-                answerAction = answerAction,
-                modifier = Modifier
-                    .padding(vertical = 16.dp)
-            )
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                pageSpacing = 16.dp,
+                userScrollEnabled = false
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    QuestionStatementCard(
+                        questionStatement = question.question.question,
+                        modifier = Modifier
+                            .weight(1f)
+                            .wrapContentSize()
+                    )
+                    AnswerButtons(
+                        userAnswer = question.answer.answer,
+                        answers = question.question.run { incorrectAnswers + correctAnswer },
+                        answerAction = answerAction,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -254,27 +287,48 @@ private fun AnswerButtons(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.width(IntrinsicSize.Max),
+        modifier = modifier.width(IntrinsicSize.Max),  // to have same width
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
     ) {
         answers.forEachIndexed { idx, answer ->
             val state = AnswerButtonState.getState(userAnswer, answer)
             ElevatedCard(
                 onClick = { answerAction(answer) },
-                modifier = Modifier
-                    .fillMaxWidth(),
                 colors = CardDefaults.elevatedCardColors().copy(
-                    containerColor = state.containerColor(),
+                    containerColor =
+                        if (state == AnswerButtonState.ANSWERED) MaterialTheme.colorScheme.surface
+                        else state.containerColor(),
                     contentColor = state.contentColor()
                 )
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.Top
+                val fillColor = state.containerColor()
+                val fillPercent by animateFloatAsState(
+                    targetValue = if (state == AnswerButtonState.ANSWERED) 1f else 0f,
+                    animationSpec = tween(1000)
+                )
+                Box(
+                    Modifier
+                        .height(IntrinsicSize.Max)
+                        .fillMaxWidth()
+                        .drawBehind {
+                            drawRect(
+                                color = fillColor,
+                                size = Size(
+                                    width = this.size.width * fillPercent,
+                                    height = this.size.height
+                                )
+                            )
+                        }
                 ) {
-                    Text("${idx + 1}.")
-                    Text(answer)
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text("${idx + 1}.")
+                        Text(answer)
+                    }
                 }
             }
         }

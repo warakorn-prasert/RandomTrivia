@@ -2,6 +2,9 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,9 +13,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,15 +36,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
@@ -52,12 +63,15 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryDisplay
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun Categories(
+    modifier: Modifier = Modifier,
+    fetchStatus: StateFlow<FetchStatus>,
+    fetchCategories: () -> Unit,
     navToQuestions: (categoryId: Int) -> Unit,
-    navToAboutScreen: () -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
     val searchWord by viewModel.searchWord.collectAsState()
@@ -66,21 +80,26 @@ fun Categories(
     val filter by viewModel.filter.collectAsState()
     val sort by viewModel.sort.collectAsState()
     val reverseSort by viewModel.reverseSort.collectAsState()
+
+    val fetchStatusValue by fetchStatus.collectAsState()
+
     Categories(
+        modifier = modifier,
         searchWord = searchWord, setSearchWord = viewModel::setSearchWord,
         categories = categories,
         filter = filter, setFilter = viewModel::setFilter,
         sort = sort, setSort = viewModel::setSort,
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
-        fetchStatus = viewModel.fetchStatus, fetchCategories = viewModel::fetchCategories,
+        fetchStatus = fetchStatusValue, fetchCategories = fetchCategories,
         navToQuestions = navToQuestions,
-        navToAboutScreen = navToAboutScreen,
-        onShowSortMenuChange = onShowSortMenuChange
+        navToAboutScreen = navToAboutScreen
     )
 }
 
 @Composable
 private fun Categories(
+    modifier: Modifier = Modifier,
+
     searchWord: String,
     setSearchWord: (String) -> Unit,
 
@@ -96,11 +115,10 @@ private fun Categories(
     fetchCategories: () -> Unit,
 
     navToQuestions: (categoryId: Int) -> Unit,
-    navToAboutScreen: () -> Unit,
-
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             SearchableTopBar(
                 searchWord = searchWord,
@@ -108,19 +126,25 @@ private fun Categories(
                 hint = "Search for categories",
                 navToAboutScreen = navToAboutScreen
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             val listState = rememberLazyListState()
             LaunchedEffect(searchWord, filter, reverseSort, sort) {
-                listState.scrollToItem(0)
+                listState.animateScrollToItem(0)
+            }
+            val itemsInView by remember {
+                derivedStateOf {
+                    listState.layoutInfo
+                        .visibleItemsInfo.map { it.key as Int }
+                }
             }
 
             CategoriesFilterSortMenuBar(
                 filter, setFilter,
                 sort, setSort,
-                reverseSort, setReverseSort,
-                onShowSortMenuChange = onShowSortMenuChange
+                reverseSort, setReverseSort
             )
             FetchStatusBar(
                 fetchStatus,
@@ -130,23 +154,41 @@ private fun Categories(
                 Box(Modifier.fillMaxSize().padding(horizontal = 16.dp), Alignment.Center) {
                     Text("No category available to play.")
                 }
+            val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+            val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val bottomBarPadding = 80.dp
             LazyColumn(
                 state = listState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    top = 8.dp,
+                    end = 16.dp,
+                    bottom = (imePadding - navBarPadding - bottomBarPadding + 8.dp).coerceAtLeast(8.dp)
+                ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(categories, key = { it.id }) { (name, total, totalPlayed, id, isPlayed) ->
-                    CategoryCard(
-                        categoryName = name,
-                        totalQuestions = total,
-                        playedQuestions = totalPlayed,
-                        isPlayed = isPlayed,
-                        onClick = {
-                            //viewModel.saveCategoryId(id)
-                            navToQuestions(id)
-                        },
-                        modifier = Modifier.fillMaxWidth()
+                    val isInView = id in itemsInView
+                    val alpha by animateFloatAsState(
+                        targetValue = if (isInView) 1f else 0f,
+                        animationSpec = tween(
+                            durationMillis = 600,
+                            delayMillis = 50,
+                            easing = LinearOutSlowInEasing
+                        )
                     )
+                    Box(Modifier.alpha(alpha)) {
+                        CategoryCard(
+                            categoryName = name,
+                            totalQuestions = total,
+                            playedQuestions = totalPlayed,
+                            isPlayed = isPlayed,
+                            onClick = {
+                                navToQuestions(id)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }
@@ -160,8 +202,7 @@ private fun CategoriesFilterSortMenuBar(
     sort: CategorySort,
     onSortSelect: (CategorySort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
@@ -192,8 +233,7 @@ private fun CategoriesFilterSortMenuBar(
                     )
                 }
             }
-        },
-        onShowSortMenuChange = onShowSortMenuChange,
+        }
     )
 }
 

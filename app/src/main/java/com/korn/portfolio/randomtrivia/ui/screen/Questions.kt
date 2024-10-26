@@ -3,14 +3,22 @@
 package com.korn.portfolio.randomtrivia.ui.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,14 +31,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
@@ -88,32 +99,33 @@ private fun List<Question>.process(
 
 @Composable
 fun Questions(
+    modifier: Modifier = Modifier,
     categoryId: Int,
     onBack: () -> Unit,
-    navToAboutScreen: () -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
     Questions(
+        modifier = modifier,
         categoryName = viewModel.categoryName,
         questions = viewModel.questions,
         onBack = onBack,
-        navToAboutScreen = navToAboutScreen,
-        onShowSortMenuChange = onShowSortMenuChange
+        navToAboutScreen = navToAboutScreen
     )
 }
 
 @Composable
 private fun Questions(
+    modifier: Modifier = Modifier,
     categoryName: String,
     questions: List<Question>,
     onBack: () -> Unit,
-    navToAboutScreen: () -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    navToAboutScreen: () -> Unit
 ) {
     var searchWord by remember { mutableStateOf("") }
     BackHandler(onBack = onBack)
     Scaffold(
+        modifier = modifier,
         topBar = {
             SearchableTopBarWithBackButton(
                 searchWord = searchWord,
@@ -123,7 +135,8 @@ private fun Questions(
                 title = categoryName,
                 onBackButtonClick = onBack
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             var filter by remember { mutableStateOf(QuestionFilter.ALL) }
@@ -132,25 +145,49 @@ private fun Questions(
 
             val listState = rememberLazyListState()
             LaunchedEffect(searchWord, filter, sort, reverseSort) {
-                listState.scrollToItem(0)
+                listState.animateScrollToItem(0)
+            }
+            val itemsInView by remember {
+                derivedStateOf {
+                    listState.layoutInfo
+                        .visibleItemsInfo.map { it.key as UUID }
+                }
             }
 
             QuestionsFilterSortMenuBar(
                 filter, { filter = it },
                 sort, { sort = it },
-                reverseSort, { reverseSort = it },
-                onShowSortMenuChange = onShowSortMenuChange
+                reverseSort, { reverseSort = it }
             )
+            val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+            val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val bottomBarPadding = 80.dp
             LazyColumn(
                 state = listState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    top = 8.dp,
+                    end = 16.dp,
+                    bottom = (imePadding - navBarPadding - bottomBarPadding + 8.dp).coerceAtLeast(8.dp)
+                ),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(
                     items = questions.process(filter, searchWord, sort, reverseSort),
                     key = { it.id }
                 ) {
-                    QuestionCard(it)
+                    val isInView = it.id in itemsInView
+                    val alpha by animateFloatAsState(
+                        targetValue = if (isInView) 1f else 0f,
+                        animationSpec = tween(
+                            durationMillis = 600,
+                            delayMillis = 50,
+                            easing = LinearOutSlowInEasing
+                        )
+                    )
+                    Box(Modifier.alpha(alpha)) {
+                        QuestionCard(it)
+                    }
                 }
             }
         }
@@ -164,8 +201,7 @@ private fun QuestionsFilterSortMenuBar(
     sort: QuestionSort,
     onSortSelect: (QuestionSort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit,
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
@@ -196,8 +232,7 @@ private fun QuestionsFilterSortMenuBar(
                     )
                 }
             }
-        },
-        onShowSortMenuChange = onShowSortMenuChange
+        }
     )
 }
 
@@ -205,9 +240,7 @@ private fun QuestionsFilterSortMenuBar(
 private fun QuestionCard(question: Question, modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     Column(
-        modifier = modifier
-            .padding(vertical = 8.dp)
-            .clickable { expanded = !expanded },
+        modifier = modifier.clickable { expanded = !expanded },
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

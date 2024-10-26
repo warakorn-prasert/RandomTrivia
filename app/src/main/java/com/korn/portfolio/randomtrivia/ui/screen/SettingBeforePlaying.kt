@@ -2,24 +2,30 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -54,6 +60,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,9 +90,17 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.MAX_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.MIN_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+private const val deleteAnimDuration = 500
 
 @Composable
 fun SettingBeforePlaying(
+    modifier: Modifier = Modifier,
+    categoriesFetchStatus: StateFlow<FetchStatus>,
+    fetchCategories: () -> Unit,
     onSubmit: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit
 ) {
     val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
@@ -93,10 +108,10 @@ fun SettingBeforePlaying(
     val canStartGame by viewModel.canStartGame.collectAsState(false)
     val onlineMode by viewModel.onlineMode.collectAsState()
 
-    val canAddMoreSetting by viewModel.canAddMoreSetting.collectAsState(false)
+    val canAddMoreSetting by viewModel.canAddMoreSetting(categoriesFetchStatus).collectAsState(false)
     val settings by viewModel.settings.collectAsState()
 
-    val fetchStatus by viewModel.categoriesFetchStatus.collectAsState()
+    val categoriesFetchStatusValue by categoriesFetchStatus.collectAsState()
     val questionCountFetchStatus by viewModel.questionCountFetchStatus.collectAsState()
 
     val category by viewModel.category.collectAsState()
@@ -107,15 +122,18 @@ fun SettingBeforePlaying(
     val maxAmount by viewModel.maxAmount.collectAsState(MAX_AMOUNT)
 
     SettingBeforePlaying(
+        modifier = modifier,
         submitAction = { viewModel.submit(onSubmit) },
         canStartGame = canStartGame,
         canAddMoreSetting = canAddMoreSetting,
         settings = settings,
         removeSetting = viewModel::removeSetting,
         onlineMode = onlineMode,
-        changeOnlineMode = viewModel::changeOnlineMode,
-        fetchStatus = fetchStatus,
-        fetchCategories = viewModel::fetchCategories,
+        changeOnlineMode = {
+            viewModel.changeOnlineMode(it, categoriesFetchStatusValue, fetchCategories)
+        },
+        fetchStatus = categoriesFetchStatusValue,
+        fetchCategories = fetchCategories,
         questionCountFetchStatus = questionCountFetchStatus,
         fetchQuestionCount = viewModel::fetchQuestionCountIfNeedTo,
         addSetting = viewModel::addSetting,
@@ -133,6 +151,7 @@ fun SettingBeforePlaying(
 
 @Composable
 fun SettingBeforePlaying(
+    modifier: Modifier = Modifier,
     submitAction: () -> Unit,
     canStartGame: Boolean,
     onlineMode: Boolean,
@@ -157,6 +176,7 @@ fun SettingBeforePlaying(
 ) {
     var showDialog by remember { mutableStateOf(false) }
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopBarWithStartButton(
                 enabled = canStartGame,
@@ -168,7 +188,8 @@ fun SettingBeforePlaying(
                 enabled = canAddMoreSetting,
                 onClick = { showDialog = true }
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             OnlineModeToggleMenu(
@@ -192,10 +213,11 @@ fun SettingBeforePlaying(
                 selectDifficulty = selectDifficulty,
                 selectAmount = selectAmount
             )
-            FetchStatusBar(
-                fetchStatus = fetchStatus,
-                retryAction = fetchCategories
-            )
+            if (onlineMode)
+                FetchStatusBar(
+                    fetchStatus = fetchStatus,
+                    retryAction = fetchCategories
+                )
             if (settings.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("Add game setting.")
@@ -448,17 +470,45 @@ private fun SettingListItems(
     settings: List<GameSetting>,
     removeAction: (GameSetting) -> Unit
 ) {
-    Column(
-        Modifier
-            .verticalScroll(rememberScrollState())
-            .fillMaxSize()
-            .padding(start = 16.dp, end = 8.dp)
-    ) {
-        settings.forEachIndexed { idx, setting ->
-            SettingListItem(setting, removeAction, Modifier.padding(vertical = 8.dp))
-            if (idx < settings.size - 1) HorizontalDivider()
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(settings.size) {
+        scope.launch {
+            listState.animateScrollToItem(settings.size - 1)
         }
-        Spacer(Modifier.height((56 + 16 * 2).dp))  // FAB
+    }
+    LazyColumn(
+        state = listState,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        itemsIndexed(
+            items = settings,
+            key = { _, setting -> setting.run { "${ category?.id }$difficulty$amount" } }
+        ) { idx, setting ->
+            Column(Modifier.animateContentSize(tween(deleteAnimDuration))) {
+                var deleting by remember { mutableStateOf(false) }
+                if (!deleting) {
+                    SettingListItem(
+                        setting = setting,
+                        removeAction = {
+                            scope.launch {
+                                deleting = true
+                                delay(deleteAnimDuration.toLong())
+                                removeAction(it)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (idx < settings.size - 1) {
+                        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    }
+                }
+            }
+
+        }
+        item {
+            Spacer(Modifier.height((56 + 16).dp))  // FAB
+        }
     }
 }
 
@@ -473,7 +523,10 @@ private fun SettingListItem(
             Text(setting.category.displayName, fontWeight = FontWeight.Bold)
             Text("${setting.difficulty.displayName}, ${setting.amount}")
         }
-        IconButton({ removeAction(setting) }) {
+        IconButton(
+            onClick = { removeAction(setting) },
+            modifier = Modifier.offset(x = 12.dp)
+        ) {
             Icon(Icons.Default.Close, "Button to remove game setting item.")
         }
     }

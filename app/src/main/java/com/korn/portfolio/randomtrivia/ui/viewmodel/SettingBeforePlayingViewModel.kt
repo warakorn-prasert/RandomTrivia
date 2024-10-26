@@ -29,29 +29,10 @@ const val MAX_AMOUNT = 50
 const val MIN_AMOUNT = 1
 
 data class GameSetting(
-    val category: Category?,  // null = random  // TODO : Change to categoryId
+    val category: Category?,  // null = random
     val difficulty: Difficulty?,  // null = random
     val amount: Int
-) {
-    // TODO (maybe) : Remove downloadable property from Category to use default equals()
-    // Ignore category name and downloadable
-    override fun equals(other: Any?): Boolean {
-        return if (other !is GameSetting) super.equals(other)
-        else {
-            val cat = category?.id == other.category?.id
-            val diff = difficulty == other.difficulty
-            val amount = amount == other.amount
-            cat && diff && amount
-        }
-    }
-
-    override fun hashCode(): Int {
-        var result = category?.id.hashCode()
-        result = 31 * result + (difficulty?.hashCode() ?: 0)
-        result = 31 * result + amount
-        return result
-    }
-}
+)
 
 private val allDifficulties: List<Difficulty?> = listOf(null) + Difficulty.entries
 
@@ -68,13 +49,11 @@ private val Pair<Category, QuestionCount>?.difficultiesWithQuestions: List<Diffi
     get() = if (this == null) allDifficulties else second.difficultiesWithQuestions
 
 private interface SettingBeforePlaying {
-    val categoriesFetchStatus: StateFlow<FetchStatus>
     val questionCountFetchStatus: StateFlow<FetchStatus>
-    fun fetchCategories()
     fun fetchQuestionCountIfNeedTo()
 
     val settings: StateFlow<List<GameSetting>>
-    val canAddMoreSetting: Flow<Boolean>
+    fun canAddMoreSetting(categoriesFetchStatus: StateFlow<FetchStatus>): Flow<Boolean>
     fun addSetting()
     fun removeSetting(setting: GameSetting)
     fun submit(action: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit)
@@ -91,7 +70,7 @@ private interface SettingBeforePlaying {
 
     val canStartGame: Flow<Boolean>
     val onlineMode: StateFlow<Boolean>
-    fun changeOnlineMode(value: Boolean)
+    fun changeOnlineMode(online: Boolean, categoriesFetchStatus: FetchStatus, fetchCategories: () -> Unit)
 }
 
 class SettingBeforePlayingViewModel(
@@ -101,42 +80,12 @@ class SettingBeforePlayingViewModel(
      * Part 1/4 : Fetching categories and question counts
      */
 
-    private var categoriesFetchJob: Job = Job().apply { complete() }
     private var questionCountFetchJob: Job = Job().apply { complete() }
     private class CancellationToRestartException : CancellationException()
     private class CancellationToGoOfflineException : CancellationException()
 
-    override val categoriesFetchStatus: StateFlow<FetchStatus> get() = mutableCategoriesFetchStatus
-    private val mutableCategoriesFetchStatus = MutableStateFlow<FetchStatus>(FetchStatus.Success)
-
     override val questionCountFetchStatus: StateFlow<FetchStatus> get() = mutableQuestionCountFetchStatus
     private val mutableQuestionCountFetchStatus = MutableStateFlow<FetchStatus>(FetchStatus.Success)
-
-    override fun fetchCategories() {
-        viewModelScope.launch {
-            if (categoriesFetchJob.isActive) {
-                categoriesFetchJob.cancel(CancellationToRestartException())
-                categoriesFetchJob.join()
-            }
-            categoriesFetchJob = viewModelScope.launch {
-                mutableCategoriesFetchStatus.emit(
-                    try {
-                        mutableCategoriesFetchStatus.emit(FetchStatus.Loading)
-                        mutableSettings.emit(emptyList())
-                        delay(1000L)  // make progress indicator not look flickering
-                        triviaRepository.fetchCategories()
-                        FetchStatus.Success
-                    } catch (_: CancellationToRestartException) {
-                        FetchStatus.Loading
-                    } catch (_: CancellationToGoOfflineException) {
-                        FetchStatus.Success
-                    } catch (_: Exception) {  // TODO : Handle network exceptions.
-                        FetchStatus.Error("Failed to load.")
-                    }
-                )
-            }
-        }
-    }
 
     override fun fetchQuestionCountIfNeedTo() {
         viewModelScope.launch {
@@ -184,9 +133,12 @@ class SettingBeforePlayingViewModel(
     override val settings: StateFlow<List<GameSetting>> get() = mutableSettings
     private val mutableSettings = MutableStateFlow(emptyList<GameSetting>())
 
-    override val canAddMoreSetting: Flow<Boolean>
-        get() = combine(categories, categoriesFetchStatus) { cats, fet, ->
-            fet == FetchStatus.Success && cats.isNotEmpty()
+    override fun canAddMoreSetting(categoriesFetchStatus: StateFlow<FetchStatus>) =
+        combine(categories, categoriesFetchStatus) { cats, fet, ->
+            if (onlineMode.value)
+                fet == FetchStatus.Success && cats.isNotEmpty()
+            else
+                cats.isNotEmpty()
         }
 
     override fun addSetting() {
@@ -323,24 +275,17 @@ class SettingBeforePlayingViewModel(
     override val onlineMode: StateFlow<Boolean> get() = mutableOnlineMode
     private val mutableOnlineMode = MutableStateFlow(!triviaRepository.remoteCategories.value.isNullOrEmpty())
 
-    override fun changeOnlineMode(value: Boolean) {
+    override fun changeOnlineMode(
+        online: Boolean,
+        categoriesFetchStatus: FetchStatus,
+        fetchCategories: () -> Unit
+    ) {
         viewModelScope.launch {
             // Change mode
-            mutableOnlineMode.emit(value)
+            mutableOnlineMode.emit(online)
             // Clear settings
             mutableSettings.emit(emptyList())
-            // Fetch categories if needed
-            if (!value) {
-                categoriesFetchJob.cancel(CancellationToGoOfflineException())
-                questionCountFetchJob.cancel(CancellationToGoOfflineException())
-                categoriesFetchJob.join()
-                questionCountFetchJob.join()
-                // In case of switching from failed fetch to offline.
-                if (categoriesFetchStatus.value !is FetchStatus.Error) {
-                    mutableCategoriesFetchStatus.emit(FetchStatus.Success)
-                }
-            } else if (triviaRepository.remoteCategories.asFlow().first().isEmpty()) {
-                // Fetch and wait until finish
+            if (online && categoriesFetchStatus is FetchStatus.Error) {
                 fetchCategories()
             }
         }

@@ -3,6 +3,11 @@
 package com.korn.portfolio.randomtrivia.ui.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,8 +31,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +54,7 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewMode
 
 @Composable
 fun LoadingBeforePlaying(
+    modifier: Modifier = Modifier,
     onlineMode: Boolean,
     settings: List<GameSetting>,
     onCancel: () -> Unit,
@@ -57,6 +67,7 @@ fun LoadingBeforePlaying(
     )
     val fetchStatus by viewModel.fetchStatus.collectAsState()
     LoadingBeforePlaying(
+        modifier = modifier,
         cancelAction = { viewModel.cancel(onCancel) },
         progress = viewModel.progress,
         fetchStatus = fetchStatus,
@@ -66,7 +77,8 @@ fun LoadingBeforePlaying(
 }
 
 @Composable
-fun LoadingBeforePlaying(
+private fun LoadingBeforePlaying(
+    modifier: Modifier = Modifier,
     cancelAction: () -> Unit,
     progress: Float,
     fetchStatus: GameFetchStatus,
@@ -74,11 +86,7 @@ fun LoadingBeforePlaying(
     fetchAction: () -> Unit
 ) {
     BackHandler(onBack = cancelAction)
-    Column(
-        Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.statusBars)
-    ) {
+    Column(modifier) {
         Box(
             modifier = Modifier
                 .padding(start = 4.dp)
@@ -97,10 +105,25 @@ fun LoadingBeforePlaying(
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            val infiniteTransition = rememberInfiniteTransition()
+            val degree by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(
+                        durationMillis = 1000,
+                        delayMillis = 300
+                    ),
+                    repeatMode = RepeatMode.Restart
+                )
+            )
+            var displayDegree by remember { mutableFloatStateOf(0f) }
+            if (progress < 1f || progress == 1f && degree != 0f)
+                displayDegree = degree
             Icon(
                 painter = painterResource(R.drawable.ic_android),
                 contentDescription = "App icon",
-                modifier = Modifier.size(108.dp),
+                modifier = Modifier.size(108.dp).rotate(displayDegree),
                 tint = MaterialTheme.colorScheme.primary
             )
             M3ProgressBar(

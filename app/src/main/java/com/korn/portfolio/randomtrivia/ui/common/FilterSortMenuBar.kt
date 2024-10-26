@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,29 +41,15 @@ fun <T> FilterSortMenuBar(
     filters: Collection<T>,
     onFilterSelect: (T) -> Unit,
     filterToString: (T) -> String = { it.toString() },
-    sortBottomSheetContent: @Composable ColumnScope.() -> Unit,
-
-    /*
-     Fixes bug :
-        ThemeViewModel declared inside FilterSortMenuBar does not trigger
-        flow when using ThemeViewModel.enableCustomNavBarColor.
-        (Might be because of ModalBottomSheet)
-     TODO : Change system bar color from inside FilterSortMenuBar
-    */
-    onShowSortMenuChange: (Boolean) -> Unit = {}
+    sortBottomSheetContent: @Composable ColumnScope.() -> Unit
 ) {
     Row (
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 8.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         var showSortMenu by remember { mutableStateOf(false) }
-
-        LaunchedEffect(showSortMenu) {
-            onShowSortMenuChange(showSortMenu)
-        }
-
         IconChip(
             selected = false,
             onClick = { showSortMenu = true },
@@ -89,13 +77,16 @@ fun <T> FilterSortMenuBar(
             }
         }
         if (showSortMenu) {
+            val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
             ModalBottomSheet(
                 onDismissRequest = { showSortMenu = false },
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                windowInsets = WindowInsets(0, 0, 0, 0)
             ) {
                 Column(
                     Modifier
                         .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                        .padding(navBarPadding)
                 ) {
                     sortBottomSheetContent()
                 }
