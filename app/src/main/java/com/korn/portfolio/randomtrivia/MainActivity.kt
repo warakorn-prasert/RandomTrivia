@@ -7,35 +7,25 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.korn.portfolio.randomtrivia.ui.screen.MainScreen
+import com.korn.portfolio.randomtrivia.ui.screen.Splash
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
+import com.korn.portfolio.randomtrivia.ui.viewmodel.MainViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Set splash screen timeout
-        val durationSecond = 3
-        var count = 0
-        lifecycleScope.launch {
-            (1..durationSecond).asFlow().collect {
-                delay(1000)
-                count = it
-            }
-        }
-        splashScreen.setKeepOnScreenCondition {
-            count < durationSecond
-        }
+        val mainViewModel: MainViewModel by viewModels(factoryProducer = { MainViewModel.Factory })
 
         // Enable edgeToEdge and make detectDarkMode follows custom dark mode
         val themeViewModel: ThemeViewModel by viewModels()
@@ -58,7 +48,17 @@ class MainActivity : ComponentActivity() {
         setContent {
             RandomTriviaTheme {
                 Surface(Modifier.fillMaxSize()) {
-                    MainScreen(Modifier.fillMaxSize())
+                    MainScreen(
+                        mainViewModel = mainViewModel,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    AnimatedVisibility(mainViewModel.showSplashScreen) {
+                        Splash(
+                            onDone = {
+                                mainViewModel.showSplashScreen = false
+                            }
+                        )
+                    }
                 }
             }
         }

@@ -13,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
@@ -29,7 +28,10 @@ import com.korn.portfolio.randomtrivia.ui.navigation.Play
 import com.korn.portfolio.randomtrivia.ui.viewmodel.MainViewModel
 
 @Composable
-fun MainScreen(modifier: Modifier = Modifier) {
+fun MainScreen(
+    mainViewModel: MainViewModel,
+    modifier: Modifier = Modifier
+) {
     var showBottomBar by remember { mutableStateOf(true) }
     fun requestFullScreen() { showBottomBar = false }
     fun dismissFullScreen() { showBottomBar = true }
@@ -41,7 +43,6 @@ fun MainScreen(modifier: Modifier = Modifier) {
         bottomBar = { if (showBottomBar) BottomBar(navController) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
-        val mainViewModel: MainViewModel = viewModel(factory = MainViewModel.Factory)
         NavHost(navController = navController, startDestination = Categories) {
             navigation<Categories>(startDestination = Categories.Default) {
                 composable<About> {

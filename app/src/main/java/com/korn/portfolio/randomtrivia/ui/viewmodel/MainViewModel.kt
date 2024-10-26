@@ -1,5 +1,8 @@
 package com.korn.portfolio.randomtrivia.ui.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -18,6 +21,8 @@ import kotlinx.coroutines.launch
 import java.util.Date
 
 class MainViewModel(private val triviaRepository: TriviaRepository) : ViewModel() {
+    var showSplashScreen by mutableStateOf(true)
+
     val categoriesFetchStatus: StateFlow<FetchStatus> get() = mutableCategoriesFetchStatus
     private val mutableCategoriesFetchStatus = MutableStateFlow<FetchStatus>(FetchStatus.Success)
 
