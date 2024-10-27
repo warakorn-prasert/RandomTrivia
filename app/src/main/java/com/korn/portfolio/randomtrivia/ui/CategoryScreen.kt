@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -180,8 +179,7 @@ private fun CategoryCard(
     val title = category.category.name
     val hint = with(category) { "${easy + medium + hard} questions" }
     val bullets = with(category) { listOf(
-        "id : ${this.category.id}", "$easy Easy", "$medium Medium", "$hard Hard",
-        "Downloadable : ${this.category.downloadable}"
+        "id : ${this.category.id}", "$easy Easy", "$medium Medium", "$hard Hard"
     ) }
     Card(modifier
         .width(IntrinsicSize.Max)
@@ -259,8 +257,7 @@ private fun CategoryInsertDialog(expanded: MutableState<Boolean>, insertAction: 
                 Text("New Category", fontWeight = FontWeight.Bold)
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 val name = remember { mutableStateOf("") }
-                val downloadable = remember { mutableStateOf(false) }
-                CategoryEditor(name, downloadable)
+                CategoryEditor(name)
                 Row {
                     IconButton(
                         onClick = { expanded.value = false },
@@ -270,7 +267,7 @@ private fun CategoryInsertDialog(expanded: MutableState<Boolean>, insertAction: 
                     IconButton(
                         onClick = {
                             insertAction(
-                                Category(name.value, downloadable.value, Int.MIN_VALUE)
+                                Category(name.value, Int.MIN_VALUE)
                             )
                             expanded.value = false
                         },
@@ -302,8 +299,7 @@ private fun CategoryUpdateDialog(
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
                 Text("id : ${category.id}")
                 val name = remember { mutableStateOf(category.name) }
-                val downloadable = remember { mutableStateOf(category.downloadable) }
-                CategoryEditor(name, downloadable)
+                CategoryEditor(name)
                 Row {
                     IconButton(
                         onClick = { expanded.value = false },
@@ -315,7 +311,6 @@ private fun CategoryUpdateDialog(
                             updateAction(
                                 Category(
                                     name.value,
-                                    downloadable.value,
                                     category.id
                                 )
                             )
@@ -338,16 +333,9 @@ private fun CategoryUpdateDialogPreview() {
 }
 
 @Composable
-private fun CategoryEditor(name: MutableState<String>, downloadable: MutableState<Boolean>) {
-    Column {
-        PlainTextField(
-            name.value, { name.value = it },
-            leadingIcon = { Text("Name") },
-        )
-        Row(Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Downloadable")
-            Spacer(Modifier.width(4.dp))
-            Checkbox(downloadable.value, { downloadable.value = it })
-        }
-    }
+private fun CategoryEditor(name: MutableState<String>) {
+    PlainTextField(
+        name.value, { name.value = it },
+        leadingIcon = { Text("Name") },
+    )
 }

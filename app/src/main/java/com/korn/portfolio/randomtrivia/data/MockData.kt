@@ -12,9 +12,9 @@ import java.util.Date
 import java.util.UUID
 
 val mockCategory1: Category
-    get() = Category("Category 1", false, 1)
+    get() = Category("Category 1", 1)
 val mockCategory2: Category
-    get() = Category("Category 2", true, 2)
+    get() = Category("Category 2", 2)
 
 val mockQuestion11: Question
     get() = Question(
