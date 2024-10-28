@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.UUID
+import kotlin.time.measureTime
 
 /*
     Note: ('updates by' ~ '--')
@@ -35,16 +36,17 @@ import java.util.UUID
         - local -- questions in local database
  */
 
-// TODO (Later) : Include `option.type` in search
-// TODO (Later) : Test to list every possible exceptions
-
 interface TriviaRepository {
     val remoteCategories: LiveData<List<Pair<Category, QuestionCount>>>
     val localCategories: Flow<List<Pair<Category, QuestionCount>>>
     val savedGames: Flow<List<Game>>
     suspend fun fetchCategories()
     suspend fun fetchQuestionCount(categoryId: Int)
-    suspend fun fetchNewGame(options: List<GameOption>, offline: Boolean = false, processLog: suspend (currentIdx: Int) -> Unit): Pair<ResponseCode, Game>
+    suspend fun fetchNewGame(
+        options: List<GameOption>,
+        offline: Boolean = false,
+        processLog: suspend (currentIdx: Int) -> Unit
+    ): Pair<ResponseCode, Game>
     suspend fun saveGame(game: Game)
     suspend fun deleteLocalCategories(vararg id: Int)
     suspend fun deleteAllLocalCategories()
@@ -159,36 +161,39 @@ class TriviaRepositoryImpl(
         // get questions
         options.forEachIndexed { idx, option ->
             withContext(Dispatchers.Main) { processLog(idx) }
-            val (respCode2, fetchedQuestions) = triviaApiClient.getQuestions(
-                amount = option.amount,
-                categoryId = option.category?.id,
-                difficulty = option.difficulty,
-                type = option.type,
-                token = token
-            )
-            if (respCode2 != ResponseCode.SUCCESS) return respCode2 to game
-            questions.addAll(fetchedQuestions.map { question ->
-                // sync category and question with local by id
-                // (always use properties from `local<name>` variables)
-                val localCategory = question.categoryId?.let { categoryDao.getOneBy(it) }
-                val localQuestion = questionDao.getOneBy(question.question)
-                val questionId = localQuestion?.id ?: question.id
-                GameQuestion(
-                    question = question.copy(
-                        categoryId = localCategory?.id,
-                        id = questionId
-                    ),
-                    answer = GameAnswer(
-                        gameId = game.detail.gameId,
-                        questionId = questionId,
-                        answer = "",
-                        categoryId = localCategory?.id
-                    ),
-                    category = localCategory
+            measureTime {
+                val (respCode2, fetchedQuestions) = triviaApiClient.getQuestions(
+                    amount = option.amount,
+                    categoryId = option.category?.id,
+                    difficulty = option.difficulty,
+                    type = option.type,
+                    token = token
                 )
-            })
-            delay(6000)  // rate limit = 1 query per 5 seconds
-            // TODO : Use MeasureTime to calculate proper delay
+                if (respCode2 != ResponseCode.SUCCESS) return respCode2 to game
+                questions.addAll(fetchedQuestions.map { question ->
+                    // sync category and question with local by id
+                    // (always use properties from `local<name>` variables)
+                    val localCategory = question.categoryId?.let { categoryDao.getOneBy(it) }
+                    val localQuestion = questionDao.getOneBy(question.question)
+                    val questionId = localQuestion?.id ?: question.id
+                    GameQuestion(
+                        question = question.copy(
+                            categoryId = localCategory?.id,
+                            id = questionId
+                        ),
+                        answer = GameAnswer(
+                            gameId = game.detail.gameId,
+                            questionId = questionId,
+                            answer = "",
+                            categoryId = localCategory?.id
+                        ),
+                        category = localCategory
+                    )
+                })
+            }.let { duration ->
+                // delay due to rate limit (1 query per 5 seconds)
+                delay((6000 - duration.inWholeMilliseconds).coerceAtLeast(0))
+            }
         }
         return ResponseCode.SUCCESS to game
     }
