@@ -35,9 +35,6 @@ import java.util.UUID
         - local -- questions in local database
  */
 
-// TODO (Later) : Include `option.type` in search
-// TODO (Later) : Test to list every possible exceptions
-
 interface TriviaRepository {
     val remoteCategories: LiveData<List<Pair<Category, QuestionCount>>>
     val localCategories: Flow<List<Pair<Category, QuestionCount>>>
