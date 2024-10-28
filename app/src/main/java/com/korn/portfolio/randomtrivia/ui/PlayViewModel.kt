@@ -1,10 +1,7 @@
 package com.korn.portfolio.randomtrivia.ui
 
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -76,7 +73,7 @@ class PlayViewModel(private val triviaRepository: TriviaRepository) : ViewModel(
             uiState.value = NetworkUiState.Loading
             delay(fakeLoadingTimeMillis)
             uiState.value = try {
-                val (respCode, newGame) = triviaRepository.fetchNewGame(options, offline)
+                val (respCode, newGame) = triviaRepository.fetchNewGame(options, offline, {})
                 if (respCode == ResponseCode.SUCCESS) {
                     game.value = newGame
                     NetworkUiState.Success

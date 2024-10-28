@@ -197,7 +197,6 @@ private fun RemoteQuestionCountDialog(
             Text("- Easy : ${questionCount.easy}")
             Text("- Medium : ${questionCount.medium}")
             Text("- Hard : ${questionCount.hard}")
-            Text("- Downloadable : ${category.downloadable}")
 
             if (uiState.value !is NetworkUiState.Loading) {
                 IconButton(
@@ -262,7 +261,6 @@ private fun LocalQuestionCountDialog(
             Text("- Easy : ${questionCount.easy}")
             Text("- Medium : ${questionCount.medium}")
             Text("- Hard : ${questionCount.hard}")
-            Text("- Downloadable : ${category.downloadable}")
             IconButton(
                 onClick = {
                     deleteLocalCategory(category.id)
@@ -327,7 +325,7 @@ private fun DialogCard(
 private fun RemoteQuestionCountDialogPreview() {
     RemoteQuestionCountDialog(
         show = mutableStateOf(true),
-        category = Category(name = "Category Name", downloadable = true, id = 9),
+        category = Category(name = "Category Name", id = 9),
         questionCount = QuestionCount(10, 5, 3, 2),
         fetchQuestionCount = { _, _ -> }
     )
@@ -339,7 +337,7 @@ private fun RemoteQuestionCountDialogPreview() {
 private fun LocalQuestionCountDialogPreview() {
     LocalQuestionCountDialog(
         show = mutableStateOf(true),
-        category = Category(name = "Category Name", downloadable = true, id = 9),
+        category = Category(name = "Category Name", id = 9),
         questionCount = QuestionCount(10, 5, 3, 2),
         deleteLocalCategory = {}
     )
