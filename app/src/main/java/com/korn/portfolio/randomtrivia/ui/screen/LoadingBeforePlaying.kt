@@ -2,7 +2,6 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -11,14 +10,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -54,38 +50,37 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewMode
 
 @Composable
 fun LoadingBeforePlaying(
-    modifier: Modifier = Modifier,
     onlineMode: Boolean,
     settings: List<GameSetting>,
-    onCancel: () -> Unit,
-    onStart: (Game) -> Unit
+    cancel: () -> Unit,
+    onDone: (Game) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val viewModel: LoadingBeforePlayingViewModel = viewModel(
         factory = LoadingBeforePlayingViewModel.Factory(
-            onlineMode = onlineMode, settings = settings, onSuccess = onStart
+            onlineMode = onlineMode, settings = settings, onDone = onDone
         )
     )
     val fetchStatus by viewModel.fetchStatus.collectAsState()
     LoadingBeforePlaying(
-        modifier = modifier,
-        cancelAction = { viewModel.cancel(onCancel) },
+        cancel = { viewModel.cancel(cancel) },
         progress = viewModel.progress,
         fetchStatus = fetchStatus,
         statusText = viewModel.statusText,
-        fetchAction = viewModel::fetch
+        fetch = viewModel::fetch,
+        modifier = modifier
     )
 }
 
 @Composable
 private fun LoadingBeforePlaying(
-    modifier: Modifier = Modifier,
-    cancelAction: () -> Unit,
+    cancel: () -> Unit,
     progress: Float,
     fetchStatus: GameFetchStatus,
     statusText: String,
-    fetchAction: () -> Unit
+    fetch: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    BackHandler(onBack = cancelAction)
     Column(modifier) {
         Box(
             modifier = Modifier
@@ -94,7 +89,7 @@ private fun LoadingBeforePlaying(
             contentAlignment = Alignment.Center
         ) {
             IconButtonWithText(
-                onClick = { cancelAction() },
+                onClick = { cancel() },
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Button to cancel loading game.",
                 text = "Cancel"
@@ -141,7 +136,7 @@ private fun LoadingBeforePlaying(
                             textAlign = TextAlign.Center
                         )
                         IconButtonWithText(
-                            onClick = fetchAction,
+                            onClick = fetch,
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Button to retry fetching new game.",
                             text = "Retry"
@@ -171,11 +166,11 @@ private fun LoadingPreview() {
     RandomTriviaTheme {
         Surface {
             LoadingBeforePlaying(
-                cancelAction = {},
+                cancel = {},
                 progress = 0.3f,
                 fetchStatus = GameFetchStatus.Loading,
                 statusText = "Loading",
-                fetchAction = {}
+                fetch = {}
             )
         }
     }
@@ -187,11 +182,11 @@ private fun ErrorPreview() {
     RandomTriviaTheme {
         Surface {
             LoadingBeforePlaying(
-                cancelAction = {},
+                cancel = {},
                 progress = 0.3f,
                 fetchStatus = GameFetchStatus.Error("Error message"),
                 statusText = "Display error message",
-                fetchAction = {}
+                fetch = {}
             )
         }
     }
@@ -203,11 +198,11 @@ private fun SuccessPreview() {
     RandomTriviaTheme {
         Surface {
             LoadingBeforePlaying(
-                cancelAction = {},
+                cancel = {},
                 progress = 1f,
                 fetchStatus = GameFetchStatus.Success(getGame(0)),
                 statusText = "Success message",
-                fetchAction = {}
+                fetch = {}
             )
         }
     }

@@ -43,8 +43,8 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
-    modifier: Modifier = Modifier,
-    onBack: () -> Unit
+    goBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier,
@@ -54,7 +54,7 @@ fun AboutScreen(
                     Text("About this app", style = MaterialTheme.typography.titleMedium)
                 },
                 navigationIcon = {
-                    IconButton(onBack) {
+                    IconButton(goBack) {
                         Icon(Icons.Default.Close, "Close setting menu")
                     }
                 }
@@ -180,6 +180,6 @@ private fun ColumnScope.LicenseIndication() {
 @Composable
 fun AboutDialogPreview() {
     RandomTriviaTheme {
-        AboutScreen {}
+        AboutScreen({})
     }
 }

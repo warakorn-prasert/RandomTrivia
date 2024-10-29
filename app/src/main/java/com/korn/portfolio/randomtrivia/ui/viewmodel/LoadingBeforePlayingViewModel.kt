@@ -15,6 +15,7 @@ import com.korn.portfolio.randomtrivia.network.model.ResponseCode
 import com.korn.portfolio.randomtrivia.repository.GameOption
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.GameFetchStatus
+import com.korn.portfolio.randomtrivia.ui.common.displayName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -48,7 +49,7 @@ private fun List<GameSetting>.toGameOptions(): List<GameOption> =
     }
 
 class LoadingBeforePlayingViewModel(
-    private val onSuccess: (Game) -> Unit,
+    private val onDone: (Game) -> Unit,
     private val onlineMode: Boolean,
     private val settings: List<GameSetting>,
     private val triviaRepository: TriviaRepository
@@ -104,6 +105,8 @@ class LoadingBeforePlayingViewModel(
 //                                else "Unhandled network request error (${e.message})"
                                 else "Failed to load."
                             )
+                        } catch (_: CancellationException) {
+                            GameFetchStatus.Error("Canceled.")
                         } catch (_: Exception) {
 //                            GameFetchStatus.Error("Unhandled error (${e.message})")
                             GameFetchStatus.Error("Failed to load.")
@@ -118,7 +121,7 @@ class LoadingBeforePlayingViewModel(
                             statusText = "Finished"
                             delay(1000)
                             withContext(Dispatchers.Main) {
-                                onSuccess(f.game)
+                                onDone(f.game)
                             }
                         }
                     }
@@ -134,7 +137,7 @@ class LoadingBeforePlayingViewModel(
     class Factory(
         private val onlineMode: Boolean,
         private val settings: List<GameSetting>,
-        private val onSuccess: (Game) -> Unit
+        private val onDone: (Game) -> Unit
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(
@@ -143,7 +146,7 @@ class LoadingBeforePlayingViewModel(
         ): T {
             val application = checkNotNull(extras[APPLICATION_KEY]) as TriviaApplication
             return LoadingBeforePlayingViewModel(
-                onSuccess,
+                onDone,
                 onlineMode,
                 settings,
                 application.triviaRepository,

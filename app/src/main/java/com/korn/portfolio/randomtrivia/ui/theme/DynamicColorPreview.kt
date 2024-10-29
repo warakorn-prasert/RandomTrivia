@@ -114,7 +114,7 @@ private fun DynamicColorPreview() {
                 }
                 ContrastPicker(
                     contrastLevel = contrastLevelValue,
-                    saveAction = { themeViewModel.setContrastLevel(context, ContrastLevel.Custom(it)) }
+                    onChange = { themeViewModel.setContrastLevel(context, ContrastLevel.Custom(it)) }
                 )
                 HorizontalColorBox(
                     prefix = "Source color",
@@ -122,7 +122,7 @@ private fun DynamicColorPreview() {
                 )
                 SourceColorPicker(
                     sourceColor = sourceColorValue,
-                    saveAction = { themeViewModel.setSourceColor(context, SourceColor.Custom(it)) }
+                    onChange = { themeViewModel.setSourceColor(context, SourceColor.Custom(it)) }
                 )
                 ColorSchemeDisplay(
                     sourceColor = sourceColorValue,
@@ -137,23 +137,23 @@ private fun DynamicColorPreview() {
 @Composable
 private fun ContrastPicker(
     contrastLevel: Float,
-    saveAction: (Float) -> Unit
+    onChange: (Float) -> Unit
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("Contrast (system = ${getSystemContrast(LocalContext.current)})")
         RadioButton(
             selected = (contrastLevel * 10).roundToInt() == 0,
-            onClick = { saveAction(0f) }
+            onClick = { onChange(0f) }
         )
         Text("0")
         RadioButton(
             selected = (contrastLevel * 10).roundToInt() == 5,
-            onClick = { saveAction(0.5f) }
+            onClick = { onChange(0.5f) }
         )
         Text("0.5")
         RadioButton(
             selected = (contrastLevel * 10).roundToInt() == 10,
-            onClick = { saveAction(1f) }
+            onClick = { onChange(1f) }
         )
         Text("1")
     }
@@ -162,7 +162,7 @@ private fun ContrastPicker(
 @Composable
 private fun SourceColorPicker(
     sourceColor: Int,
-    saveAction: (Int) -> Unit
+    onChange: (Int) -> Unit
 ) {
     var tab by remember { mutableIntStateOf(0) }
     TabRow(selectedTabIndex = tab) {
@@ -173,14 +173,14 @@ private fun SourceColorPicker(
             Text("RGB")
         }
     }
-    if (tab == 0) HuePicker(sourceColor, saveAction)
-    else RgbPicker(sourceColor, saveAction)
+    if (tab == 0) HuePicker(sourceColor, onChange)
+    else RgbPicker(sourceColor, onChange)
 }
 
 @Composable
 private fun HuePicker(
     sourceColor: Int,
-    saveAction: (Int) -> Unit
+    onChange: (Int) -> Unit
 ) {
     val hue = FloatArray(3).let {
         ColorTool.colorToHSV(sourceColor, it)
@@ -204,12 +204,12 @@ private fun HuePicker(
     }
     Slider(
         value = hue,
-        onValueChange = { saveAction(colorFromHue(it)) },
+        onValueChange = { onChange(colorFromHue(it)) },
         valueRange = 0f..359f,
         steps = 360 * 2 - 1
     )
     Button({
-        saveAction(colorFromHue(Random.nextFloat() * 359))
+        onChange(colorFromHue(Random.nextFloat() * 359))
     }) {
         Text("Random")
     }
@@ -218,30 +218,30 @@ private fun HuePicker(
 @Composable
 private fun RgbPicker(
     sourceColor: Int,
-    saveAction: (Int) -> Unit
+    onChange: (Int) -> Unit
 ) {
     sourceColor.run {
         Text("R $red, G $green, B $blue")
         Slider(
             value = red.toFloat(),
-            onValueChange = { saveAction(ColorTool.argb(alpha, it.roundToInt(), green, blue)) },
+            onValueChange = { onChange(ColorTool.argb(alpha, it.roundToInt(), green, blue)) },
             valueRange = 0f..255f,
             steps = 255
         )
         Slider(
             value = green.toFloat(),
-            onValueChange = { saveAction(ColorTool.argb(alpha, red, it.roundToInt(), blue)) },
+            onValueChange = { onChange(ColorTool.argb(alpha, red, it.roundToInt(), blue)) },
             valueRange = 0f..255f,
             steps = 255
         )
         Slider(
             value = blue.toFloat(),
-            onValueChange = { saveAction(ColorTool.argb(alpha, red, green, it.roundToInt())) },
+            onValueChange = { onChange(ColorTool.argb(alpha, red, green, it.roundToInt())) },
             valueRange = 0f..255f,
             steps = 255
         )
         Button({
-            saveAction(ColorTool.argb(
+            onChange(ColorTool.argb(
                 alpha,
                 Random.nextInt(from = 0, until = 255),
                 Random.nextInt(from = 0, until = 255),

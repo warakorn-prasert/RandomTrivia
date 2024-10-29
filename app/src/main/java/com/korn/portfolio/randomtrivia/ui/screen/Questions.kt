@@ -2,7 +2,6 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -10,13 +9,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -51,9 +48,9 @@ import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
 import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBarWithBackButton
+import com.korn.portfolio.randomtrivia.ui.common.displayName
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.QuestionsViewModel
-import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
 import java.util.UUID
 
 private enum class QuestionFilter(
@@ -99,41 +96,40 @@ private fun List<Question>.process(
 
 @Composable
 fun Questions(
-    modifier: Modifier = Modifier,
     categoryId: Int,
-    onBack: () -> Unit,
-    navToAboutScreen: () -> Unit
+    goBack: () -> Unit,
+    onAboutClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
     Questions(
-        modifier = modifier,
         categoryName = viewModel.categoryName,
         questions = viewModel.questions,
-        onBack = onBack,
-        navToAboutScreen = navToAboutScreen
+        goBack = goBack,
+        onAboutClick = onAboutClick,
+        modifier = modifier
     )
 }
 
 @Composable
 private fun Questions(
-    modifier: Modifier = Modifier,
     categoryName: String,
     questions: List<Question>,
-    onBack: () -> Unit,
-    navToAboutScreen: () -> Unit
+    goBack: () -> Unit,
+    onAboutClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var searchWord by remember { mutableStateOf("") }
-    BackHandler(onBack = onBack)
     Scaffold(
         modifier = modifier,
         topBar = {
             SearchableTopBarWithBackButton(
                 searchWord = searchWord,
                 onChange = { searchWord = it },
-                navToAboutScreen = navToAboutScreen,
+                onAboutClick = onAboutClick,
                 hint = "Search for questions",
                 title = categoryName,
-                onBackButtonClick = onBack
+                onBackClick = goBack
             )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -197,40 +193,36 @@ private fun Questions(
 @Composable
 private fun QuestionsFilterSortMenuBar(
     filter: QuestionFilter,
-    onFilterSelect: (QuestionFilter) -> Unit,
+    setFilter: (QuestionFilter) -> Unit,
     sort: QuestionSort,
-    onSortSelect: (QuestionSort) -> Unit,
+    setSort: (QuestionSort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit
+    setReverseSort: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
         filters = QuestionFilter.entries,
-        onFilterSelect = onFilterSelect,
+        onFilterSelect = setFilter,
         filterToString = { it.displayText },
         sortBottomSheetContent = {
-            Column(Modifier.height(IntrinsicSize.Min)) {
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Sort By")
-                    CheckboxWithText(
-                        checked = reverseSort,
-                        onCheckedChange = onReverseSortChange,
-                        text = "Reversed"
-                    )
-                }
-                QuestionSort.entries.forEach {
-                    RadioButtonWithText(
-                        selected = sort == it,
-                        onClick = { onSortSelect(it) },
-                        text = it.displayText
-                    )
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Sort By")
+                CheckboxWithText(
+                    checked = reverseSort,
+                    onCheckedChange = setReverseSort,
+                    text = "Reversed"
+                )
+            }
+            QuestionSort.entries.forEach {
+                RadioButtonWithText(
+                    selected = sort == it,
+                    onClick = { setSort(it) },
+                    text = it.displayText
+                )
             }
         }
     )
@@ -298,8 +290,8 @@ private fun QuestionsPreview() {
                 mockQuestion.copy(question = "bcd", difficulty = Difficulty.EASY, id = UUID.randomUUID()),
                 mockQuestion.copy(question = "efg", difficulty = Difficulty.HARD, id = UUID.randomUUID()),
             ),
-            onBack = {},
-            navToAboutScreen = {}
+            goBack = {},
+            onAboutClick = {}
         )
     }
 }

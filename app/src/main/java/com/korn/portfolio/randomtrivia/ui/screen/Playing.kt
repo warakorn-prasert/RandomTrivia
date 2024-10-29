@@ -3,7 +3,6 @@
 package com.korn.portfolio.randomtrivia.ui.screen
 
 import android.content.res.Configuration
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -60,12 +59,12 @@ import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
-import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
+import com.korn.portfolio.randomtrivia.ui.common.displayName
+import com.korn.portfolio.randomtrivia.ui.common.hhmmssFrom
 import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGameQuestion
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.PlayingViewModel
-import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
 import kotlinx.coroutines.launch
 
 enum class AnswerButtonState(
@@ -89,39 +88,38 @@ enum class AnswerButtonState(
 
 @Composable
 fun Playing(
-    modifier: Modifier = Modifier,
     game: Game,
-    onExit: () -> Unit,
-    onSubmit: (Game) -> Unit
+    exit: () -> Unit,
+    submit: (Game) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val viewModel: PlayingViewModel = viewModel(factory = PlayingViewModel.Factory(game))
     Playing(
-        modifier = modifier,
-        exitAction = { viewModel.exit(onExit) },
-        submitAction = { viewModel.submit(onSubmit) },
+        exit = { viewModel.exit(exit) },
+        submit = { viewModel.submit(submit) },
         currentIdx = viewModel.currentIdx,
         questions = viewModel.questions,
         selectQuestion = viewModel::selectQuestion,
         submittable = viewModel.submittable,
         second = viewModel.second,
-        answerAction = viewModel::answer
+        answer = viewModel::answer,
+        modifier = modifier
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Playing(
-    modifier: Modifier = Modifier,
-    exitAction: () -> Unit,
-    submitAction: () -> Unit,
+    exit: () -> Unit,
+    submit: () -> Unit,
     currentIdx: Int,
     questions: List<GameQuestion>,
     selectQuestion: (Int) -> Unit,
     submittable: Boolean,
     second: Int,
-    answerAction: (String) -> Unit
+    answer: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    BackHandler(onBack = exitAction)
     val pagerState = rememberPagerState(pageCount = { questions.size })
     ScrimmableBottomSheetScaffold(
         modifier = modifier,
@@ -130,7 +128,7 @@ private fun Playing(
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = questions,
-                selectAction = { idx ->
+                onSelect = { idx ->
                     selectQuestion(idx)
                     scope.launch {
                         pagerState.animateScrollToPage(idx)
@@ -146,7 +144,7 @@ private fun Playing(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = exitAction,
+                        onClick = exit,
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to return to main menu.",
                         text = "Exit"
@@ -154,7 +152,7 @@ private fun Playing(
                 },
                 actions = {
                     IconButtonWithText(
-                        onClick = submitAction,
+                        onClick = submit,
                         imageVector = Icons.Default.Check,
                         contentDescription = "Button to submit game answers.",
                         text = "Submit",
@@ -199,7 +197,7 @@ private fun Playing(
                     AnswerButtons(
                         userAnswer = question.answer.answer,
                         answers = question.question.run { incorrectAnswers + correctAnswer },
-                        answerAction = answerAction,
+                        answer = answer,
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
@@ -283,7 +281,7 @@ fun QuestionStatementCard(questionStatement: String, modifier: Modifier = Modifi
 private fun AnswerButtons(
     userAnswer: String,
     answers: List<String>,
-    answerAction: (String) -> Unit,
+    answer: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -293,7 +291,7 @@ private fun AnswerButtons(
         answers.forEachIndexed { idx, answer ->
             val state = AnswerButtonState.getState(userAnswer, answer)
             ElevatedCard(
-                onClick = { answerAction(answer) },
+                onClick = { answer(answer) },
                 colors = CardDefaults.elevatedCardColors().copy(
                     containerColor =
                         if (state == AnswerButtonState.ANSWERED) MaterialTheme.colorScheme.surface
@@ -341,14 +339,14 @@ private fun AnswerButtons(
 private fun PlayingPreview() {
     RandomTriviaTheme {
         Playing(
-            exitAction = {},
-            submitAction = {},
+            exit = {},
+            submit = {},
             currentIdx = 2,
             questions = List(12) { getGameQuestion(getCategory(it % 2)) },
             selectQuestion = {},
             submittable = true,
             second = 100,
-            answerAction = {}
+            answer = {}
         )
     }
 }
@@ -358,14 +356,14 @@ private fun PlayingPreview() {
 private fun OverflowQuestionPreview() {
     RandomTriviaTheme {
         Playing(
-            exitAction = {},
-            submitAction = {},
+            exit = {},
+            submit = {},
             currentIdx = 0,
             questions = listOf(getGameQuestion(getCategory(0), overflow = true)),
             selectQuestion = {},
             submittable = true,
             second = 100,
-            answerAction = {}
+            answer = {}
         )
     }
 }
@@ -377,7 +375,7 @@ private fun OverflowAnswerButtonsPreview() {
         AnswerButtons(
             userAnswer = "",
             answers = listOf("OverflowAnswer".repeat(20)),
-            answerAction = {}
+            answer = {}
         )
     }
 }

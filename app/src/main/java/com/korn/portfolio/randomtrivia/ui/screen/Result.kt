@@ -2,7 +2,6 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
-import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
+import com.korn.portfolio.randomtrivia.ui.common.hhmmssFrom
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ResultViewModel
@@ -47,14 +46,13 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Result(
-    modifier: Modifier = Modifier,
     game: Game,
-    onExit: () -> Unit,
-    onReplay: (Game) -> Unit,
-    onInspect: (Game) -> Unit
+    exit: () -> Unit,
+    replay: (Game) -> Unit,
+    inspect: (Game) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val viewModel: ResultViewModel = viewModel(factory = ResultViewModel.Factory(game))
-    BackHandler(onBack = onExit)
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -62,7 +60,7 @@ fun Result(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = { viewModel.exit(onExit) },
+                        onClick = { viewModel.exit(exit) },
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to exit to main screen.",
                         text = "Exit"
@@ -78,13 +76,13 @@ fun Result(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButtonWithText(
-                        onClick = { onInspect(game) },
+                        onClick = { inspect(game) },
                         imageVector = Icons.Default.Search,
                         contentDescription = "Button to inspect previous game.",
                         text = "Inspect"
                     )
                     IconButtonWithText(
-                        onClick = { viewModel.replay(onReplay) },
+                        onClick = { viewModel.replay(replay) },
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Replay button.",
                         text = "Replay"
@@ -150,9 +148,9 @@ private fun ResultPreview() {
     RandomTriviaTheme {
         Result(
             game = getGame(42),
-            onExit = {},
-            onReplay = {},
-            onInspect = {}
+            exit = {},
+            replay = {},
+            inspect = {}
         )
     }
 }

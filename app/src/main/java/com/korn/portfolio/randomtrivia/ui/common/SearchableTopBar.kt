@@ -48,7 +48,7 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 fun SearchableTopBar(
     searchWord: String,
     onChange: (String) -> Unit,
-    navToAboutScreen: () -> Unit,
+    onAboutClick: () -> Unit,
     hint: String = "",
     title: String = "Random Trivia",
     hideSearchButton: Boolean = false
@@ -56,7 +56,7 @@ fun SearchableTopBar(
     SearchableTopBarDefault(
         searchWord = searchWord,
         onChange = onChange,
-        navToAboutScreen = navToAboutScreen,
+        onAboutClick = onAboutClick,
         hint = hint,
         title = title,
         hideSearchButton = hideSearchButton
@@ -67,18 +67,18 @@ fun SearchableTopBar(
 fun SearchableTopBarWithBackButton(
     searchWord: String,
     onChange: (String) -> Unit,
-    navToAboutScreen: () -> Unit,
+    onAboutClick: () -> Unit,
     hint: String = "",
     title: String = "Random Trivia",
-    onBackButtonClick: () -> Unit
+    onBackClick: () -> Unit
 ) {
     SearchableTopBarDefault(
         searchWord = searchWord,
         onChange = onChange,
-        navToAboutScreen = navToAboutScreen,
+        onAboutClick = onAboutClick,
         hint = hint,
         title = title,
-        onNavigateBackClick = onBackButtonClick,
+        onBackClick = onBackClick,
         hideSearchButton = false
     )
 }
@@ -88,10 +88,10 @@ fun SearchableTopBarWithBackButton(
 private fun SearchableTopBarDefault(
     searchWord: String,
     onChange: (String) -> Unit,
-    navToAboutScreen: () -> Unit,
+    onAboutClick: () -> Unit,
     hint: String = "",
     title: String = "Random Trivia",
-    onNavigateBackClick: (() -> Unit)? = null,  // If not null, icon will be app logo.
+    onBackClick: (() -> Unit)? = null,  // If not null, icon will be app logo.
     hideSearchButton: Boolean = false
 ) {
     var searching by remember { mutableStateOf(false) }
@@ -146,15 +146,15 @@ private fun SearchableTopBarDefault(
             }}
         },
         navigationIcon = {
-            if (!searching && searchWord.isBlank() && onNavigateBackClick == null)
+            if (!searching && searchWord.isBlank() && onBackClick == null)
                 Icon(
                     painter = painterResource(R.drawable.ic_android),
                     contentDescription = "App icon",
                     modifier = Modifier.minimumInteractiveComponentSize(),
                     tint = MaterialTheme.colorScheme.primary
                 )
-            if (onNavigateBackClick != null)
-                IconButton(onNavigateBackClick) {
+            if (onBackClick != null)
+                IconButton(onBackClick) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Button to navigate back")
                 }
         },
@@ -186,7 +186,7 @@ private fun SearchableTopBarDefault(
                             text = { Text("About App") },
                             onClick = {
                                 menuExpanded = false
-                                navToAboutScreen()
+                                onAboutClick()
                             }
                         )
                     }
@@ -217,17 +217,17 @@ private fun TopBarSearchPreview() {
             SearchableTopBar(
                 searchWord = searchWord,
                 onChange = { searchWord = it },
-                navToAboutScreen = {},
+                onAboutClick = {},
                 hint = "Search for ...",
                 title = "Main top bar"
             )
             SearchableTopBarWithBackButton(
                 searchWord = searchWord,
                 onChange = { searchWord = it },
-                navToAboutScreen = {},
+                onAboutClick = {},
                 hint = "Search for ...",
                 title = "Backable top bar",
-                onBackButtonClick = {}
+                onBackClick = {}
             )
         }
     }

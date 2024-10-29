@@ -15,16 +15,14 @@ import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.Date
 
 class MainViewModel(private val triviaRepository: TriviaRepository) : ViewModel() {
     var showSplashScreen by mutableStateOf(true)
 
-    val categoriesFetchStatus: StateFlow<FetchStatus> get() = mutableCategoriesFetchStatus
-    private val mutableCategoriesFetchStatus = MutableStateFlow<FetchStatus>(FetchStatus.Success)
+    var categoriesFetchStatus: FetchStatus by mutableStateOf(FetchStatus.Success)
+        private set
 
     private val neverFetch: Boolean
         get() = triviaRepository.remoteCategories.value.isNullOrEmpty()
@@ -35,16 +33,14 @@ class MainViewModel(private val triviaRepository: TriviaRepository) : ViewModel(
 
     fun fetchCategories() {
         viewModelScope.launch {
-            mutableCategoriesFetchStatus.emit(FetchStatus.Loading)
+            categoriesFetchStatus = FetchStatus.Loading
             delay(1000L)  // make progress indicator not look flickering
-            mutableCategoriesFetchStatus.emit(
-                try {
-                    triviaRepository.fetchCategories()
-                    FetchStatus.Success
-                } catch (_: Exception) {
-                    FetchStatus.Error("Failed to load new categories")
-                }
-            )
+            categoriesFetchStatus = try {
+                triviaRepository.fetchCategories()
+                FetchStatus.Success
+            } catch (_: Exception) {
+                FetchStatus.Error("Failed to load new categories")
+            }
         }
     }
 

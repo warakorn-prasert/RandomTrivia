@@ -10,14 +10,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -63,15 +61,14 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryDisplay
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryFilter
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
-import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun Categories(
-    modifier: Modifier = Modifier,
-    fetchStatus: StateFlow<FetchStatus>,
+    fetchStatus: FetchStatus,
     fetchCategories: () -> Unit,
-    navToQuestions: (categoryId: Int) -> Unit,
-    navToAboutScreen: () -> Unit
+    onCategoryClick: (categoryId: Int) -> Unit,
+    onAboutClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
     val searchWord by viewModel.searchWord.collectAsState()
@@ -81,25 +78,21 @@ fun Categories(
     val sort by viewModel.sort.collectAsState()
     val reverseSort by viewModel.reverseSort.collectAsState()
 
-    val fetchStatusValue by fetchStatus.collectAsState()
-
     Categories(
-        modifier = modifier,
         searchWord = searchWord, setSearchWord = viewModel::setSearchWord,
         categories = categories,
         filter = filter, setFilter = viewModel::setFilter,
         sort = sort, setSort = viewModel::setSort,
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
-        fetchStatus = fetchStatusValue, fetchCategories = fetchCategories,
-        navToQuestions = navToQuestions,
-        navToAboutScreen = navToAboutScreen
+        fetchStatus = fetchStatus, fetchCategories = fetchCategories,
+        onCategoryClick = onCategoryClick,
+        onAboutClick = onAboutClick,
+        modifier = modifier
     )
 }
 
 @Composable
 private fun Categories(
-    modifier: Modifier = Modifier,
-
     searchWord: String,
     setSearchWord: (String) -> Unit,
 
@@ -114,8 +107,10 @@ private fun Categories(
     fetchStatus: FetchStatus,
     fetchCategories: () -> Unit,
 
-    navToQuestions: (categoryId: Int) -> Unit,
-    navToAboutScreen: () -> Unit
+    onCategoryClick: (categoryId: Int) -> Unit,
+    onAboutClick: () -> Unit,
+
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier,
@@ -124,7 +119,7 @@ private fun Categories(
                 searchWord = searchWord,
                 onChange = setSearchWord,
                 hint = "Search for categories",
-                navToAboutScreen = navToAboutScreen
+                onAboutClick = onAboutClick
             )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -184,7 +179,7 @@ private fun Categories(
                             playedQuestions = totalPlayed,
                             isPlayed = isPlayed,
                             onClick = {
-                                navToQuestions(id)
+                                onCategoryClick(id)
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -198,40 +193,36 @@ private fun Categories(
 @Composable
 private fun CategoriesFilterSortMenuBar(
     filter: CategoryFilter,
-    onFilterSelect: (CategoryFilter) -> Unit,
+    setFilter: (CategoryFilter) -> Unit,
     sort: CategorySort,
-    onSortSelect: (CategorySort) -> Unit,
+    setSort: (CategorySort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit
+    setReverseSort: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
         filters = CategoryFilter.entries,
-        onFilterSelect = onFilterSelect,
+        onFilterSelect = setFilter,
         filterToString = { it.displayText },
         sortBottomSheetContent = {
-            Column(Modifier.height(IntrinsicSize.Min)) {
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Sort By")
-                    CheckboxWithText(
-                        checked = reverseSort,
-                        onCheckedChange = onReverseSortChange,
-                        text = "Reversed"
-                    )
-                }
-                CategorySort.entries.forEach {
-                    RadioButtonWithText(
-                        selected = sort == it,
-                        onClick = { onSortSelect(it) },
-                        text = it.displayText
-                    )
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Sort By")
+                CheckboxWithText(
+                    checked = reverseSort,
+                    onCheckedChange = setReverseSort,
+                    text = "Reversed"
+                )
+            }
+            CategorySort.entries.forEach {
+                RadioButtonWithText(
+                    selected = sort == it,
+                    onClick = { setSort(it) },
+                    text = it.displayText
+                )
             }
         }
     )
@@ -297,7 +288,7 @@ private fun CategoriesPreview() {
         sort = CategorySort.NAME, setSort = {},
         reverseSort = false, setReverseSort = {},
         fetchStatus = FetchStatus.Success, fetchCategories = {},
-        navToQuestions = {},
-        navToAboutScreen = {}
+        onCategoryClick = {},
+        onAboutClick = {}
     )
 }

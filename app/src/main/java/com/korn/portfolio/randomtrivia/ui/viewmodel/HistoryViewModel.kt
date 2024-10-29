@@ -23,7 +23,8 @@ enum class HistoryFilter(
 ) {
     ALL("All", { it }),
     TODAY("Today", { games ->
-        fun Calendar.toTimeString() = "${get(Calendar.YEAR)}:${get(Calendar.MONTH)}:${get(Calendar.DAY_OF_MONTH)}"
+        fun Calendar.toTimeString() =
+            "${get(Calendar.YEAR)}:${get(Calendar.MONTH)}:${get(Calendar.DAY_OF_MONTH)}"
         val calendar = Calendar.getInstance()
         val today = calendar.toTimeString()
         games.filter { game ->

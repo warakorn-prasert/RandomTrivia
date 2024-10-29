@@ -53,7 +53,7 @@ private interface SettingBeforePlaying {
     fun fetchQuestionCountIfNeedTo()
 
     val settings: StateFlow<List<GameSetting>>
-    fun canAddMoreSetting(categoriesFetchStatus: StateFlow<FetchStatus>): Flow<Boolean>
+    fun canAddMoreSetting(categoriesFetchStatus: FetchStatus): Flow<Boolean>
     fun addSetting()
     fun removeSetting(setting: GameSetting)
     fun submit(action: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit)
@@ -133,13 +133,13 @@ class SettingBeforePlayingViewModel(
     override val settings: StateFlow<List<GameSetting>> get() = mutableSettings
     private val mutableSettings = MutableStateFlow(emptyList<GameSetting>())
 
-    override fun canAddMoreSetting(categoriesFetchStatus: StateFlow<FetchStatus>) =
-        combine(categories, categoriesFetchStatus) { cats, fet, ->
+    override fun canAddMoreSetting(categoriesFetchStatus: FetchStatus) =
+        categories.map { cats ->
             if (onlineMode.value)
-                fet == FetchStatus.Success && cats.isNotEmpty()
-            else
-                cats.isNotEmpty()
-        }
+                categoriesFetchStatus == FetchStatus.Success && cats.isNotEmpty()
+                else
+                    cats.isNotEmpty()
+            }
 
     override fun addSetting() {
         viewModelScope.launch {

@@ -81,6 +81,7 @@ import com.korn.portfolio.randomtrivia.ui.common.FetchStatusBar
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.OutlinedDropdown
 import com.korn.portfolio.randomtrivia.ui.common.PaddedDialog
+import com.korn.portfolio.randomtrivia.ui.common.displayName
 import com.korn.portfolio.randomtrivia.ui.previewdata.BooleanDataProvider
 import com.korn.portfolio.randomtrivia.ui.previewdata.GameSettingDataProvider
 import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
@@ -89,19 +90,17 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import com.korn.portfolio.randomtrivia.ui.viewmodel.MAX_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.MIN_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
-import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 private const val deleteAnimDuration = 500
 
 @Composable
 fun SettingBeforePlaying(
-    modifier: Modifier = Modifier,
-    categoriesFetchStatus: StateFlow<FetchStatus>,
+    categoriesFetchStatus: FetchStatus,
     fetchCategories: () -> Unit,
-    onSubmit: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit
+    submit: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
 
@@ -111,7 +110,6 @@ fun SettingBeforePlaying(
     val canAddMoreSetting by viewModel.canAddMoreSetting(categoriesFetchStatus).collectAsState(false)
     val settings by viewModel.settings.collectAsState()
 
-    val categoriesFetchStatusValue by categoriesFetchStatus.collectAsState()
     val questionCountFetchStatus by viewModel.questionCountFetchStatus.collectAsState()
 
     val category by viewModel.category.collectAsState()
@@ -122,17 +120,16 @@ fun SettingBeforePlaying(
     val maxAmount by viewModel.maxAmount.collectAsState(MAX_AMOUNT)
 
     SettingBeforePlaying(
-        modifier = modifier,
-        submitAction = { viewModel.submit(onSubmit) },
+        submit = { viewModel.submit(submit) },
         canStartGame = canStartGame,
         canAddMoreSetting = canAddMoreSetting,
         settings = settings,
         removeSetting = viewModel::removeSetting,
         onlineMode = onlineMode,
         changeOnlineMode = {
-            viewModel.changeOnlineMode(it, categoriesFetchStatusValue, fetchCategories)
+            viewModel.changeOnlineMode(it, categoriesFetchStatus, fetchCategories)
         },
-        fetchStatus = categoriesFetchStatusValue,
+        fetchStatus = categoriesFetchStatus,
         fetchCategories = fetchCategories,
         questionCountFetchStatus = questionCountFetchStatus,
         fetchQuestionCount = viewModel::fetchQuestionCountIfNeedTo,
@@ -146,13 +143,13 @@ fun SettingBeforePlaying(
         selectCategory = viewModel::selectCategory,
         selectDifficulty = viewModel::selectDifficulty,
         selectAmount = viewModel::selectAmount,
+        modifier = modifier
     )
 }
 
 @Composable
 fun SettingBeforePlaying(
-    modifier: Modifier = Modifier,
-    submitAction: () -> Unit,
+    submit: () -> Unit,
     canStartGame: Boolean,
     onlineMode: Boolean,
     canAddMoreSetting: Boolean,
@@ -172,7 +169,8 @@ fun SettingBeforePlaying(
     maxAmount: Int,
     selectCategory: (Category?) -> Unit,
     selectDifficulty: (Difficulty?) -> Unit,
-    selectAmount: (Int) -> Unit
+    selectAmount: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var showDialog by remember { mutableStateOf(false) }
     Scaffold(
@@ -180,7 +178,7 @@ fun SettingBeforePlaying(
         topBar = {
             TopBarWithStartButton(
                 enabled = canStartGame,
-                onClick = submitAction
+                onClick = submit
             )
         },
         floatingActionButton = {
@@ -216,7 +214,7 @@ fun SettingBeforePlaying(
             if (onlineMode)
                 FetchStatusBar(
                     fetchStatus = fetchStatus,
-                    retryAction = fetchCategories
+                    retry = fetchCategories
                 )
             if (settings.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
@@ -225,7 +223,7 @@ fun SettingBeforePlaying(
             else
                 SettingListItems(
                     settings = settings,
-                    removeAction = removeSetting
+                    remove = removeSetting
                 )
         }
     }
@@ -468,7 +466,7 @@ private fun AddGameSettingDialog(
 @Composable
 private fun SettingListItems(
     settings: List<GameSetting>,
-    removeAction: (GameSetting) -> Unit
+    remove: (GameSetting) -> Unit
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -490,11 +488,11 @@ private fun SettingListItems(
                 if (!deleting) {
                     SettingListItem(
                         setting = setting,
-                        removeAction = {
+                        remove = {
                             scope.launch {
                                 deleting = true
                                 delay(deleteAnimDuration.toLong())
-                                removeAction(it)
+                                remove(it)
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -515,7 +513,7 @@ private fun SettingListItems(
 @Composable
 private fun SettingListItem(
     setting: GameSetting,
-    removeAction: (GameSetting) -> Unit,
+    remove: (GameSetting) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(modifier, Arrangement.spacedBy(16.dp)) {
@@ -524,7 +522,7 @@ private fun SettingListItem(
             Text("${setting.difficulty.displayName}, ${setting.amount}")
         }
         IconButton(
-            onClick = { removeAction(setting) },
+            onClick = { remove(setting) },
             modifier = Modifier.offset(x = 12.dp)
         ) {
             Icon(Icons.Default.Close, "Button to remove game setting item.")
@@ -537,7 +535,7 @@ private fun SettingListItem(
 private fun SettingBeforePlayingPreview() {
     RandomTriviaTheme {
         SettingBeforePlaying(
-            submitAction = {},
+            submit = {},
             canStartGame = true,
             canAddMoreSetting = true,
             settings = listOf(
@@ -570,7 +568,7 @@ private fun SettingBeforePlayingPreview() {
 private fun LoadingPreview() {
     RandomTriviaTheme {
         SettingBeforePlaying(
-            submitAction = {},
+            submit = {},
             canStartGame = false,
             canAddMoreSetting = false,
             settings = emptyList(),
@@ -600,7 +598,7 @@ private fun LoadingPreview() {
 private fun ErrorPreview() {
     RandomTriviaTheme {
         SettingBeforePlaying(
-            submitAction = {},
+            submit = {},
             canStartGame = false,
             canAddMoreSetting = false,
             settings = emptyList(),

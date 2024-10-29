@@ -9,13 +9,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -56,7 +54,7 @@ import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
 import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
-import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
+import com.korn.portfolio.randomtrivia.ui.common.hhmmssFrom
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryFilter
@@ -122,10 +120,10 @@ fun Game.asDisplay() =
 
 @Composable
 fun PastGames(
-    modifier: Modifier = Modifier,
-    onReplay: (Game) -> Unit,
-    onInspect: (Game) -> Unit,
-    navToAboutScreen: () -> Unit
+    replay: (Game) -> Unit,
+    inspect: (Game) -> Unit,
+    onAboutClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
 
@@ -135,24 +133,22 @@ fun PastGames(
     val games by viewModel.games.collectAsState(emptyList())
 
     PastGames(
-        modifier = modifier,
-        onReplay = onReplay,
-        onInspect = onInspect,
+        replay = replay,
+        inspect = inspect,
         filter = filter, setFilter = viewModel::setFilter,
         sort = sort, setSort = viewModel::setSort,
         reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
         games = games,
         deleteGame = viewModel::deleteGame,
-        navToAboutScreen = navToAboutScreen
+        onAboutClick = onAboutClick,
+        modifier = modifier
     )
 }
 
 @Composable
 private fun PastGames(
-    modifier: Modifier = Modifier,
-
-    onReplay: (Game) -> Unit,
-    onInspect: (Game) -> Unit,
+    replay: (Game) -> Unit,
+    inspect: (Game) -> Unit,
 
     filter: HistoryFilter, setFilter: (HistoryFilter) -> Unit,
     sort: HistorySort, setSort: (HistorySort) -> Unit,
@@ -161,7 +157,9 @@ private fun PastGames(
     games: List<Game>,
     deleteGame: (gameId: UUID) -> Unit,
 
-    navToAboutScreen: () -> Unit
+    onAboutClick: () -> Unit,
+
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier,
@@ -169,7 +167,7 @@ private fun PastGames(
             SearchableTopBar(
                 searchWord = "",
                 onChange = {},
-                navToAboutScreen = navToAboutScreen,
+                onAboutClick = onAboutClick,
                 hint = "",
                 title = "Random Trivia",
                 hideSearchButton = true,
@@ -226,9 +224,9 @@ private fun PastGames(
                         if (!deleting) {
                             GameDisplayItem(
                                 game = game,
-                                inspectAction = { onInspect(game) },
-                                replayAction = { onReplay(game) },
-                                deleteAction = {
+                                inspect = { inspect(game) },
+                                replay = { replay(game) },
+                                delete = {
                                     scope.launch {
                                         deleting = true
                                         delay(deleteAnimDuration.toLong())
@@ -250,40 +248,36 @@ private fun PastGames(
 @Composable
 private fun HistoryFilterSortMenuBar(
     filter: HistoryFilter,
-    onFilterSelect: (HistoryFilter) -> Unit,
+    setFilter: (HistoryFilter) -> Unit,
     sort: HistorySort,
-    onSortSelect: (HistorySort) -> Unit,
+    setSort: (HistorySort) -> Unit,
     reverseSort: Boolean,
-    onReverseSortChange: (Boolean) -> Unit
+    setReverseSort: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
         filters = HistoryFilter.entries,
-        onFilterSelect = onFilterSelect,
+        onFilterSelect = setFilter,
         filterToString = { it.displayText },
         sortBottomSheetContent = {
-            Column(Modifier.height(IntrinsicSize.Min)) {
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Sort By")
-                    CheckboxWithText(
-                        checked = reverseSort,
-                        onCheckedChange = onReverseSortChange,
-                        text = "Reversed"
-                    )
-                }
-                HistorySort.entries.forEach {
-                    RadioButtonWithText(
-                        selected = sort == it,
-                        onClick = { onSortSelect(it) },
-                        text = it.displayText
-                    )
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Sort By")
+                CheckboxWithText(
+                    checked = reverseSort,
+                    onCheckedChange = setReverseSort,
+                    text = "Reversed"
+                )
+            }
+            HistorySort.entries.forEach {
+                RadioButtonWithText(
+                    selected = sort == it,
+                    onClick = { setSort(it) },
+                    text = it.displayText
+                )
             }
         }
     )
@@ -292,9 +286,9 @@ private fun HistoryFilterSortMenuBar(
 @Composable
 private fun GameDisplayItem(
     game: Game,
-    inspectAction: () -> Unit,
-    replayAction: () -> Unit,
-    deleteAction: () -> Unit,
+    inspect: () -> Unit,
+    replay: () -> Unit,
+    delete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -342,7 +336,7 @@ private fun GameDisplayItem(
                         text = { Text("Inspect") },
                         onClick = {
                             showMenu = false
-                            inspectAction()
+                            inspect()
                         },
                         leadingIcon = { Icon(Icons.Default.Search, null) }
                     )
@@ -350,7 +344,7 @@ private fun GameDisplayItem(
                         text = { Text("Replay") },
                         onClick = {
                             showMenu = false
-                            replayAction()
+                            replay()
                         },
                         leadingIcon = { Icon(Icons.Default.Refresh, null) }
                     )
@@ -358,7 +352,7 @@ private fun GameDisplayItem(
                         text = { Text("Delete") },
                         onClick = {
                             showMenu = false
-                            deleteAction()
+                            delete()
                         },
                         leadingIcon = { Icon(Icons.Outlined.Delete, null) }
                     )
@@ -373,14 +367,14 @@ private fun GameDisplayItem(
 private fun PastGamesPreview() {
     RandomTriviaTheme {
         PastGames(
-            onReplay = {},
-            onInspect = {},
+            replay = {},
+            inspect = {},
             filter = HistoryFilter.ALL, setFilter = {},
             sort = HistorySort.MOST_RECENT, setSort = {},
             reverseSort = false, setReverseSort = {},
             games = List(2) { getGame(totalQuestions = 10, played = true) },
             deleteGame = {},
-            navToAboutScreen = {}
+            onAboutClick = {}
         )
     }
 }

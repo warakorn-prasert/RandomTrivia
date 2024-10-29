@@ -19,7 +19,6 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.korn.portfolio.randomtrivia.ui.common.BottomBar
-import com.korn.portfolio.randomtrivia.ui.common.navigateBottomNav
 import com.korn.portfolio.randomtrivia.ui.navigation.About
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
 import com.korn.portfolio.randomtrivia.ui.navigation.History
@@ -43,15 +42,15 @@ fun MainScreen(
         bottomBar = { if (showBottomBar) BottomBar(navController) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
-        NavHost(navController = navController, startDestination = Categories) {
+        NavHost(navController, startDestination = Categories) {
             navigation<Categories>(startDestination = Categories.Default) {
                 composable<About> {
                     LaunchedEffect(Unit) {
                         requestFullScreen()
                     }
                     AboutScreen(
-                        modifier = Modifier.systemBarsPadding(),
-                        onBack = { navController.navigateUp() }
+                        goBack = { navController.navigateUp() },
+                        modifier = Modifier.systemBarsPadding()
                     )
                 }
                 composable<Categories.Default> {
@@ -59,13 +58,13 @@ fun MainScreen(
                         dismissFullScreen()
                     }
                     Categories(
-                        modifier = Modifier.padding(paddingValues),
                         fetchStatus = mainViewModel.categoriesFetchStatus,
                         fetchCategories = mainViewModel::fetchCategories,
-                        navToQuestions = { categoryId ->
+                        onCategoryClick = { categoryId ->
                             navController.navigate(Categories.Questions(categoryId))
                         },
-                        navToAboutScreen = { navController.navigate(About) }
+                        onAboutClick = { navController.navigate(About) },
+                        modifier = Modifier.padding(paddingValues),
                     )
                 }
                 composable<Categories.Questions> { backStackEntry ->
@@ -73,14 +72,10 @@ fun MainScreen(
                         dismissFullScreen()
                     }
                     Questions(
-                        modifier = Modifier.padding(paddingValues),
                         categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId,
-                        onBack = {
-                            navController.navigate(Categories.Default) {
-                                popUpTo(Categories.Default) { inclusive = true }
-                            }
-                        },
-                        navToAboutScreen = { navController.navigate(About) }
+                        goBack = { navController.navigateUp() },
+                        onAboutClick = { navController.navigate(About) },
+                        modifier = Modifier.padding(paddingValues)
                     )
                 }
             }
@@ -90,14 +85,14 @@ fun MainScreen(
                         dismissFullScreen()
                     }
                     SettingBeforePlaying(
-                        modifier = Modifier.padding(paddingValues),
                         categoriesFetchStatus = mainViewModel.categoriesFetchStatus,
                         fetchCategories = mainViewModel::fetchCategories,
-                        onSubmit = { onlineMode, settings ->
+                        submit = { onlineMode, settings ->
                             mainViewModel.onlineMode = onlineMode
                             mainViewModel.settings = settings
                             navController.navigate(Play.Loading)
-                        }
+                        },
+                        modifier = Modifier.padding(paddingValues)
                     )
                 }
                 composable<Play.Loading> {
@@ -105,20 +100,16 @@ fun MainScreen(
                         requestFullScreen()
                     }
                     LoadingBeforePlaying(
-                        modifier = Modifier.systemBarsPadding(),
                         onlineMode = mainViewModel.onlineMode,
                         settings = mainViewModel.settings,
-                        onCancel = {
-                            navController.navigate(Play.Setting) {
-                                popUpTo(Play.Setting) { inclusive = true }
-                            }
-                        },
-                        onStart = { game ->
+                        cancel = { navController.navigateUp() },
+                        onDone = { game ->
                             mainViewModel.game = game
                             navController.navigate(Play.Playing) {
-                                popUpTo(Play.Playing) { inclusive = true }
+                                popUpTo(Play.Setting)
                             }
-                        }
+                        },
+                        modifier = Modifier.systemBarsPadding()
                     )
                 }
                 composable<Play.Playing> {
@@ -127,15 +118,11 @@ fun MainScreen(
                     }
                     Playing(
                         game = mainViewModel.game,
-                        onExit = {
-                            navController.navigate(Play.Setting) {
-                                popUpTo(Play.Setting) { inclusive = true }
-                            }
-                        },
-                        onSubmit = { game ->
+                        exit = { navController.navigateUp() },
+                        submit = { game ->
                             mainViewModel.game = game
                             navController.navigate(Play.Result) {
-                                popUpTo(Play.Result) { inclusive = true }
+                                popUpTo(Play.Setting)
                             }
                         }
                     )
@@ -146,20 +133,16 @@ fun MainScreen(
                     }
                     Result(
                         game = mainViewModel.game,
-                        onExit = {
-                            navController.navigate(Play.Setting) {
-                                popUpTo(Play.Setting) { inclusive = true }
-                            }
-                        },
-                        onReplay = { _ ->
+                        exit = { navController.navigateUp() },
+                        replay = { _ ->
                             navController.navigate(Play.Playing) {
-                                popUpTo(Play.Playing) { inclusive = true }
+                                popUpTo(Play.Setting)
                             }
                         },
-                        onInspect = { game ->
+                        inspect = { game ->
                             mainViewModel.game = game
                             navController.navigate(Inspect) {
-                                popUpTo(Inspect) { inclusive = true }
+                                popUpTo(Play.Setting)
                             }
                         }
                     )
@@ -171,16 +154,16 @@ fun MainScreen(
                         dismissFullScreen()
                     }
                     PastGames(
-                        modifier = Modifier.padding(paddingValues),
-                        onReplay = { game ->
+                        replay = { game ->
                             mainViewModel.game = game
                             navController.navigate(History.Replay)
                         },
-                        onInspect = { game ->
+                        inspect = { game ->
                             mainViewModel.game = game
                             navController.navigate(Inspect)
                         },
-                        navToAboutScreen = { navController.navigate(About) }
+                        onAboutClick = { navController.navigate(About) },
+                        modifier = Modifier.padding(paddingValues)
                     )
                 }
                 composable<History.Replay> {
@@ -189,15 +172,11 @@ fun MainScreen(
                     }
                     Playing(
                         game = mainViewModel.game,
-                        onExit = {
-                            navController.navigate(History.Default) {
-                                popUpTo(History.Default) { inclusive = true }
-                            }
-                        },
-                        onSubmit = { game ->
+                        exit = { navController.navigateUp() },
+                        submit = { game ->
                             mainViewModel.game = game
                             navController.navigate(History.Result) {
-                                popUpTo(History.Result) { inclusive = true }
+                                popUpTo(History.Default)
                             }
                         }
                     )
@@ -208,20 +187,16 @@ fun MainScreen(
                     }
                     Result(
                         game = mainViewModel.game,
-                        onExit = {
-                            navController.navigate(History.Default) {
-                                popUpTo(History.Default) { inclusive = true }
-                            }
-                        },
-                        onReplay = { _ ->
+                        exit = { navController.navigateUp() },
+                        replay = { _ ->
                             navController.navigate(History.Replay) {
-                                popUpTo(History.Replay) { inclusive = true }
+                                popUpTo(History.Default)
                             }
                         },
-                        onInspect = { game ->
+                        inspect = { game ->
                             mainViewModel.game = game
                             navController.navigate(Inspect) {
-                                popUpTo(Inspect) { inclusive = true }
+                                popUpTo(History.Default)
                             }
                         }
                     )
@@ -232,12 +207,10 @@ fun MainScreen(
                     requestFullScreen()
                 }
                 Inspect(
-                    onBack = {
-                        navController.navigateBottomNav(History)
-                    },
-                    onReplay = { _ ->
+                    goBack = { navController.navigateUp() },
+                    replay = { _ ->
                         navController.navigate(History.Replay) {
-                            popUpTo(History.Replay) { inclusive = true }
+                            popUpTo(Inspect) { inclusive = true }
                         }
                     },
                     game = mainViewModel.game

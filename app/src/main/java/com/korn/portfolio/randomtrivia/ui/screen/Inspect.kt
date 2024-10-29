@@ -2,7 +2,6 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -87,12 +86,11 @@ private enum class InspectAnswerButtonState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Inspect(
-    modifier: Modifier = Modifier,
-    onBack: () -> Unit,
-    onReplay: (Game) -> Unit,
-    game: Game
+    goBack: () -> Unit,
+    replay: (Game) -> Unit,
+    game: Game,
+    modifier: Modifier = Modifier
 ) {
-    BackHandler(onBack = onBack)
     val pagerState = rememberPagerState(pageCount = { game.questions.size })
     var currentIdx by remember { mutableIntStateOf(0) }
     ScrimmableBottomSheetScaffold(
@@ -102,7 +100,7 @@ fun Inspect(
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = game.questions,
-                selectAction = { idx ->
+                onSelect = { idx ->
                     currentIdx = idx
                     scope.launch {
                         pagerState.animateScrollToPage(idx)
@@ -119,7 +117,7 @@ fun Inspect(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = onBack,
+                        onClick = goBack,
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to return to main menu.",
                         text = "Exit"
@@ -127,7 +125,7 @@ fun Inspect(
                 },
                 actions = {
                     IconButtonWithText(
-                        onClick = { onReplay(game) },
+                        onClick = { replay(game) },
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Replay button.",
                         text = "Replay"
@@ -172,8 +170,7 @@ fun Inspect(
                         userAnswer = question.answer.answer,
                         answers = question.question.run { incorrectAnswers + correctAnswer },
                         correctAnswer = question.question.correctAnswer,
-                        modifier = Modifier
-                            .padding(vertical = 16.dp)
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
             }
@@ -231,8 +228,8 @@ private fun InspectAnswerButtons(
 private fun InspectPreview() {
     RandomTriviaTheme {
         Inspect(
-            onBack = {},
-            onReplay = {},
+            goBack = {},
+            replay = {},
             game = getGame(totalQuestions = 44, played = true)
         )
     }
