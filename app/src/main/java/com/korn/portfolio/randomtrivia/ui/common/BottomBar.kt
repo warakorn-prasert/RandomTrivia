@@ -29,10 +29,9 @@ private val bottomNavs = listOf(Categories, Play, History)
 
 fun NavController.navigateBottomNav(bottomNav: BottomNav) {
     navigate(bottomNav) {
-        // Pop up to the start destination of the graph to
-        // avoid building up a large stack of destinations
-        // on the back stack as users select items
         popUpTo(graph.findStartDestination().id)
+        // fix: 2nd back press from non-start bottom nav destination doesn't exit app
+        launchSingleTop = true
     }
 }
 
