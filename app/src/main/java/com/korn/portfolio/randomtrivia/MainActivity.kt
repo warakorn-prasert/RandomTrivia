@@ -13,6 +13,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.ui.screen.MainScreen
 import com.korn.portfolio.randomtrivia.ui.screen.Splash
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
@@ -24,8 +25,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-
-        val mainViewModel: MainViewModel by viewModels(factoryProducer = { MainViewModel.Factory })
 
         // Enable edgeToEdge and make detectDarkMode follows custom dark mode
         val themeViewModel: ThemeViewModel by viewModels()
@@ -48,6 +47,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RandomTriviaTheme {
                 Surface(Modifier.fillMaxSize()) {
+                    val mainViewModel: MainViewModel = viewModel(factory = MainViewModel.Factory)
                     MainScreen(
                         mainViewModel = mainViewModel,
                         modifier = Modifier.fillMaxSize()
