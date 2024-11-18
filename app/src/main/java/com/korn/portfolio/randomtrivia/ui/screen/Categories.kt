@@ -38,6 +38,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,7 +115,7 @@ private fun Categories(
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var searchWord by remember { mutableStateOf("") }
+    var searchWord by rememberSaveable { mutableStateOf("") }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -129,9 +130,9 @@ private fun Categories(
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             val listState = rememberLazyListState()
-            var filter by remember { mutableStateOf(CategoryFilter.default) }
-            var sort by remember { mutableStateOf(CategorySort.default) }
-            var reverseSort by remember { mutableStateOf(reverseSortDefault) }
+            var filter by rememberSaveable { mutableStateOf(CategoryFilter.default) }
+            var sort by rememberSaveable { mutableStateOf(CategorySort.default) }
+            var reverseSort by rememberSaveable { mutableStateOf(reverseSortDefault) }
 
             val filterSortCategories = categories
                 .let { filter.invoke(it) }

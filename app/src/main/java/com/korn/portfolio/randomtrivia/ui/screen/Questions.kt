@@ -32,6 +32,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +56,7 @@ import java.util.UUID
 
 private enum class QuestionFilter(
     val displayText: String,
-    val function: (List<Question>) -> List<Question>
+    val invoke: (List<Question>) -> List<Question>
 ) {
     ALL("All", { it }),
     EASY("Easy", { all -> all.filter { it.difficulty == Difficulty.EASY } }),
@@ -65,7 +66,7 @@ private enum class QuestionFilter(
 
 private enum class QuestionSort(
     val displayText: String,
-    val function: (List<Question>) -> List<Question>
+    val invoke: (List<Question>) -> List<Question>
 ) {
     QUESTION_STATEMENT("Question statement (A-Z)", { all -> all.sortedBy { it.question.lowercase() } }),
     DIFFICULTY("Difficulty (Easy-Hard)", { all -> all.sortedBy { it.difficulty.sortIndex } });
@@ -84,14 +85,11 @@ private fun List<Question>.process(
     sort: QuestionSort,
     reverseSort: Boolean
 ): List<Question> = this
-    .let { filter.function(it) }
-    .let { questions ->
-        if (searchWord.isNotBlank()) questions.filter {
-            it.question.lowercase().contains(searchWord.lowercase())
-        }
-        else questions
+    .let { filter.invoke(it) }
+    .filter {
+        it.question.lowercase().contains(searchWord.lowercase())
     }
-    .let { sort.function(it) }
+    .let { sort.invoke(it) }
     .let { if (reverseSort) it.reversed() else it }
 
 @Composable
@@ -119,7 +117,7 @@ private fun Questions(
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var searchWord by remember { mutableStateOf("") }
+    var searchWord by rememberSaveable { mutableStateOf("") }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -135,14 +133,15 @@ private fun Questions(
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
-            var filter by remember { mutableStateOf(QuestionFilter.ALL) }
-            var sort by remember { mutableStateOf(QuestionSort.QUESTION_STATEMENT) }
-            var reverseSort by remember { mutableStateOf(false) }
-
             val listState = rememberLazyListState()
+            var filter by rememberSaveable { mutableStateOf(QuestionFilter.ALL) }
+            var sort by rememberSaveable { mutableStateOf(QuestionSort.QUESTION_STATEMENT) }
+            var reverseSort by rememberSaveable { mutableStateOf(false) }
+
             LaunchedEffect(searchWord, filter, sort, reverseSort) {
                 listState.animateScrollToItem(0)
             }
+
             val itemsInView by remember {
                 derivedStateOf {
                     listState.layoutInfo
@@ -155,6 +154,7 @@ private fun Questions(
                 sort, { sort = it },
                 reverseSort, { reverseSort = it }
             )
+
             val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
             val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
             val bottomBarPadding = 80.dp
@@ -172,9 +172,8 @@ private fun Questions(
                     items = questions.process(filter, searchWord, sort, reverseSort),
                     key = { it.id }
                 ) {
-                    val isInView = it.id in itemsInView
                     val alpha by animateFloatAsState(
-                        targetValue = if (isInView) 1f else 0f,
+                        targetValue = if (it.id in itemsInView) 1f else 0f,
                         animationSpec = tween(
                             durationMillis = 600,
                             delayMillis = 50,
