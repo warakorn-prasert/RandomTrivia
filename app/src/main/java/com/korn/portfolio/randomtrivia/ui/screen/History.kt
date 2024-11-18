@@ -135,11 +135,11 @@ fun PastGames(
     PastGames(
         replay = replay,
         inspect = inspect,
-        filter = filter, setFilter = viewModel::setFilter,
-        sort = sort, setSort = viewModel::setSort,
-        reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
+        filter = filter, setFilter = { viewModel.setFilter(it) },
+        sort = sort, setSort = { viewModel.setSort(it) },
+        reverseSort = reverseSort, setReverseSort = { viewModel.setReverseSort(it) },
         games = games,
-        deleteGame = viewModel::deleteGame,
+        deleteGame = { viewModel.deleteGame(it) },
         onAboutClick = onAboutClick,
         modifier = modifier
     )

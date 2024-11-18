@@ -65,12 +65,12 @@ fun MainScreen(
                     }
                     Categories(
                         fetchStatus = mainViewModel.categoriesFetchStatus,
-                        fetchCategories = mainViewModel::fetchCategories,
+                        fetchCategories = { mainViewModel.fetchCategories() },
                         onCategoryClick = { categoryId ->
                             navController.navigate(Categories.Questions(categoryId))
                         },
                         onAboutClick = { navController.navigate(About) },
-                        modifier = Modifier.padding(paddingValues),
+                        modifier = Modifier.padding(paddingValues)
                     )
                 }
                 composable<Categories.Questions> { backStackEntry ->
@@ -92,7 +92,7 @@ fun MainScreen(
                     }
                     SettingBeforePlaying(
                         categoriesFetchStatus = mainViewModel.categoriesFetchStatus,
-                        fetchCategories = mainViewModel::fetchCategories,
+                        fetchCategories = { mainViewModel.fetchCategories() },
                         submit = { onlineMode, settings ->
                             mainViewModel.onlineMode = onlineMode
                             mainViewModel.settings = settings

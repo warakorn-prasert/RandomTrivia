@@ -124,7 +124,7 @@ fun SettingBeforePlaying(
         canStartGame = canStartGame,
         canAddMoreSetting = canAddMoreSetting,
         settings = settings,
-        removeSetting = viewModel::removeSetting,
+        removeSetting = { viewModel.removeSetting(it) },
         onlineMode = onlineMode,
         changeOnlineMode = {
             viewModel.changeOnlineMode(it, categoriesFetchStatus, fetchCategories)
@@ -132,17 +132,17 @@ fun SettingBeforePlaying(
         fetchStatus = categoriesFetchStatus,
         fetchCategories = fetchCategories,
         questionCountFetchStatus = questionCountFetchStatus,
-        fetchQuestionCount = viewModel::fetchQuestionCountIfNeedTo,
-        addSetting = viewModel::addSetting,
+        fetchQuestionCount = { viewModel.fetchQuestionCountIfNeedTo() },
+        addSetting = { viewModel.addSetting() },
         category = category,
         difficulty = difficulty,
         amount = amount,
         categories = categories,
         difficulties = difficulties,
         maxAmount = maxAmount,
-        selectCategory = viewModel::selectCategory,
-        selectDifficulty = viewModel::selectDifficulty,
-        selectAmount = viewModel::selectAmount,
+        selectCategory = { viewModel.selectCategory(it) },
+        selectDifficulty = { viewModel.selectDifficulty(it) },
+        selectAmount = { viewModel.selectAmount(it) },
         modifier = modifier
     )
 }

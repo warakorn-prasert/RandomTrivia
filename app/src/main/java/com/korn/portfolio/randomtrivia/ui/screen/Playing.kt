@@ -99,10 +99,10 @@ fun Playing(
         submit = { viewModel.submit(submit) },
         currentIdx = viewModel.currentIdx,
         questions = viewModel.questions,
-        selectQuestion = viewModel::selectQuestion,
+        selectQuestion = { viewModel.selectQuestion(it) },
         submittable = viewModel.submittable,
         second = viewModel.second,
-        answer = viewModel::answer,
+        answer = { viewModel.answer(it) },
         modifier = modifier
     )
 }

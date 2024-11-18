@@ -67,7 +67,7 @@ fun LoadingBeforePlaying(
         progress = viewModel.progress,
         fetchStatus = fetchStatus,
         statusText = viewModel.statusText,
-        fetch = viewModel::fetch,
+        fetch = { viewModel.fetch() },
         modifier = modifier
     )
 }
