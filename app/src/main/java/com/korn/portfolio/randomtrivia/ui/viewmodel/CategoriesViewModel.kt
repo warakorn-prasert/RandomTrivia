@@ -30,12 +30,10 @@ private fun Pair<Category, QuestionCount>.asDisplay(playedQuestions: Int) =
         id = first.id
     )
 
-class CategoriesViewModel(
-    private val triviaRepository: TriviaRepository
-) : ViewModel() {
+class CategoriesViewModel(triviaRepository: TriviaRepository) : ViewModel() {
     // local categories that have saved questions
-    private val playedCategories: Flow<List<Pair<Category, QuestionCount>>>
-        get() = triviaRepository.localCategories.map { categories ->
+    private val playedCategories: Flow<List<Pair<Category, QuestionCount>>> =
+        triviaRepository.localCategories.map { categories ->
             categories.filter { (_, questionCount) ->
                 questionCount.run {
                     easy + medium + hard > 0
@@ -43,8 +41,8 @@ class CategoriesViewModel(
             }
         }
 
-    val categories: Flow<List<CategoryDisplay>>
-        get() = combine(playedCategories, triviaRepository.remoteCategories.asFlow()) { played, remote ->
+    val categories: Flow<List<CategoryDisplay>> =
+        combine(playedCategories, triviaRepository.remoteCategories.asFlow()) { played, remote ->
             remote.map { r ->
                 val playedCat = played.firstOrNull { it.first.id == r.first.id }
                 r.asDisplay(playedQuestions = playedCat?.second?.total ?: 0)
