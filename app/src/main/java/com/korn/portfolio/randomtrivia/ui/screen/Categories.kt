@@ -36,7 +36,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -59,8 +61,29 @@ import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
 import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryDisplay
-import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryFilter
-import com.korn.portfolio.randomtrivia.ui.viewmodel.CategorySort
+
+private enum class CategoryFilter(
+    val displayText: String,
+    val invoke: (List<CategoryDisplay>) -> List<CategoryDisplay>
+) {
+    ALL("All", { it }),
+    PLAYED("Played", { all -> all.filter { it.isPlayed } }),
+    NOT_PLAY("Not played", { all -> all.filter { !it.isPlayed } });
+
+    companion object { val default = ALL }
+}
+
+private enum class CategorySort(
+    val displayText: String,
+    val invoke: (List<CategoryDisplay>) -> List<CategoryDisplay>
+) {
+    NAME("Name (A-Z)", { all -> all.sortedBy { it.name.lowercase() } }),
+    TOTAL_QUESTIONS("Total questions (low-high)", { all -> all.sortedBy { it.totalQuestions } });
+
+    companion object { val default = NAME }
+}
+
+private const val reverseSortDefault = false
 
 @Composable
 fun Categories(
@@ -71,20 +94,11 @@ fun Categories(
     modifier: Modifier = Modifier
 ) {
     val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
-    val searchWord by viewModel.searchWord.collectAsState()
-
     val categories by viewModel.categories.collectAsState(emptyList())
-    val filter by viewModel.filter.collectAsState()
-    val sort by viewModel.sort.collectAsState()
-    val reverseSort by viewModel.reverseSort.collectAsState()
-
     Categories(
-        searchWord = searchWord, setSearchWord = viewModel::setSearchWord,
         categories = categories,
-        filter = filter, setFilter = viewModel::setFilter,
-        sort = sort, setSort = viewModel::setSort,
-        reverseSort = reverseSort, setReverseSort = viewModel::setReverseSort,
-        fetchStatus = fetchStatus, fetchCategories = fetchCategories,
+        fetchStatus = fetchStatus,
+        fetchCategories = fetchCategories,
         onCategoryClick = onCategoryClick,
         onAboutClick = onAboutClick,
         modifier = modifier
@@ -93,31 +107,20 @@ fun Categories(
 
 @Composable
 private fun Categories(
-    searchWord: String,
-    setSearchWord: (String) -> Unit,
-
     categories: List<CategoryDisplay>,
-    filter: CategoryFilter,
-    sort: CategorySort,
-    reverseSort: Boolean,
-    setFilter: (CategoryFilter) -> Unit,
-    setSort: (CategorySort) -> Unit,
-    setReverseSort: (Boolean) -> Unit,
-
     fetchStatus: FetchStatus,
     fetchCategories: () -> Unit,
-
     onCategoryClick: (categoryId: Int) -> Unit,
     onAboutClick: () -> Unit,
-
     modifier: Modifier = Modifier
 ) {
+    var searchWord by remember { mutableStateOf("") }
     Scaffold(
         modifier = modifier,
         topBar = {
             SearchableTopBar(
                 searchWord = searchWord,
-                onChange = setSearchWord,
+                onChange = { searchWord = it },
                 hint = "Search for categories",
                 onAboutClick = onAboutClick
             )
@@ -126,9 +129,20 @@ private fun Categories(
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             val listState = rememberLazyListState()
+            var filter by remember { mutableStateOf(CategoryFilter.default) }
+            var sort by remember { mutableStateOf(CategorySort.default) }
+            var reverseSort by remember { mutableStateOf(reverseSortDefault) }
+
+            val filterSortCategories = categories
+                .let { filter.invoke(it) }
+                .filter { it.name.lowercase().contains(searchWord.lowercase())  }
+                .let { sort.invoke(it) }
+                .let { if (reverseSort) it.asReversed() else it }
+
             LaunchedEffect(searchWord, filter, reverseSort, sort) {
                 listState.animateScrollToItem(0)
             }
+
             val itemsInView by remember {
                 derivedStateOf {
                     listState.layoutInfo
@@ -137,18 +151,18 @@ private fun Categories(
             }
 
             CategoriesFilterSortMenuBar(
-                filter, setFilter,
-                sort, setSort,
-                reverseSort, setReverseSort
+                filter, { filter = it },
+                sort, { sort = it },
+                reverseSort, { reverseSort = it }
             )
-            FetchStatusBar(
-                fetchStatus,
-                fetchCategories
-            )
-            if (categories.isEmpty() && fetchStatus != FetchStatus.Loading)
+
+            FetchStatusBar(fetchStatus, fetchCategories)
+
+            if (filterSortCategories.isEmpty() && fetchStatus != FetchStatus.Loading)
                 Box(Modifier.fillMaxSize().padding(horizontal = 16.dp), Alignment.Center) {
                     Text("No category available to play.")
                 }
+
             val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
             val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
             val bottomBarPadding = 80.dp
@@ -162,10 +176,9 @@ private fun Categories(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(categories, key = { it.id }) { (name, total, totalPlayed, id, isPlayed) ->
-                    val isInView = id in itemsInView
+                items(filterSortCategories, key = { it.id }) { (name, total, totalPlayed, id, isPlayed) ->
                     val alpha by animateFloatAsState(
-                        targetValue = if (isInView) 1f else 0f,
+                        targetValue = if (id in itemsInView) 1f else 0f,
                         animationSpec = tween(
                             durationMillis = 600,
                             delayMillis = 50,
@@ -178,9 +191,7 @@ private fun Categories(
                             totalQuestions = total,
                             playedQuestions = totalPlayed,
                             isPlayed = isPlayed,
-                            onClick = {
-                                onCategoryClick(id)
-                            },
+                            onClick = { onCategoryClick(id) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -278,16 +289,13 @@ private fun CategoryCard(
 @Composable
 private fun CategoriesPreview() {
     Categories(
-        searchWord = "", setSearchWord = {},
         categories = List(5) {
             getCategory(it).run {
                 CategoryDisplay(name, 10, it % 2, id)
             }
         },
-        filter = CategoryFilter.ALL, setFilter = {},
-        sort = CategorySort.NAME, setSort = {},
-        reverseSort = false, setReverseSort = {},
-        fetchStatus = FetchStatus.Success, fetchCategories = {},
+        fetchStatus = FetchStatus.Success,
+        fetchCategories = {},
         onCategoryClick = {},
         onAboutClick = {}
     )
