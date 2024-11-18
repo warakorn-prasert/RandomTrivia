@@ -2,6 +2,8 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -39,7 +41,11 @@ fun MainScreen(
 
     Scaffold(
         modifier = modifier,
-        bottomBar = { if (showBottomBar) BottomBar(navController) },
+        bottomBar = {
+            Box(Modifier.animateContentSize()) {
+                if (showBottomBar) BottomBar(navController)
+            }
+        },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         NavHost(navController, startDestination = Categories) {
