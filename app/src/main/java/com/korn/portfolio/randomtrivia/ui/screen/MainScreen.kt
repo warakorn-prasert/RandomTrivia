@@ -49,16 +49,16 @@ fun MainScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         NavHost(navController, startDestination = Categories) {
-            navigation<Categories>(startDestination = Categories.Default) {
-                composable<About> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
-                    AboutScreen(
-                        goBack = { navController.navigateUp() },
-                        modifier = Modifier.systemBarsPadding()
-                    )
+            composable<About> {
+                LaunchedEffect(Unit) {
+                    requestFullScreen()
                 }
+                AboutScreen(
+                    goBack = { navController.navigateUp() },
+                    modifier = Modifier.systemBarsPadding()
+                )
+            }
+            navigation<Categories>(startDestination = Categories.Default) {
                 composable<Categories.Default> {
                     LaunchedEffect(Unit) {
                         dismissFullScreen()
