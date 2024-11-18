@@ -29,7 +29,10 @@ private val bottomNavs = listOf(Categories, Play, History)
 
 fun NavController.navigateBottomNav(bottomNav: BottomNav) {
     navigate(bottomNav) {
-        popUpTo(graph.findStartDestination().id)
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        restoreState = true
         // fix: 2nd back press from non-start bottom nav destination doesn't exit app
         launchSingleTop = true
     }
