@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
-private const val prepareText = "Preparing to fetch"
+private const val PREPARE_TEXT = "Preparing to fetch"
 
 private val ResponseCode.message: String
     get() = when (this) {
@@ -57,7 +57,7 @@ class LoadingBeforePlayingViewModel(
     val fetchStatus: StateFlow<GameFetchStatus> get() = mutableFetchStatus
     private val mutableFetchStatus = MutableStateFlow<GameFetchStatus>(GameFetchStatus.Loading)
 
-    var statusText: String by mutableStateOf(prepareText)
+    var statusText: String by mutableStateOf(PREPARE_TEXT)
         private set
 
     // 0f..1f
@@ -81,7 +81,7 @@ class LoadingBeforePlayingViewModel(
                 try {
                     mutableFetchStatus.emit(GameFetchStatus.Loading)
                     progress = 0f
-                    statusText = prepareText
+                    statusText = PREPARE_TEXT
                     mutableFetchStatus.emit(
                         try {
                             var currentSettingDisplayName = ""
@@ -118,7 +118,12 @@ class LoadingBeforePlayingViewModel(
                         GameFetchStatus.Loading -> {}
                         is GameFetchStatus.Success -> {
                             progress = 1f
-                            statusText = "Finished"
+                            if (onlineMode) {
+                                statusText = "Saving questions."
+                                triviaRepository.saveQuestions(f.game)
+                            }
+                            delay(1000)
+                            statusText = "Finished."
                             delay(1000)
                             withContext(Dispatchers.Main) {
                                 onDone(f.game)
