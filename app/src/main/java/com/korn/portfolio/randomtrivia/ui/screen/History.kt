@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
@@ -203,7 +204,11 @@ private fun PastGames(
             val scope = rememberCoroutineScope()
             LazyColumn(
                 state = listState,
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    top = 8.dp,
+                    bottom = 8.dp
+                )
             ) {
                 itemsIndexed(games, key = { _, game -> game.detail.gameId }) { idx, game ->
                     val isInView = game.detail.gameId in itemsInView
@@ -233,7 +238,8 @@ private fun PastGames(
                                         deleteGame(game.detail.gameId)
                                     }
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                endPadding = 16.dp
                             )
                             if (idx < games.size - 1)
                                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
@@ -289,7 +295,8 @@ private fun GameDisplayItem(
     inspect: () -> Unit,
     replay: () -> Unit,
     delete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    endPadding: Dp = 0.dp
 ) {
     Row(
         modifier = modifier,
@@ -320,7 +327,7 @@ private fun GameDisplayItem(
             var showMenu by remember { mutableStateOf(false) }
             IconButton(
                 onClick = { showMenu = true },
-                modifier = Modifier.offset(x = 12.dp)
+                modifier = Modifier.offset(x = 12.dp - endPadding)
             ) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
