@@ -18,17 +18,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Date
 
-class MainViewModel(private val triviaRepository: TriviaRepository) : ViewModel() {
-    var showSplashScreen by mutableStateOf(true)
-
+class SharedViewModel(private val triviaRepository: TriviaRepository) : ViewModel() {
     var categoriesFetchStatus: FetchStatus by mutableStateOf(FetchStatus.Success)
         private set
 
-    private val neverFetch: Boolean
-        get() = triviaRepository.remoteCategories.value.isNullOrEmpty()
-
     init {
-        if (neverFetch) fetchCategories()
+        // if never fetch
+        if (triviaRepository.remoteCategories.value.isNullOrEmpty())
+            fetchCategories()
     }
 
     fun fetchCategories() {
@@ -50,7 +47,7 @@ class MainViewModel(private val triviaRepository: TriviaRepository) : ViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[APPLICATION_KEY] as TriviaApplication
-                MainViewModel(application.triviaRepository)
+                SharedViewModel(application.triviaRepository)
             }
         }
     }

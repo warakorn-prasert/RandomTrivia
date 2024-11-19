@@ -10,14 +10,16 @@ import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.ui.screen.MainScreen
 import com.korn.portfolio.randomtrivia.ui.screen.Splash
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
-import com.korn.portfolio.randomtrivia.ui.viewmodel.MainViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 import kotlinx.coroutines.launch
 
@@ -47,15 +49,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             RandomTriviaTheme {
                 Surface(Modifier.fillMaxSize()) {
-                    val mainViewModel: MainViewModel = viewModel(factory = MainViewModel.Factory)
-                    MainScreen(
-                        mainViewModel = mainViewModel,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    AnimatedVisibility(mainViewModel.showSplashScreen) {
+                    var showSplashScreen by remember { mutableStateOf(true) }
+                    MainScreen(Modifier.fillMaxSize())
+                    AnimatedVisibility(showSplashScreen) {
                         Splash(
                             onDone = {
-                                mainViewModel.showSplashScreen = false
+                                showSplashScreen = false
                             }
                         )
                     }

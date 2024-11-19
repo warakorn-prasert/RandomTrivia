@@ -137,9 +137,9 @@ class SettingBeforePlayingViewModel(
         categories.map { cats ->
             if (onlineMode.value)
                 categoriesFetchStatus == FetchStatus.Success && cats.isNotEmpty()
-                else
-                    cats.isNotEmpty()
-            }
+            else
+                cats.isNotEmpty()
+        }
 
     override fun addSetting() {
         viewModelScope.launch {
@@ -273,7 +273,10 @@ class SettingBeforePlayingViewModel(
         get() = settings.map { it.isNotEmpty() }
 
     override val onlineMode: StateFlow<Boolean> get() = mutableOnlineMode
-    private val mutableOnlineMode = MutableStateFlow(!triviaRepository.remoteCategories.value.isNullOrEmpty())
+    private val mutableOnlineMode = MutableStateFlow(false).apply {
+        val neverFetch = triviaRepository.remoteCategories.value.isNullOrEmpty()
+        value = !neverFetch
+    }
 
     override fun changeOnlineMode(
         online: Boolean,

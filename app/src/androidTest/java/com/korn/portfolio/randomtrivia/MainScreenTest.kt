@@ -1,6 +1,5 @@
 package com.korn.portfolio.randomtrivia
 
-import android.content.Context
 import android.graphics.Color
 import androidx.activity.compose.setContent
 import androidx.compose.ui.graphics.toArgb
@@ -13,17 +12,11 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso
-import com.korn.portfolio.randomtrivia.database.TriviaDatabase
-import com.korn.portfolio.randomtrivia.network.TriviaApiClient
-import com.korn.portfolio.randomtrivia.repository.TriviaRepositoryImpl
 import com.korn.portfolio.randomtrivia.ui.screen.MainScreen
 import com.korn.portfolio.randomtrivia.ui.theme.M3Purple
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.theme.TriviaAppColor
-import com.korn.portfolio.randomtrivia.ui.viewmodel.MainViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.dynamicColorScheme
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -31,27 +24,14 @@ import org.junit.Rule
 import org.junit.Test
 
 class MainScreenTest {
-    private lateinit var mainViewModel: MainViewModel
-
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Before
     fun create_view_model() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val db = Room.inMemoryDatabaseBuilder(
-            context, TriviaDatabase::class.java
-        ).build()
-        val repo = TriviaRepositoryImpl(
-            db.categoryDao(),
-            db.questionDao(),
-            db.gameDao(),
-            TriviaApiClient()
-        )
-        mainViewModel = MainViewModel(repo)
         composeTestRule.activity.setContent {
             RandomTriviaTheme {
-                MainScreen(mainViewModel)
+                MainScreen()
             }
         }
     }
