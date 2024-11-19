@@ -24,50 +24,47 @@ import androidx.compose.ui.window.Dialog
 
 @Composable
 fun PaddedDialog(
-    show: Boolean,
     onDismissRequest: () -> Unit,
     title: @Composable RowScope.() -> Unit,
     actions: @Composable RowScope.() -> Unit,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    if (show)
-        Dialog(onDismissRequest = onDismissRequest) {
-            Card(
-                modifier = Modifier.widthIn(min = 280.dp, max = 560.dp),
-                shape = RoundedCornerShape(28.dp)
+    Dialog(onDismissRequest = onDismissRequest) {
+        Card(
+            modifier = Modifier.widthIn(min = 280.dp, max = 560.dp),
+            shape = RoundedCornerShape(28.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(24.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.titleMedium) {
-                        title()
-                    }
-                }
-                Column(
-                    Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(horizontal = 24.dp)
-                ) {
-                    content()
-                }
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    actions()
+                CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.titleMedium) {
+                    title()
                 }
             }
+            Column(
+                Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(horizontal = 24.dp)
+            ) {
+                content()
+            }
+            Row(
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                actions()
+            }
         }
+    }
 }
 
 @Preview
 @Composable
 private fun PaddedDialogPreview() {
     PaddedDialog(
-        show = true,
         onDismissRequest = {},
         title = { Text("Title") },
         actions = {

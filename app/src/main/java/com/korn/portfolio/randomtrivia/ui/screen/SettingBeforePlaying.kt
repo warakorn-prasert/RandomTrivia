@@ -377,90 +377,90 @@ private fun AddGameSettingDialog(
             it in MIN_AMOUNT..maxAmount.coerceAtLeast(MIN_AMOUNT)
         }
         ?: false
-    PaddedDialog(
-        show = show,
-        onDismissRequest = onDismissRequest,
-        title = { Text("Game Setting") },
-        actions = {
-            TextButton(onDismissRequest) { Text("CANCEL") }
-            val focusManager = LocalFocusManager.current
-            TextButton(
-                onClick = {
-                    addSetting()
-                    focusManager.clearFocus()
-                },
-                enabled = fetchStatus == FetchStatus.Success && validDisplayAmount
-            ) {
-                Text("ADD")
+    if (show)
+        PaddedDialog(
+            onDismissRequest = onDismissRequest,
+            title = { Text("Game Setting") },
+            actions = {
+                TextButton(onDismissRequest) { Text("CANCEL") }
+                val focusManager = LocalFocusManager.current
+                TextButton(
+                    onClick = {
+                        addSetting()
+                        focusManager.clearFocus()
+                    },
+                    enabled = fetchStatus == FetchStatus.Success && validDisplayAmount
+                ) {
+                    Text("ADD")
+                }
             }
-        }
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (fetchStatus in listOf(FetchStatus.Loading, FetchStatus.Success)) {
-                OutlinedDropdown(
-                    selected = category,
-                    onSelect = selectCategory,
-                    items = categories,
-                    toString = { it.displayName },
-                    label = { Text("Category") },
-                    itemContent = { Text(it.displayName) }
-                )
-            }
-            when (fetchStatus) {
-                is FetchStatus.Error -> {
-                    Text(
-                        text = fetchStatus.message,
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    IconButtonWithText(
-                        onClick = fetchQuestionCount,
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Button to retry fetching category detail",
-                        text = "Retry"
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (fetchStatus in listOf(FetchStatus.Loading, FetchStatus.Success)) {
+                    OutlinedDropdown(
+                        selected = category,
+                        onSelect = selectCategory,
+                        items = categories,
+                        toString = { it.displayName },
+                        label = { Text("Category") },
+                        itemContent = { Text(it.displayName) }
                     )
                 }
-                FetchStatus.Loading ->
-                    CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-                FetchStatus.Success ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedDropdown(
-                            selected = difficulty,
-                            onSelect = selectDifficulty,
-                            items = difficulties,
-                            toString = { it.displayName },
-                            label = { Text("Difficulty") },
-                            itemContent = { Text(it.displayName) }
+                when (fetchStatus) {
+                    is FetchStatus.Error -> {
+                        Text(
+                            text = fetchStatus.message,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                            color = MaterialTheme.colorScheme.error
                         )
-                        val interactionSource = remember { MutableInteractionSource() }
-                        val isFocus by interactionSource.collectIsFocusedAsState()
-                        LaunchedEffect(isFocus, displayAmount, amount) {
-                            if (!isFocus || validDisplayAmount) {
-                                val newAmount = (displayAmount.toIntOrNull() ?: MIN_AMOUNT)
-                                    .coerceIn(MIN_AMOUNT..maxAmount.coerceAtLeast(MIN_AMOUNT))
-                                selectAmount(newAmount)
-                                displayAmount = newAmount.toString()
-                            }
-                        }
-                        val focusManager = LocalFocusManager.current
-                        OutlinedTextField(
-                            value = displayAmount,
-                            onValueChange = { displayAmount = it },
-                            label = { Text("Amount") },
-                            supportingText = { Text("Max $maxAmount") },
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                keyboardType = KeyboardType.Decimal,
-                                imeAction = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(
-                                onDone = { focusManager.clearFocus() }
-                            ),
-                            interactionSource = interactionSource
+                        IconButtonWithText(
+                            onClick = fetchQuestionCount,
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Button to retry fetching category detail",
+                            text = "Retry"
                         )
                     }
+                    FetchStatus.Loading ->
+                        CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
+                    FetchStatus.Success ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedDropdown(
+                                selected = difficulty,
+                                onSelect = selectDifficulty,
+                                items = difficulties,
+                                toString = { it.displayName },
+                                label = { Text("Difficulty") },
+                                itemContent = { Text(it.displayName) }
+                            )
+                            val interactionSource = remember { MutableInteractionSource() }
+                            val isFocus by interactionSource.collectIsFocusedAsState()
+                            LaunchedEffect(isFocus, displayAmount, amount) {
+                                if (!isFocus || validDisplayAmount) {
+                                    val newAmount = (displayAmount.toIntOrNull() ?: MIN_AMOUNT)
+                                        .coerceIn(MIN_AMOUNT..maxAmount.coerceAtLeast(MIN_AMOUNT))
+                                    selectAmount(newAmount)
+                                    displayAmount = newAmount.toString()
+                                }
+                            }
+                            val focusManager = LocalFocusManager.current
+                            OutlinedTextField(
+                                value = displayAmount,
+                                onValueChange = { displayAmount = it },
+                                label = { Text("Amount") },
+                                supportingText = { Text("Max $maxAmount") },
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Done
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = { focusManager.clearFocus() }
+                                ),
+                                interactionSource = interactionSource
+                            )
+                        }
+                }
             }
         }
-    }
 }
 
 @Composable
