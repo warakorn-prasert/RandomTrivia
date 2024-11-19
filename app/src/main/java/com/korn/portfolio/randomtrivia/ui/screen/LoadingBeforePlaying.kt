@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -70,6 +71,7 @@ fun LoadingBeforePlaying(
         fetch = { viewModel.fetch() },
         modifier = modifier
     )
+    BackHandler { viewModel.cancel(cancel) }
 }
 
 @Composable
