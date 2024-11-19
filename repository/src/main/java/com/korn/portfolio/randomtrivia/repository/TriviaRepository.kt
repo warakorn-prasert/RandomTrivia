@@ -52,6 +52,7 @@ interface TriviaRepository {
     suspend fun deleteAllLocalCategories()
     suspend fun deleteGame(gameId: UUID)
     suspend fun getLocalQuestions(categoryId: Int): List<Question>
+    suspend fun saveQuestions(game: Game)
 }
 
 class TriviaRepositoryImpl(
@@ -263,6 +264,7 @@ class TriviaRepositoryImpl(
             } else {  // old question
                 gameDao.insertAnswer(question.answer.copy(questionId = localQuestion.id))
             }
+            // assume category already exists, e.g., fetchCategories() before fetchOnlineGame()
         }
     }
 
@@ -282,6 +284,18 @@ class TriviaRepositoryImpl(
 
     override suspend fun getLocalQuestions(categoryId: Int): List<Question> =
         questionDao.getByCategory(categoryId)
+
+    override suspend fun saveQuestions(game: Game) {
+        // Save questions
+        game.questions.forEach { question ->
+            // sync category and question ids with local
+            val localQuestion = questionDao.getOneBy(question.question.question)
+            val localCategory = question.question.categoryId?.let { categoryDao.getOneBy(it) }
+            if (localQuestion == null)  // new question
+                questionDao.insert(question.question.copy(categoryId = localCategory?.id))
+            // assume category already exists, e.g., fetchCategories() before fetchOnlineGame()
+        }
+    }
 
     private val _remoteCategories = MutableLiveData<List<Pair<Category, QuestionCount>>>(emptyList())
 }
