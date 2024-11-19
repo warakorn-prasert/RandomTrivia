@@ -23,6 +23,7 @@ import androidx.navigation.toRoute
 import com.korn.portfolio.randomtrivia.ui.common.BottomBar
 import com.korn.portfolio.randomtrivia.ui.navigation.About
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
+import com.korn.portfolio.randomtrivia.ui.navigation.Game
 import com.korn.portfolio.randomtrivia.ui.navigation.GameSettingType
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
@@ -117,14 +118,16 @@ fun MainScreen(
                         cancel = { navController.navigateUp() },
                         onDone = { game ->
                             mainViewModel.game = game
-                            navController.navigate(Play.Playing) {
+                            navController.navigate(Game) {
                                 popUpTo(Play.Setting)
                             }
                         },
                         modifier = Modifier.systemBarsPadding()
                     )
                 }
-                composable<Play.Playing> {
+            }
+            navigation<Game>(startDestination = Game.Play) {
+                composable<Game.Play> {
                     LaunchedEffect(Unit) {
                         requestFullScreen()
                     }
@@ -133,13 +136,13 @@ fun MainScreen(
                         exit = { navController.navigateUp() },
                         submit = { game ->
                             mainViewModel.game = game
-                            navController.navigate(Play.Result) {
-                                popUpTo(Play.Setting)
+                            navController.navigate(Game.Result) {
+                                popUpTo(Game.Play) { inclusive = true }
                             }
                         }
                     )
                 }
-                composable<Play.Result> {
+                composable<Game.Result> {
                     LaunchedEffect(Unit) {
                         requestFullScreen()
                     }
@@ -147,72 +150,35 @@ fun MainScreen(
                         game = mainViewModel.game,
                         exit = { navController.navigateUp() },
                         replay = { _ ->
-                            navController.navigate(Play.Playing) {
-                                popUpTo(Play.Setting)
+                            navController.navigate(Game.Play) {
+                                popUpTo(Game.Result) { inclusive = true }
                             }
                         },
                         inspect = { game ->
                             mainViewModel.game = game
                             navController.navigate(Inspect) {
-                                popUpTo(Play.Setting)
+                                popUpTo(Game.Result) { inclusive = true }
                             }
                         }
                     )
                 }
             }
-            navigation<History>(startDestination = History.Default) {
-                composable<History.Default> {
-                    LaunchedEffect(Unit) {
-                        dismissFullScreen()
-                    }
-                    PastGames(
-                        replay = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(History.Replay)
-                        },
-                        inspect = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(Inspect)
-                        },
-                        onAboutClick = { navController.navigate(About) },
-                        modifier = Modifier.padding(paddingValues)
-                    )
+            composable<History> {
+                LaunchedEffect(Unit) {
+                    dismissFullScreen()
                 }
-                composable<History.Replay> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
-                    Playing(
-                        game = mainViewModel.game,
-                        exit = { navController.navigateUp() },
-                        submit = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(History.Result) {
-                                popUpTo(History.Default)
-                            }
-                        }
-                    )
-                }
-                composable<History.Result> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
-                    Result(
-                        game = mainViewModel.game,
-                        exit = { navController.navigateUp() },
-                        replay = { _ ->
-                            navController.navigate(History.Replay) {
-                                popUpTo(History.Default)
-                            }
-                        },
-                        inspect = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(Inspect) {
-                                popUpTo(History.Default)
-                            }
-                        }
-                    )
-                }
+                PastGames(
+                    replay = { game ->
+                        mainViewModel.game = game
+                        navController.navigate(Game.Play)
+                    },
+                    inspect = { game ->
+                        mainViewModel.game = game
+                        navController.navigate(Inspect)
+                    },
+                    onAboutClick = { navController.navigate(About) },
+                    modifier = Modifier.padding(paddingValues)
+                )
             }
             composable<Inspect> {
                 LaunchedEffect(Unit) {
@@ -221,7 +187,7 @@ fun MainScreen(
                 Inspect(
                     goBack = { navController.navigateUp() },
                     replay = { _ ->
-                        navController.navigate(History.Replay) {
+                        navController.navigate(Game) {
                             popUpTo(Inspect) { inclusive = true }
                         }
                     },

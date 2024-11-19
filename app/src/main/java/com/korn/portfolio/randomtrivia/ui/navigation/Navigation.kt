@@ -40,20 +40,19 @@ data object Play : BottomNav {
         val onlineMode: Boolean,
         val settings: List<SerializableGameSetting>
     )
-    @Serializable data object Playing
-    @Serializable data object Result
 }
 
 @Serializable
 data object History : BottomNav {
     override val title = "History"
     override val icon = R.drawable.ic_history
-
-    @Serializable data object Default
-    @Serializable data object Replay
-    @Serializable data object Result
 }
 
+@Serializable
+data object Game {
+    @Serializable data object Play
+    @Serializable data object Result
+}
 @Serializable data object Inspect
 @Serializable data object About
 
