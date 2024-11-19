@@ -33,14 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.hhmmssFrom
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
-import com.korn.portfolio.randomtrivia.ui.viewmodel.ResultViewModel
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,7 +50,16 @@ fun Result(
     inspect: (Game) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val viewModel: ResultViewModel = viewModel(factory = ResultViewModel.Factory(game))
+    // Extract data from game
+    val totalTimeSecond = game.detail.totalTimeSecond
+    val score = game.questions.fold(0) { score, question ->
+        if (question.answer.answer == question.question.correctAnswer)
+            score + 1
+        else
+            score
+    }
+    val maxScore = game.questions.size
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -60,7 +67,7 @@ fun Result(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = { viewModel.exit(exit) },
+                        onClick = exit,
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to exit to main screen.",
                         text = "Exit"
@@ -82,7 +89,7 @@ fun Result(
                         text = "Inspect"
                     )
                     IconButtonWithText(
-                        onClick = { viewModel.replay(replay) },
+                        onClick = { replay(game) },
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Replay button.",
                         text = "Replay"
@@ -118,7 +125,7 @@ fun Result(
             }
 
             Text(
-                text = "${viewModel.score} / ${viewModel.maxScore}",
+                text = "$score / $maxScore",
                 color = color,
                 style = MaterialTheme.typography.displayMedium
             )
@@ -133,7 +140,7 @@ fun Result(
                         tint = color
                     )
                     Text(
-                        text = hhmmssFrom(viewModel.totalTimeSecond),
+                        text = hhmmssFrom(totalTimeSecond),
                         color = color
                     )
                 }
