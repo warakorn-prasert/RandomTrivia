@@ -95,7 +95,7 @@ class TriviaDatabaseTest {
     }
 
     @Test
-    fun insert_update_delete() = runBlocking {
+    fun insert_update_delete_upsert() = runBlocking {
         val update = arrayOf(
             cats[1].copy(name = "update cat 1"),
             cats[2].copy(name = "update cat 2")
@@ -103,8 +103,13 @@ class TriviaDatabaseTest {
         categoryDao.update(*update)
         val delete = cats.sliceArray(3..4)
         categoryDao.delete(*delete)
+        val upsert = arrayOf(
+            cats[0].copy(name = "upsert cat 0"),
+            cats[4]
+        )
+        categoryDao.upsert(*upsert)
         assertEquals(
-            listOf(cats[0], *update),
+            listOf(upsert[0], *update, upsert[1]),
             categoryDao.getCategoriesWithQuestions().first().map { it.category }
         )
     }
