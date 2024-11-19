@@ -44,8 +44,6 @@ class MainViewModel(private val triviaRepository: TriviaRepository) : ViewModel(
         }
     }
 
-    var onlineMode = false
-    var settings = emptyList<GameSetting>()
     var game = Game(GameDetail(Date(), 0), emptyList())
 
     companion object {

@@ -23,10 +23,15 @@ import androidx.navigation.toRoute
 import com.korn.portfolio.randomtrivia.ui.common.BottomBar
 import com.korn.portfolio.randomtrivia.ui.navigation.About
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
+import com.korn.portfolio.randomtrivia.ui.navigation.GameSettingType
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
 import com.korn.portfolio.randomtrivia.ui.navigation.Play
+import com.korn.portfolio.randomtrivia.ui.navigation.SerializableGameSetting
+import com.korn.portfolio.randomtrivia.ui.navigation.deserialized
+import com.korn.portfolio.randomtrivia.ui.navigation.serialized
 import com.korn.portfolio.randomtrivia.ui.viewmodel.MainViewModel
+import kotlin.reflect.typeOf
 
 @Composable
 fun MainScreen(
@@ -94,20 +99,21 @@ fun MainScreen(
                         categoriesFetchStatus = mainViewModel.categoriesFetchStatus,
                         fetchCategories = { mainViewModel.fetchCategories() },
                         submit = { onlineMode, settings ->
-                            mainViewModel.onlineMode = onlineMode
-                            mainViewModel.settings = settings
-                            navController.navigate(Play.Loading)
+                            navController.navigate(Play.Loading(onlineMode, settings.serialized()))
                         },
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
-                composable<Play.Loading> {
+                composable<Play.Loading>(
+                    typeMap = mapOf(typeOf<List<SerializableGameSetting>>() to GameSettingType)
+                ) { backStackEntry ->
                     LaunchedEffect(Unit) {
                         requestFullScreen()
                     }
+                    val (onlineMode, settings) = backStackEntry.toRoute<Play.Loading>()
                     LoadingBeforePlaying(
-                        onlineMode = mainViewModel.onlineMode,
-                        settings = mainViewModel.settings,
+                        onlineMode = onlineMode,
+                        settings = settings.deserialized(),
                         cancel = { navController.navigateUp() },
                         onDone = { game ->
                             mainViewModel.game = game
