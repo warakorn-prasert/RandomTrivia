@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,9 +55,7 @@ fun MainScreen(
     ) { paddingValues ->
         NavHost(navController, startDestination = Categories) {
             composable<About> {
-                LaunchedEffect(Unit) {
-                    requestFullScreen()
-                }
+                requestFullScreen()
                 AboutScreen(
                     goBack = { navController.navigateUp() },
                     modifier = Modifier.systemBarsPadding()
@@ -66,9 +63,7 @@ fun MainScreen(
             }
             navigation<Categories>(startDestination = Categories.Default) {
                 composable<Categories.Default> {
-                    LaunchedEffect(Unit) {
-                        dismissFullScreen()
-                    }
+                    dismissFullScreen()
                     Categories(
                         fetchStatus = mainViewModel.categoriesFetchStatus,
                         fetchCategories = { mainViewModel.fetchCategories() },
@@ -80,9 +75,7 @@ fun MainScreen(
                     )
                 }
                 composable<Categories.Questions> { backStackEntry ->
-                    LaunchedEffect(Unit) {
-                        dismissFullScreen()
-                    }
+                    dismissFullScreen()
                     Questions(
                         categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId,
                         goBack = { navController.navigateUp() },
@@ -93,9 +86,7 @@ fun MainScreen(
             }
             navigation<Play>(startDestination = Play.Setting) {
                 composable<Play.Setting> {
-                    LaunchedEffect(Unit) {
-                        dismissFullScreen()
-                    }
+                    dismissFullScreen()
                     SettingBeforePlaying(
                         categoriesFetchStatus = mainViewModel.categoriesFetchStatus,
                         fetchCategories = { mainViewModel.fetchCategories() },
@@ -108,9 +99,7 @@ fun MainScreen(
                 composable<Play.Loading>(
                     typeMap = mapOf(typeOf<List<SerializableGameSetting>>() to GameSettingType)
                 ) { backStackEntry ->
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
+                    requestFullScreen()
                     val (onlineMode, settings) = backStackEntry.toRoute<Play.Loading>()
                     LoadingBeforePlaying(
                         onlineMode = onlineMode,
@@ -128,9 +117,7 @@ fun MainScreen(
             }
             navigation<Game>(startDestination = Game.Play) {
                 composable<Game.Play> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
+                    requestFullScreen()
                     Playing(
                         game = mainViewModel.game,
                         exit = { navController.navigateUp() },
@@ -143,9 +130,7 @@ fun MainScreen(
                     )
                 }
                 composable<Game.Result> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
+                    requestFullScreen()
                     Result(
                         game = mainViewModel.game,
                         exit = { navController.navigateUp() },
@@ -164,9 +149,7 @@ fun MainScreen(
                 }
             }
             composable<History> {
-                LaunchedEffect(Unit) {
-                    dismissFullScreen()
-                }
+                dismissFullScreen()
                 PastGames(
                     replay = { game ->
                         mainViewModel.game = game
@@ -181,9 +164,7 @@ fun MainScreen(
                 )
             }
             composable<Inspect> {
-                LaunchedEffect(Unit) {
-                    requestFullScreen()
-                }
+                requestFullScreen()
                 Inspect(
                     goBack = { navController.navigateUp() },
                     replay = { _ ->
