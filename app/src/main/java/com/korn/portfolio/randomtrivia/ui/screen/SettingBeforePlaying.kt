@@ -63,6 +63,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -143,7 +144,7 @@ private fun SettingBeforePlaying(
     modifier: Modifier = Modifier
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    var settings: List<GameSetting> by remember { mutableStateOf(emptyList()) }
+    var settings: List<GameSetting> by rememberSaveable { mutableStateOf(emptyList()) }
     val categories = dialogChoiceGetter.getCategories(settings)
 
     Scaffold(
