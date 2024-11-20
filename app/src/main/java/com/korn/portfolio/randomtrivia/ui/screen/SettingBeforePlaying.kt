@@ -73,6 +73,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
@@ -577,7 +578,11 @@ private fun SettingListItems(
     }
     LazyColumn(
         state = listState,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            top = 8.dp,
+            bottom = 8.dp
+        )
     ) {
         itemsIndexed(
             items = settings,
@@ -595,10 +600,13 @@ private fun SettingListItems(
                                 remove(it)
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        endPadding = 16.dp
                     )
                     if (idx < settings.size - 1) {
-                        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                        HorizontalDivider(
+                            Modifier.padding(top = 8.dp, end = 16.dp, bottom = 8.dp)
+                        )
                     }
                 }
             }
@@ -614,7 +622,8 @@ private fun SettingListItems(
 private fun SettingListItem(
     setting: GameSetting,
     remove: (GameSetting) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    endPadding: Dp = 0.dp
 ) {
     Row(modifier, Arrangement.spacedBy(16.dp)) {
         Column(Modifier.weight(1f), Arrangement.spacedBy(8.dp)) {
@@ -623,7 +632,7 @@ private fun SettingListItem(
         }
         IconButton(
             onClick = { remove(setting) },
-            modifier = Modifier.offset(x = 12.dp)
+            modifier = Modifier.offset(x = 12.dp - endPadding)
         ) {
             Icon(Icons.Default.Close, "Button to remove game setting item.")
         }
