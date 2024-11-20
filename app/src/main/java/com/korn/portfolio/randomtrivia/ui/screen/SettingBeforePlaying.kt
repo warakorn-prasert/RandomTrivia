@@ -57,7 +57,9 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -76,6 +78,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatusBar
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
@@ -87,13 +90,13 @@ import com.korn.portfolio.randomtrivia.ui.previewdata.GameSettingDataProvider
 import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
-import com.korn.portfolio.randomtrivia.ui.viewmodel.MAX_AMOUNT
-import com.korn.portfolio.randomtrivia.ui.viewmodel.MIN_AMOUNT
+import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting.Companion.MAX_AMOUNT
+import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting.Companion.MIN_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private const val deleteAnimDuration = 500
+private const val DELETE_ANIM_DURATION = 500
 
 @Composable
 fun SettingBeforePlaying(
@@ -103,87 +106,57 @@ fun SettingBeforePlaying(
     modifier: Modifier = Modifier
 ) {
     val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
-
-    val canStartGame by viewModel.canStartGame.collectAsState(false)
     val onlineMode by viewModel.onlineMode.collectAsState()
 
-    val canAddMoreSetting by viewModel.canAddMoreSetting(categoriesFetchStatus).collectAsState(false)
-    val settings by viewModel.settings.collectAsState()
-
-    val questionCountFetchStatus by viewModel.questionCountFetchStatus.collectAsState()
-
-    val category by viewModel.category.collectAsState()
-    val difficulty by viewModel.difficulty.collectAsState()
-    val amount by viewModel.amount.collectAsState()
-    val categories by viewModel.categories.collectAsState(emptyList())
-    val difficulties by viewModel.difficulties.collectAsState(emptyList())
-    val maxAmount by viewModel.maxAmount.collectAsState(MAX_AMOUNT)
+    val catsWithCounts by viewModel.categoriesWithQuestionCounts.collectAsState(emptyList())
+    val dialogChoiceGetter = DialogChoiceGetter(catsWithCounts)
 
     SettingBeforePlaying(
-        submit = { viewModel.submit(submit) },
-        canStartGame = canStartGame,
-        canAddMoreSetting = canAddMoreSetting,
-        settings = settings,
-        removeSetting = { viewModel.removeSetting(it) },
+        submit = { settings -> submit(onlineMode, settings) },
         onlineMode = onlineMode,
-        changeOnlineMode = {
-            viewModel.changeOnlineMode(it, categoriesFetchStatus, fetchCategories)
+        onOnlineModeChange = { online ->
+            viewModel.changeOnlineMode(online)
+            if (online && categoriesFetchStatus is FetchStatus.Error)
+                fetchCategories()
         },
-        fetchStatus = categoriesFetchStatus,
+        categoriesFetchStatus = categoriesFetchStatus,
         fetchCategories = fetchCategories,
-        questionCountFetchStatus = questionCountFetchStatus,
-        fetchQuestionCount = { viewModel.fetchQuestionCountIfNeedTo() },
-        addSetting = { viewModel.addSetting() },
-        category = category,
-        difficulty = difficulty,
-        amount = amount,
-        categories = categories,
-        difficulties = difficulties,
-        maxAmount = maxAmount,
-        selectCategory = { viewModel.selectCategory(it) },
-        selectDifficulty = { viewModel.selectDifficulty(it) },
-        selectAmount = { viewModel.selectAmount(it) },
+        fetchQuestionCountIfNotAlready = { categoryId, onFetchStatusChange ->
+            viewModel.fetchQuestionCountIfNotAlready(categoryId, onFetchStatusChange)
+        },
+        dialogChoiceGetter = dialogChoiceGetter,
         modifier = modifier
     )
 }
 
 @Composable
-fun SettingBeforePlaying(
-    submit: () -> Unit,
-    canStartGame: Boolean,
+private fun SettingBeforePlaying(
+    submit: (List<GameSetting>) -> Unit,
     onlineMode: Boolean,
-    canAddMoreSetting: Boolean,
-    settings: List<GameSetting>,
-    removeSetting: (GameSetting) -> Unit,
-    changeOnlineMode: (Boolean) -> Unit,
-    fetchStatus: FetchStatus,
+    onOnlineModeChange: (Boolean) -> Unit,
+    categoriesFetchStatus: FetchStatus,
     fetchCategories: () -> Unit,
-    questionCountFetchStatus: FetchStatus,
-    fetchQuestionCount: () -> Unit,
-    addSetting: () -> Unit,
-    category: Category?,
-    difficulty: Difficulty?,
-    amount: Int,
-    categories: List<Category?>,
-    difficulties: List<Difficulty?>,
-    maxAmount: Int,
-    selectCategory: (Category?) -> Unit,
-    selectDifficulty: (Difficulty?) -> Unit,
-    selectAmount: (Int) -> Unit,
+    fetchQuestionCountIfNotAlready:
+        (categoryId: Int?, onFetchStatusChange: (FetchStatus) -> Unit) -> Unit,
+    dialogChoiceGetter: DialogChoiceGetter,
     modifier: Modifier = Modifier
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    var settings: List<GameSetting> by remember { mutableStateOf(emptyList()) }
+    val categories = dialogChoiceGetter.getCategories(settings)
+
     Scaffold(
         modifier = modifier,
         topBar = {
             TopBarWithStartButton(
-                enabled = canStartGame,
-                onClick = submit
+                enabled = settings.isNotEmpty(),
+                onClick = { submit(settings) }
             )
         },
         floatingActionButton = {
             ExtendedFAB(
-                enabled = canAddMoreSetting,
+                enabled = categoriesFetchStatus == FetchStatus.Success
+                        && categories.isNotEmpty(),
                 onClick = { showDialog = true }
             )
         },
@@ -192,28 +165,27 @@ fun SettingBeforePlaying(
         Column(Modifier.padding(paddingValues)) {
             OnlineModeToggleMenu(
                 onlineMode = onlineMode,
-                onChange = changeOnlineMode
+                onChange = {
+                    settings = emptyList()
+                    onOnlineModeChange(it)
+                }
             )
-            AddGameSettingDialog(
-                show = showDialog,
-                onDismissRequest = { showDialog = false },
-                canAddMoreSetting = canAddMoreSetting,
-                fetchStatus = questionCountFetchStatus,
-                fetchQuestionCount = fetchQuestionCount,
-                addSetting = addSetting,
-                category = category,
-                difficulty = difficulty,
-                amount = amount,
-                categories = categories,
-                difficulties = difficulties,
-                maxAmount = maxAmount,
-                selectCategory = selectCategory,
-                selectDifficulty = selectDifficulty,
-                selectAmount = selectAmount
-            )
+            if (showDialog)
+                AddGameSettingDialog(
+                    onDismissRequest = { showDialog = false },
+                    onAddClick = { settings = settings + it },
+                    categories = categories,
+                    getDifficulties = { category ->
+                        dialogChoiceGetter.getDifficulties(category, settings)
+                    },
+                    getMaxAmount = { category, difficulty ->
+                        dialogChoiceGetter.getMaxAmount(category, difficulty)
+                    },
+                    fetchQuestionCountIfNotAlready = fetchQuestionCountIfNotAlready
+                )
             if (onlineMode)
                 FetchStatusBar(
-                    fetchStatus = fetchStatus,
+                    fetchStatus = categoriesFetchStatus,
                     retry = fetchCategories
                 )
             if (settings.isEmpty())
@@ -223,10 +195,86 @@ fun SettingBeforePlaying(
             else
                 SettingListItems(
                     settings = settings,
-                    remove = removeSetting
+                    remove = { setting ->
+                        val idx = settings.indexOfFirst {
+                            it.category?.id == setting.category?.id
+                                    && it.difficulty == setting.difficulty
+                                    && it.amount == setting.amount
+                        }
+                        settings = settings.run { subList(0, idx) + drop(idx + 1) }
+                    }
                 )
         }
     }
+}
+
+private class DialogChoiceGetter(
+    private val catsWithCounts: List<Pair<Category, QuestionCount>>
+) {
+    private val allDifficulties: List<Difficulty?> = listOf(null) + Difficulty.entries
+
+    private val QuestionCount?.difficultiesWithQuestions: List<Difficulty?>
+        get() =
+            if (this == null) allDifficulties
+            else mutableListOf<Difficulty?>(null).apply {
+                if (easy > 0) add(Difficulty.EASY)
+                if (medium > 0) add(Difficulty.MEDIUM)
+                if (hard > 0) add(Difficulty.HARD)
+            }
+
+    private val Pair<Category, QuestionCount>?.difficultiesWithQuestions: List<Difficulty?>
+        get() = if (this == null) allDifficulties else second.difficultiesWithQuestions
+
+    fun getCategories(settings: List<GameSetting>): List<Category?> {
+        if (catsWithCounts.isEmpty()) return emptyList()
+        else {
+            // Exclude category in settings whose all difficulties are used.
+            val catIdsToExclude: List<Int?> = settings
+                .filter { setting ->
+                    val usedCombinations = settings.count { it.category?.id == setting.category?.id }
+                    val possibleCombinations =
+                        // Random category has all difficulties
+                        if (setting.category == null) allDifficulties.size
+                        else catsWithCounts
+                            .first { it.first.id == setting.category.id }
+                            .difficultiesWithQuestions
+                            .size
+                    usedCombinations == possibleCombinations
+                }
+                .map { it.category?.id }
+            // Return random category + starting categories - excluded categories
+            return (listOf(null) + catsWithCounts.sortedBy { it.first.name })
+                .filter { all ->
+                    all?.first?.id !in catIdsToExclude
+                }
+                .map { it?.first }
+        }
+    }
+
+    fun getDifficulties(category: Category?, settings: List<GameSetting>): List<Difficulty?>  {
+        val allDiffs =
+            if (category == null) allDifficulties
+            else catsWithCounts
+                .first { it.first.id == category.id }
+                .difficultiesWithQuestions
+        val usedDiffs = settings.filter { it.category?.id == category?.id }.map { it.difficulty }
+        return allDiffs - usedDiffs
+    }
+
+    fun getMaxAmount(category: Category?, difficulty: Difficulty?): Int =
+        if (category == null) MAX_AMOUNT
+        else catsWithCounts
+            .first { it.first.id == category.id }
+            .second
+            .run {
+                when (difficulty) {
+                    Difficulty.EASY -> easy
+                    Difficulty.MEDIUM -> medium
+                    Difficulty.HARD -> hard
+                    else -> total
+                }
+            }
+            .coerceAtMost(MAX_AMOUNT)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -352,115 +400,167 @@ private fun ExtendedFAB(
 
 @Composable
 private fun AddGameSettingDialog(
-    show: Boolean,
     onDismissRequest: () -> Unit,
-    canAddMoreSetting: Boolean,
-    fetchStatus: FetchStatus,
-    fetchQuestionCount: () -> Unit,
-    addSetting: () -> Unit,
-    category: Category?,
-    difficulty: Difficulty?,
-    amount: Int,
+    onAddClick: (GameSetting) -> Unit,
     categories: List<Category?>,
-    difficulties: List<Difficulty?>,
-    maxAmount: Int,
-    selectCategory: (Category?) -> Unit,
-    selectDifficulty: (Difficulty?) -> Unit,
-    selectAmount: (Int) -> Unit,
+    getDifficulties: (Category?) -> List<Difficulty?>,
+    getMaxAmount: (Category?, Difficulty?) -> Int,
+    fetchQuestionCountIfNotAlready:
+        (categoryId: Int?, onFetchStatusChange: (FetchStatus) -> Unit) -> Unit,
 ) {
-    LaunchedEffect(canAddMoreSetting) {
-        if (!canAddMoreSetting) onDismissRequest()
+    // new categories -> reset category
+    var category: Category? by remember {
+        mutableStateOf(categories.firstOrNull())
     }
-    var displayAmount by remember { mutableStateOf(amount.toString()) }
-    val validDisplayAmount = displayAmount.toIntOrNull()
-        ?.let {
-            it in MIN_AMOUNT..maxAmount.coerceAtLeast(MIN_AMOUNT)
+    LaunchedEffect(categories) {
+        if (categories.isEmpty()) onDismissRequest()
+        category = categories.firstOrNull()
+    }
+
+    // new category -> fetch question count
+    var questionCountFetchStatus: FetchStatus by remember { mutableStateOf(FetchStatus.Success) }
+    LaunchedEffect(category) {
+        fetchQuestionCountIfNotAlready(category?.id) {
+            questionCountFetchStatus = it
         }
-        ?: false
-    if (show)
-        PaddedDialog(
-            onDismissRequest = onDismissRequest,
-            title = { Text("Game Setting") },
-            actions = {
-                TextButton(onDismissRequest) { Text("CANCEL") }
-                val focusManager = LocalFocusManager.current
-                TextButton(
-                    onClick = {
-                        addSetting()
-                        focusManager.clearFocus()
-                    },
-                    enabled = fetchStatus == FetchStatus.Success && validDisplayAmount
-                ) {
-                    Text("ADD")
-                }
+    }
+
+    // case 1: new category -> fetch question count -> new difficulties
+    // case 2: new category (already fetched) -> new difficulties
+    // case 3: retry fetch question count -> new difficulties
+    var difficulties: List<Difficulty?> by remember {
+        mutableStateOf(getDifficulties(category))
+    }
+    LaunchedEffect(
+        category,  // case 2
+        questionCountFetchStatus  // case 1 & 3
+    ) {
+        if (questionCountFetchStatus == FetchStatus.Success)
+            difficulties = getDifficulties(category)
+    }
+
+    // new difficulties -> new difficulty
+    var difficulty: Difficulty? by remember(difficulties) {
+        mutableStateOf(difficulties.firstOrNull())
+    }
+
+    // new difficulty -> new max amount
+    val maxAmount: Int by remember(difficulty) {
+        mutableIntStateOf(getMaxAmount(category, difficulty))
+    }
+
+    // new max amount -> new amount
+    fun getNewAmount(oldAmount: String, newMaxAmount: Int): String =
+        (oldAmount.toIntOrNull() ?: MIN_AMOUNT)
+            .coerceIn(MIN_AMOUNT..newMaxAmount.coerceAtLeast(MIN_AMOUNT))
+            .toString()
+    var amount: String by remember { mutableStateOf(MIN_AMOUNT.toString()) }
+    LaunchedEffect(maxAmount) {
+        amount = getNewAmount(amount, maxAmount)
+    }
+
+    val isAmountValid: Boolean by remember {
+        derivedStateOf {
+            amount.toIntOrNull()
+                ?.let { it in MIN_AMOUNT..maxAmount.coerceAtLeast(MIN_AMOUNT) }
+                ?: false
+        }
+    }
+
+    PaddedDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Game Setting") },
+        actions = {
+            TextButton(onDismissRequest) { Text("CANCEL") }
+            val focusManager = LocalFocusManager.current
+            TextButton(
+                onClick = {
+                    onAddClick(GameSetting(category, difficulty, amount.toInt()))
+                    // If categories doesn't update, nothing will,
+                    // i.e., when there're other options with same category.
+                    // Updating difficulties will update difficulty, max amount, and amount.
+                    difficulties = getDifficulties(category)
+                    // dismiss keyboard if shown
+                    focusManager.clearFocus()
+                },
+                enabled = questionCountFetchStatus == FetchStatus.Success
+                        && isAmountValid
+            ) {
+                Text("ADD")
             }
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (fetchStatus in listOf(FetchStatus.Loading, FetchStatus.Success)) {
-                    OutlinedDropdown(
-                        selected = category,
-                        onSelect = selectCategory,
-                        items = categories,
-                        toString = { it.displayName },
-                        label = { Text("Category") },
-                        itemContent = { Text(it.displayName) }
+        }
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (questionCountFetchStatus == FetchStatus.Loading
+                || questionCountFetchStatus == FetchStatus.Success)
+                OutlinedDropdown(
+                    selected = category,
+                    onSelect = { category = it },
+                    items = categories,
+                    toString = { it.displayName },
+                    label = { Text("Category") },
+                    itemContent = { Text(it.displayName) }
+                )
+            when (val f = questionCountFetchStatus) {
+                is FetchStatus.Error -> {
+                    Text(
+                        text = f.message,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    IconButtonWithText(
+                        onClick = {
+                            fetchQuestionCountIfNotAlready(category?.id) {
+                                questionCountFetchStatus = it
+                            }
+                        },
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Button to retry fetching category detail",
+                        text = "Retry"
                     )
                 }
-                when (fetchStatus) {
-                    is FetchStatus.Error -> {
-                        Text(
-                            text = fetchStatus.message,
-                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                            color = MaterialTheme.colorScheme.error
+
+                FetchStatus.Loading ->
+                    CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
+
+                FetchStatus.Success ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedDropdown(
+                            selected = difficulty,
+                            onSelect = { difficulty = it },
+                            items = difficulties,
+                            toString = { it.displayName },
+                            label = { Text("Difficulty") },
+                            itemContent = { Text(it.displayName) }
                         )
-                        IconButtonWithText(
-                            onClick = fetchQuestionCount,
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Button to retry fetching category detail",
-                            text = "Retry"
+
+                        // when keyboard is dismissed, set amount to correct value
+                        val interactionSource = remember { MutableInteractionSource() }
+                        val isFocus by interactionSource.collectIsFocusedAsState()
+                        LaunchedEffect(isFocus) {
+                            if (!isFocus)
+                                amount = getNewAmount(amount, maxAmount)
+                        }
+
+                        val focusManager = LocalFocusManager.current
+                        OutlinedTextField(
+                            value = amount,
+                            onValueChange = { amount = it },
+                            label = { Text("Amount") },
+                            supportingText = { Text("Max $maxAmount") },
+                            keyboardOptions = KeyboardOptions.Default.copy(
+                                keyboardType = KeyboardType.Decimal,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = { focusManager.clearFocus() }
+                            ),
+                            interactionSource = interactionSource
                         )
                     }
-                    FetchStatus.Loading ->
-                        CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-                    FetchStatus.Success ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedDropdown(
-                                selected = difficulty,
-                                onSelect = selectDifficulty,
-                                items = difficulties,
-                                toString = { it.displayName },
-                                label = { Text("Difficulty") },
-                                itemContent = { Text(it.displayName) }
-                            )
-                            val interactionSource = remember { MutableInteractionSource() }
-                            val isFocus by interactionSource.collectIsFocusedAsState()
-                            LaunchedEffect(isFocus, displayAmount, amount) {
-                                if (!isFocus || validDisplayAmount) {
-                                    val newAmount = (displayAmount.toIntOrNull() ?: MIN_AMOUNT)
-                                        .coerceIn(MIN_AMOUNT..maxAmount.coerceAtLeast(MIN_AMOUNT))
-                                    selectAmount(newAmount)
-                                    displayAmount = newAmount.toString()
-                                }
-                            }
-                            val focusManager = LocalFocusManager.current
-                            OutlinedTextField(
-                                value = displayAmount,
-                                onValueChange = { displayAmount = it },
-                                label = { Text("Amount") },
-                                supportingText = { Text("Max $maxAmount") },
-                                keyboardOptions = KeyboardOptions.Default.copy(
-                                    keyboardType = KeyboardType.Decimal,
-                                    imeAction = ImeAction.Done
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onDone = { focusManager.clearFocus() }
-                                ),
-                                interactionSource = interactionSource
-                            )
-                        }
-                }
             }
         }
+    }
 }
 
 @Composable
@@ -483,7 +583,7 @@ private fun SettingListItems(
             items = settings,
             key = { _, setting -> setting.run { "${ category?.id }$difficulty$amount" } }
         ) { idx, setting ->
-            Column(Modifier.animateContentSize(tween(deleteAnimDuration))) {
+            Column(Modifier.animateContentSize(tween(DELETE_ANIM_DURATION))) {
                 var deleting by remember { mutableStateOf(false) }
                 if (!deleting) {
                     SettingListItem(
@@ -491,7 +591,7 @@ private fun SettingListItems(
                         remove = {
                             scope.launch {
                                 deleting = true
-                                delay(deleteAnimDuration.toLong())
+                                delay(DELETE_ANIM_DURATION.toLong())
                                 remove(it)
                             }
                         },
@@ -536,29 +636,12 @@ private fun SettingBeforePlayingPreview() {
     RandomTriviaTheme {
         SettingBeforePlaying(
             submit = {},
-            canStartGame = true,
-            canAddMoreSetting = true,
-            settings = listOf(
-                GameSetting(getCategory(0), Difficulty.EASY, 10),
-                GameSetting(getCategory(1), Difficulty.HARD, 50),
-            ),
-            removeSetting = {},
             onlineMode = true,
-            changeOnlineMode = {},
-            fetchStatus = FetchStatus.Success,
+            onOnlineModeChange = {},
+            categoriesFetchStatus = FetchStatus.Success,
             fetchCategories = {},
-            questionCountFetchStatus = FetchStatus.Success,
-            fetchQuestionCount = {},
-            addSetting = {},
-            category = getCategory(0),
-            difficulty = Difficulty.EASY,
-            amount = 1,
-            categories = emptyList(),
-            difficulties = emptyList(),
-            maxAmount = 1,
-            selectCategory = {},
-            selectDifficulty = {},
-            selectAmount = {},
+            fetchQuestionCountIfNotAlready = { _, _ -> },
+            dialogChoiceGetter = DialogChoiceGetter(emptyList()),
         )
     }
 }
@@ -569,26 +652,12 @@ private fun LoadingPreview() {
     RandomTriviaTheme {
         SettingBeforePlaying(
             submit = {},
-            canStartGame = false,
-            canAddMoreSetting = false,
-            settings = emptyList(),
-            removeSetting = {},
             onlineMode = true,
-            changeOnlineMode = {},
-            fetchStatus = FetchStatus.Loading,
+            onOnlineModeChange = {},
+            categoriesFetchStatus = FetchStatus.Loading,
             fetchCategories = {},
-            questionCountFetchStatus = FetchStatus.Success,
-            fetchQuestionCount = {},
-            addSetting = {},
-            category = getCategory(0),
-            difficulty = Difficulty.EASY,
-            amount = 1,
-            categories = emptyList(),
-            difficulties = emptyList(),
-            maxAmount = 1,
-            selectCategory = {},
-            selectDifficulty = {},
-            selectAmount = {},
+            fetchQuestionCountIfNotAlready = { _, _ -> },
+            dialogChoiceGetter = DialogChoiceGetter(emptyList()),
         )
     }
 }
@@ -599,26 +668,12 @@ private fun ErrorPreview() {
     RandomTriviaTheme {
         SettingBeforePlaying(
             submit = {},
-            canStartGame = false,
-            canAddMoreSetting = false,
-            settings = emptyList(),
-            removeSetting = {},
             onlineMode = true,
-            changeOnlineMode = {},
-            fetchStatus = FetchStatus.Error("Some error message"),
+            onOnlineModeChange = {},
+            categoriesFetchStatus = FetchStatus.Error("Some error message."),
             fetchCategories = {},
-            questionCountFetchStatus = FetchStatus.Success,
-            fetchQuestionCount = {},
-            addSetting = {},
-            category = getCategory(0),
-            difficulty = Difficulty.EASY,
-            amount = 1,
-            categories = emptyList(),
-            difficulties = emptyList(),
-            maxAmount = 1,
-            selectCategory = {},
-            selectDifficulty = {},
-            selectAmount = {},
+            fetchQuestionCountIfNotAlready = { _, _ -> },
+            dialogChoiceGetter = DialogChoiceGetter(emptyList()),
         )
     }
 }
@@ -662,21 +717,12 @@ private fun ExtendedFABPreview(
 private fun AddGameSettingDialogPreview() {
     RandomTriviaTheme {
         AddGameSettingDialog(
-            show = true,
             onDismissRequest = {},
-            canAddMoreSetting = false,
-            fetchStatus = FetchStatus.Success,
-            fetchQuestionCount = {},
-            addSetting = {},
-            category = getCategory(0),
-            difficulty = Difficulty.EASY,
-            amount = 1,
-            categories = List(2) { getCategory(it) },
-            difficulties = Difficulty.entries,
-            maxAmount = 50,
-            selectCategory = {},
-            selectDifficulty = {},
-            selectAmount = {}
+            onAddClick = {},
+            categories = List(1) { getCategory(it) },
+            getDifficulties = { Difficulty.entries },
+            getMaxAmount = { _, _ -> 50 },
+            fetchQuestionCountIfNotAlready = { _, _ -> }
         )
     }
 }
