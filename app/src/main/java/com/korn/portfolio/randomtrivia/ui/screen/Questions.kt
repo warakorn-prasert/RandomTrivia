@@ -79,19 +79,6 @@ private val Difficulty.sortIndex: Int
         Difficulty.HARD -> 2
     }
 
-private fun List<Question>.process(
-    filter: QuestionFilter,
-    searchWord: String,
-    sort: QuestionSort,
-    reverseSort: Boolean
-): List<Question> = this
-    .let { filter.invoke(it) }
-    .filter {
-        it.question.lowercase().contains(searchWord.lowercase())
-    }
-    .let { sort.invoke(it) }
-    .let { if (reverseSort) it.reversed() else it }
-
 @Composable
 fun Questions(
     categoryId: Int,
@@ -169,7 +156,13 @@ private fun Questions(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(
-                    items = questions.process(filter, searchWord, sort, reverseSort),
+                    items = questions
+                        .let { filter.invoke(it) }
+                        .filter {
+                            it.question.lowercase().contains(searchWord.lowercase())
+                        }
+                        .let { sort.invoke(it) }
+                        .let { if (reverseSort) it.reversed() else it },
                     key = { it.id }
                 ) {
                     val alpha by animateFloatAsState(
