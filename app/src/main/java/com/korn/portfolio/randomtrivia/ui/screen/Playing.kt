@@ -2,7 +2,11 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
+import androidx.activity.ComponentActivity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -40,32 +44,43 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
+import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.Game
-import com.korn.portfolio.randomtrivia.database.model.GameQuestion
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
 import com.korn.portfolio.randomtrivia.ui.common.displayName
 import com.korn.portfolio.randomtrivia.ui.common.hhmmssFrom
-import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
-import com.korn.portfolio.randomtrivia.ui.previewdata.getGameQuestion
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
-import com.korn.portfolio.randomtrivia.ui.viewmodel.PlayingViewModel
 import kotlinx.coroutines.launch
+import java.util.Date
+import java.util.UUID
+import kotlin.concurrent.timer
+
+private fun Context.getActivity(): ComponentActivity? =
+    when (this) {
+        is ComponentActivity -> this
+        is ContextWrapper -> baseContext.getActivity()
+        else -> null
+    }
 
 enum class AnswerButtonState(
     val containerColor: @Composable () -> Color,
@@ -86,6 +101,7 @@ enum class AnswerButtonState(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Playing(
     game: Game,
@@ -93,43 +109,30 @@ fun Playing(
     submit: (Game) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val viewModel: PlayingViewModel = viewModel(factory = PlayingViewModel.Factory(game))
-    Playing(
-        exit = { viewModel.exit(exit) },
-        submit = { viewModel.submit(submit) },
-        currentIdx = viewModel.currentIdx,
-        questions = viewModel.questions,
-        selectQuestion = { viewModel.selectQuestion(it) },
-        submittable = viewModel.submittable,
-        second = viewModel.second,
-        answer = { viewModel.answer(it) },
-        modifier = modifier
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun Playing(
-    exit: () -> Unit,
-    submit: () -> Unit,
-    currentIdx: Int,
-    questions: List<GameQuestion>,
-    selectQuestion: (Int) -> Unit,
-    submittable: Boolean,
-    second: Int,
-    answer: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
+    val questions = remember { game.questions.toMutableStateList() }
     val pagerState = rememberPagerState(pageCount = { questions.size })
+    val currentIdx = pagerState.currentPage
+
+    @SuppressLint("ProduceStateDoesNotAssignValue")
+    val second by run {
+        produceState(initialValue = 0) {
+            val timer = timer(initialDelay = 2000L, period = 1000L) {
+                value++
+            }
+            awaitDispose {
+                timer.cancel()
+            }
+        }
+    }
+
+    val scope = rememberCoroutineScope()
     ScrimmableBottomSheetScaffold(
         modifier = modifier,
         sheetContent = { paddingValues, spaceUnderPeekContent ->
-            val scope = rememberCoroutineScope()
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = questions,
                 onSelect = { idx ->
-                    selectQuestion(idx)
                     scope.launch {
                         pagerState.animateScrollToPage(idx)
                     }
@@ -151,12 +154,41 @@ private fun Playing(
                     )
                 },
                 actions = {
+                    val context = LocalContext.current
                     IconButtonWithText(
-                        onClick = submit,
+                        onClick = {
+                            scope.launch {
+                                val newGameId = UUID.randomUUID()
+                                val saveableGame = game.copy(
+                                    detail = game.detail.copy(
+                                        timestamp = Date(),
+                                        totalTimeSecond = second,
+                                        gameId = newGameId
+                                    ),
+                                    questions = questions.map {
+                                        it.copy(
+                                            answer = it.answer.copy(
+                                                gameId = newGameId
+                                            )
+                                        )
+                                    }
+                                )
+                                context.getActivity()?.run {
+                                    (application as TriviaApplication)
+                                        .triviaRepository
+                                        .saveGame(saveableGame)
+                                }
+                                submit(saveableGame)
+                            }
+                        },
                         imageVector = Icons.Default.Check,
                         contentDescription = "Button to submit game answers.",
                         text = "Submit",
-                        enabled = submittable
+                        enabled = questions.all {
+                            it.answer.answer in it.question.run {
+                                incorrectAnswers + correctAnswer
+                            }
+                        }
                     )
                 }
             )
@@ -197,7 +229,15 @@ private fun Playing(
                     AnswerButtons(
                         userAnswer = question.answer.answer,
                         answers = question.question.run { incorrectAnswers + correctAnswer },
-                        answer = answer,
+                        answer = { answer ->
+                            questions[currentIdx] = questions[currentIdx].let {
+                                it.copy(
+                                    answer = it.answer.copy(
+                                        answer = answer
+                                    )
+                                )
+                            }
+                        },
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
@@ -339,14 +379,9 @@ private fun AnswerButtons(
 private fun PlayingPreview() {
     RandomTriviaTheme {
         Playing(
+            game = getGame(11),
             exit = {},
             submit = {},
-            currentIdx = 2,
-            questions = List(12) { getGameQuestion(getCategory(it % 2)) },
-            selectQuestion = {},
-            submittable = true,
-            second = 100,
-            answer = {}
         )
     }
 }
@@ -356,14 +391,9 @@ private fun PlayingPreview() {
 private fun OverflowQuestionPreview() {
     RandomTriviaTheme {
         Playing(
+            game = getGame(1, true),
             exit = {},
             submit = {},
-            currentIdx = 0,
-            questions = listOf(getGameQuestion(getCategory(0), overflow = true)),
-            selectQuestion = {},
-            submittable = true,
-            second = 100,
-            answer = {}
         )
     }
 }
