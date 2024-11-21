@@ -28,11 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -92,7 +88,7 @@ fun Inspect(
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(pageCount = { game.questions.size })
-    var currentIdx by remember { mutableIntStateOf(0) }
+    val currentIdx = pagerState.currentPage
     ScrimmableBottomSheetScaffold(
         modifier = modifier,
         sheetContent = { paddingValues, spaceUnderPeekContent ->
@@ -101,7 +97,6 @@ fun Inspect(
                 currentIdx = currentIdx,
                 questions = game.questions,
                 onSelect = { idx ->
-                    currentIdx = idx
                     scope.launch {
                         pagerState.animateScrollToPage(idx)
                     }
