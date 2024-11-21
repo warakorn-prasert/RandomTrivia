@@ -169,8 +169,11 @@ private fun SettingBeforePlaying(
         },
         floatingActionButton = {
             ExtendedFAB(
-                enabled = categoriesFetchStatus == FetchStatus.Success
-                        && categories.isNotEmpty(),
+                enabled =
+                    if (onlineMode)
+                        categoriesFetchStatus == FetchStatus.Success && categories.isNotEmpty()
+                    else
+                        categories.isNotEmpty(),
                 onClick = { showDialog = true }
             )
         },
