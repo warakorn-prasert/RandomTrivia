@@ -43,7 +43,7 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
-    goBack: () -> Unit,
+    onExit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -54,7 +54,7 @@ fun AboutScreen(
                     Text("About this app", style = MaterialTheme.typography.titleMedium)
                 },
                 navigationIcon = {
-                    IconButton(goBack) {
+                    IconButton(onExit) {
                         Icon(Icons.Default.Close, "Close setting menu")
                     }
                 }

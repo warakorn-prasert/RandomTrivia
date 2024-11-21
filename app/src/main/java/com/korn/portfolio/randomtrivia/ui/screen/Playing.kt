@@ -93,8 +93,8 @@ enum class AnswerButtonState(
 @Composable
 fun Playing(
     game: Game,
-    exit: () -> Unit,
-    submit: (Game) -> Unit,
+    onExit: () -> Unit,
+    onSubmit: (Game) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val questions = remember { game.questions.toMutableStateList() }
@@ -135,7 +135,7 @@ fun Playing(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = exit,
+                        onClick = onExit,
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to return to main menu.",
                         text = "Exit"
@@ -159,7 +159,7 @@ fun Playing(
                                     )
                                 }
                             )
-                            submit(saveableGame)
+                            onSubmit(saveableGame)
                         },
                         imageVector = Icons.Default.Check,
                         contentDescription = "Button to submit game answers.",
@@ -209,7 +209,7 @@ fun Playing(
                     AnswerButtons(
                         userAnswer = question.answer.answer,
                         answers = question.question.run { incorrectAnswers + correctAnswer },
-                        answer = { answer ->
+                        onAnswer = { answer ->
                             questions[currentIdx] = questions[currentIdx].let {
                                 it.copy(
                                     answer = it.answer.copy(
@@ -301,7 +301,7 @@ fun QuestionStatementCard(questionStatement: String, modifier: Modifier = Modifi
 private fun AnswerButtons(
     userAnswer: String,
     answers: List<String>,
-    answer: (String) -> Unit,
+    onAnswer: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -311,7 +311,7 @@ private fun AnswerButtons(
         answers.forEachIndexed { idx, answer ->
             val state = AnswerButtonState.getState(userAnswer, answer)
             ElevatedCard(
-                onClick = { answer(answer) },
+                onClick = { onAnswer(answer) },
                 colors = CardDefaults.elevatedCardColors().copy(
                     containerColor =
                         if (state == AnswerButtonState.ANSWERED) MaterialTheme.colorScheme.surface
@@ -360,8 +360,8 @@ private fun PlayingPreview() {
     RandomTriviaTheme {
         Playing(
             game = getGame(11),
-            exit = {},
-            submit = {},
+            onExit = {},
+            onSubmit = {},
         )
     }
 }
@@ -372,8 +372,8 @@ private fun OverflowQuestionPreview() {
     RandomTriviaTheme {
         Playing(
             game = getGame(1, true),
-            exit = {},
-            submit = {},
+            onExit = {},
+            onSubmit = {},
         )
     }
 }
@@ -385,7 +385,7 @@ private fun OverflowAnswerButtonsPreview() {
         AnswerButtons(
             userAnswer = "",
             answers = listOf("OverflowAnswer".repeat(20)),
-            answer = {}
+            onAnswer = {}
         )
     }
 }

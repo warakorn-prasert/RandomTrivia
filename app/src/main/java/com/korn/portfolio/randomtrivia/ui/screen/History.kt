@@ -94,10 +94,10 @@ private enum class HistorySort(
 
 @Composable
 fun PastGames(
-    replay: (Game) -> Unit,
-    inspect: (Game) -> Unit,
     pastGames: List<Game>,
-    deleteGame: (gameId: UUID) -> Unit,
+    onDelete: (gameId: UUID) -> Unit,
+    onReplay: (Game) -> Unit,
+    onInspect: (Game) -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -125,11 +125,11 @@ fun PastGames(
         Column(Modifier.padding(paddingValues)) {
             HistoryFilterSortMenuBar(
                 filter = filter,
-                setFilter = { filter = it },
+                onFilterChange = { filter = it },
                 sort = sort,
-                setSort = { sort = it },
+                onSortChange = { sort = it },
                 reverseSort = reverseSort,
-                setReverseSort = { reverseSort = it }
+                onReverseSortChange = { reverseSort = it }
             )
             if (displayGames.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
@@ -174,15 +174,15 @@ fun PastGames(
                         if (!deleting) {
                             GameDisplayItem(
                                 game = game,
-                                inspect = { inspect(game) },
-                                replay = { replay(game) },
-                                delete = {
+                                onDelete = {
                                     scope.launch {
                                         deleting = true
                                         delay(DELETE_ANIM_DURATION.toLong())
-                                        deleteGame(game.detail.gameId)
+                                        onDelete(game.detail.gameId)
                                     }
                                 },
+                                onReplay = { onReplay(game) },
+                                onInspect = { onInspect(game) },
                                 modifier = Modifier.fillMaxWidth(),
                                 endPadding = 16.dp
                             )
@@ -199,16 +199,16 @@ fun PastGames(
 @Composable
 private fun HistoryFilterSortMenuBar(
     filter: HistoryFilter,
-    setFilter: (HistoryFilter) -> Unit,
+    onFilterChange: (HistoryFilter) -> Unit,
     sort: HistorySort,
-    setSort: (HistorySort) -> Unit,
+    onSortChange: (HistorySort) -> Unit,
     reverseSort: Boolean,
-    setReverseSort: (Boolean) -> Unit
+    onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
         filters = HistoryFilter.entries,
-        onFilterSelect = setFilter,
+        onFilterSelect = onFilterChange,
         filterToString = { it.displayText },
         sortBottomSheetContent = {
             Row(
@@ -219,14 +219,14 @@ private fun HistoryFilterSortMenuBar(
                 Text("Sort By")
                 CheckboxWithText(
                     checked = reverseSort,
-                    onCheckedChange = setReverseSort,
+                    onChange = onReverseSortChange,
                     text = "Reversed"
                 )
             }
             HistorySort.entries.forEach {
                 RadioButtonWithText(
                     selected = sort == it,
-                    onClick = { setSort(it) },
+                    onClick = { onSortChange(it) },
                     text = it.displayText
                 )
             }
@@ -237,9 +237,9 @@ private fun HistoryFilterSortMenuBar(
 @Composable
 private fun GameDisplayItem(
     game: Game,
-    inspect: () -> Unit,
-    replay: () -> Unit,
-    delete: () -> Unit,
+    onDelete: () -> Unit,
+    onReplay: () -> Unit,
+    onInspect: () -> Unit,
     modifier: Modifier = Modifier,
     endPadding: Dp = 0.dp
 ) {
@@ -309,7 +309,7 @@ private fun GameDisplayItem(
                         text = { Text("Inspect") },
                         onClick = {
                             showMenu = false
-                            inspect()
+                            onInspect()
                         },
                         leadingIcon = { Icon(Icons.Default.Search, null) }
                     )
@@ -317,7 +317,7 @@ private fun GameDisplayItem(
                         text = { Text("Replay") },
                         onClick = {
                             showMenu = false
-                            replay()
+                            onReplay()
                         },
                         leadingIcon = { Icon(Icons.Default.Refresh, null) }
                     )
@@ -325,7 +325,7 @@ private fun GameDisplayItem(
                         text = { Text("Delete") },
                         onClick = {
                             showMenu = false
-                            delete()
+                            onDelete()
                         },
                         leadingIcon = { Icon(Icons.Outlined.Delete, null) }
                     )
@@ -340,10 +340,10 @@ private fun GameDisplayItem(
 private fun PastGamesPreview() {
     RandomTriviaTheme {
         PastGames(
-            replay = {},
-            inspect = {},
             pastGames = List(2) { getGame(totalQuestions = 10, played = true) },
-            deleteGame = {},
+            onDelete = {},
+            onReplay = {},
+            onInspect = {},
             onAboutClick = {}
         )
     }

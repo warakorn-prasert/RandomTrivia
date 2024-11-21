@@ -45,9 +45,9 @@ import kotlinx.coroutines.delay
 @Composable
 fun Result(
     game: Game,
-    exit: () -> Unit,
-    replay: (Game) -> Unit,
-    inspect: (Game) -> Unit,
+    onExit: () -> Unit,
+    onReplay: (Game) -> Unit,
+    onInspect: (Game) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Extract data from game
@@ -67,7 +67,7 @@ fun Result(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = exit,
+                        onClick = onExit,
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to exit to main screen.",
                         text = "Exit"
@@ -83,13 +83,13 @@ fun Result(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButtonWithText(
-                        onClick = { inspect(game) },
+                        onClick = { onInspect(game) },
                         imageVector = Icons.Default.Search,
                         contentDescription = "Button to inspect previous game.",
                         text = "Inspect"
                     )
                     IconButtonWithText(
-                        onClick = { replay(game) },
+                        onClick = { onReplay(game) },
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Replay button.",
                         text = "Replay"
@@ -155,9 +155,9 @@ private fun ResultPreview() {
     RandomTriviaTheme {
         Result(
             game = getGame(42),
-            exit = {},
-            replay = {},
-            inspect = {}
+            onExit = {},
+            onReplay = {},
+            onInspect = {}
         )
     }
 }

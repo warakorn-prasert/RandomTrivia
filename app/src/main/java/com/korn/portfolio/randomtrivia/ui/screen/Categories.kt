@@ -88,8 +88,8 @@ private const val reverseSortDefault = false
 
 @Composable
 fun Categories(
-    fetchStatus: FetchStatus,
-    fetchCategories: () -> Unit,
+    categoriesFetchStatus: FetchStatus,
+    onRetryFetch: () -> Unit,
     onCategoryClick: (categoryId: Int) -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -98,8 +98,8 @@ fun Categories(
     val categories by viewModel.categories.collectAsState(emptyList())
     Categories(
         categories = categories,
-        fetchStatus = fetchStatus,
-        fetchCategories = fetchCategories,
+        categoriesFetchStatus = categoriesFetchStatus,
+        onRetryFetch = onRetryFetch,
         onCategoryClick = onCategoryClick,
         onAboutClick = onAboutClick,
         modifier = modifier
@@ -109,8 +109,8 @@ fun Categories(
 @Composable
 private fun Categories(
     categories: List<CategoryDisplay>,
-    fetchStatus: FetchStatus,
-    fetchCategories: () -> Unit,
+    categoriesFetchStatus: FetchStatus,
+    onRetryFetch: () -> Unit,
     onCategoryClick: (categoryId: Int) -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -157,9 +157,9 @@ private fun Categories(
                 reverseSort, { reverseSort = it }
             )
 
-            FetchStatusBar(fetchStatus, fetchCategories)
+            FetchStatusBar(categoriesFetchStatus, onRetryFetch)
 
-            if (filterSortCategories.isEmpty() && fetchStatus != FetchStatus.Loading)
+            if (filterSortCategories.isEmpty() && categoriesFetchStatus != FetchStatus.Loading)
                 Box(Modifier.fillMaxSize().padding(horizontal = 16.dp), Alignment.Center) {
                     Text("No category available to play.")
                 }
@@ -205,16 +205,16 @@ private fun Categories(
 @Composable
 private fun CategoriesFilterSortMenuBar(
     filter: CategoryFilter,
-    setFilter: (CategoryFilter) -> Unit,
+    onFilterChange: (CategoryFilter) -> Unit,
     sort: CategorySort,
-    setSort: (CategorySort) -> Unit,
+    onSortChange: (CategorySort) -> Unit,
     reverseSort: Boolean,
-    setReverseSort: (Boolean) -> Unit
+    onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
         filters = CategoryFilter.entries,
-        onFilterSelect = setFilter,
+        onFilterSelect = onFilterChange,
         filterToString = { it.displayText },
         sortBottomSheetContent = {
             Row(
@@ -225,14 +225,14 @@ private fun CategoriesFilterSortMenuBar(
                 Text("Sort By")
                 CheckboxWithText(
                     checked = reverseSort,
-                    onCheckedChange = setReverseSort,
+                    onChange = onReverseSortChange,
                     text = "Reversed"
                 )
             }
             CategorySort.entries.forEach {
                 RadioButtonWithText(
                     selected = sort == it,
-                    onClick = { setSort(it) },
+                    onClick = { onSortChange(it) },
                     text = it.displayText
                 )
             }
@@ -295,8 +295,8 @@ private fun CategoriesPreview() {
                 CategoryDisplay(name, 10, it % 2, id)
             }
         },
-        fetchStatus = FetchStatus.Success,
-        fetchCategories = {},
+        categoriesFetchStatus = FetchStatus.Success,
+        onRetryFetch = {},
         onCategoryClick = {},
         onAboutClick = {}
     )

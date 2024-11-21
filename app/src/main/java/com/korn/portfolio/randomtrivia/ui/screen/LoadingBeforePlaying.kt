@@ -53,7 +53,7 @@ import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewMode
 fun LoadingBeforePlaying(
     onlineMode: Boolean,
     settings: List<GameSetting>,
-    cancel: () -> Unit,
+    onCancel: () -> Unit,
     onDone: (Game) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -64,23 +64,25 @@ fun LoadingBeforePlaying(
     )
     val fetchStatus by viewModel.fetchStatus.collectAsState()
     LoadingBeforePlaying(
-        cancel = { viewModel.cancel(cancel) },
         progress = viewModel.progress,
-        fetchStatus = fetchStatus,
         statusText = viewModel.statusText,
-        fetch = { viewModel.fetch() },
+        fetchStatus = fetchStatus,
+        onCancel = {
+            viewModel.cancel(onCancel)
+        },
+        onRetry = { viewModel.fetch() },
         modifier = modifier
     )
-    BackHandler { viewModel.cancel(cancel) }
+    BackHandler { viewModel.cancel(onCancel) }
 }
 
 @Composable
 private fun LoadingBeforePlaying(
-    cancel: () -> Unit,
     progress: Float,
-    fetchStatus: GameFetchStatus,
     statusText: String,
-    fetch: () -> Unit,
+    fetchStatus: GameFetchStatus,
+    onCancel: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier) {
@@ -91,7 +93,7 @@ private fun LoadingBeforePlaying(
             contentAlignment = Alignment.Center
         ) {
             IconButtonWithText(
-                onClick = { cancel() },
+                onClick = { onCancel() },
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Button to cancel loading game.",
                 text = "Cancel"
@@ -138,7 +140,7 @@ private fun LoadingBeforePlaying(
                             textAlign = TextAlign.Center
                         )
                         IconButtonWithText(
-                            onClick = fetch,
+                            onClick = onRetry,
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Button to retry fetching new game.",
                             text = "Retry"
@@ -168,11 +170,11 @@ private fun LoadingPreview() {
     RandomTriviaTheme {
         Surface {
             LoadingBeforePlaying(
-                cancel = {},
                 progress = 0.3f,
-                fetchStatus = GameFetchStatus.Loading,
                 statusText = "Loading",
-                fetch = {}
+                fetchStatus = GameFetchStatus.Loading,
+                onCancel = {},
+                onRetry = {}
             )
         }
     }
@@ -184,11 +186,11 @@ private fun ErrorPreview() {
     RandomTriviaTheme {
         Surface {
             LoadingBeforePlaying(
-                cancel = {},
                 progress = 0.3f,
-                fetchStatus = GameFetchStatus.Error("Error message"),
                 statusText = "Display error message",
-                fetch = {}
+                fetchStatus = GameFetchStatus.Error("Error message"),
+                onCancel = {},
+                onRetry = {}
             )
         }
     }
@@ -200,11 +202,11 @@ private fun SuccessPreview() {
     RandomTriviaTheme {
         Surface {
             LoadingBeforePlaying(
-                cancel = {},
                 progress = 1f,
-                fetchStatus = GameFetchStatus.Success(getGame(0)),
                 statusText = "Success message",
-                fetch = {}
+                fetchStatus = GameFetchStatus.Success(getGame(0)),
+                onCancel = {},
+                onRetry = {}
             )
         }
     }

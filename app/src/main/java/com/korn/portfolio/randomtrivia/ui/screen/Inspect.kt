@@ -82,9 +82,9 @@ private enum class InspectAnswerButtonState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Inspect(
-    goBack: () -> Unit,
-    replay: (Game) -> Unit,
     game: Game,
+    onExit: () -> Unit,
+    onReplay: (Game) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(pageCount = { game.questions.size })
@@ -112,7 +112,7 @@ fun Inspect(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = goBack,
+                        onClick = onExit,
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to return to main menu.",
                         text = "Exit"
@@ -120,7 +120,7 @@ fun Inspect(
                 },
                 actions = {
                     IconButtonWithText(
-                        onClick = { replay(game) },
+                        onClick = { onReplay(game) },
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Replay button.",
                         text = "Replay"
@@ -223,9 +223,9 @@ private fun InspectAnswerButtons(
 private fun InspectPreview() {
     RandomTriviaTheme {
         Inspect(
-            goBack = {},
-            replay = {},
-            game = getGame(totalQuestions = 44, played = true)
+            game = getGame(totalQuestions = 44, played = true),
+            onExit = {},
+            onReplay = {}
         )
     }
 }

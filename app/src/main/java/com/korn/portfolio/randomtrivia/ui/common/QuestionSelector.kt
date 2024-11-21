@@ -168,8 +168,8 @@ fun ColumnScope.QuestionSelector(
             }
             Box {
                 QuestionButton(
-                    onClick = { onSelect(questionNumber - 1) },
                     questionNumber = questionNumber,
+                    onClick = { onSelect(questionNumber - 1) },
                     state = state
                 )
                 if (state == QuestionButtonState.CORRECT || state == QuestionButtonState.INCORRECT)
@@ -181,8 +181,8 @@ fun ColumnScope.QuestionSelector(
 
 @Composable
 private fun QuestionButton(
-    onClick: () -> Unit,
     questionNumber: Int,
+    onClick: () -> Unit,
     state: QuestionButtonState
 ) {
     OutlinedButton(

@@ -95,7 +95,7 @@ private fun List<Question>.process(
 @Composable
 fun Questions(
     categoryId: Int,
-    goBack: () -> Unit,
+    onExit: () -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -103,7 +103,7 @@ fun Questions(
     Questions(
         categoryName = viewModel.categoryName,
         questions = viewModel.questions,
-        goBack = goBack,
+        onExit = onExit,
         onAboutClick = onAboutClick,
         modifier = modifier
     )
@@ -113,7 +113,7 @@ fun Questions(
 private fun Questions(
     categoryName: String,
     questions: List<Question>,
-    goBack: () -> Unit,
+    onExit: () -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -127,7 +127,7 @@ private fun Questions(
                 onAboutClick = onAboutClick,
                 hint = "Search for questions",
                 title = categoryName,
-                onBackClick = goBack
+                onBackClick = onExit
             )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -192,16 +192,16 @@ private fun Questions(
 @Composable
 private fun QuestionsFilterSortMenuBar(
     filter: QuestionFilter,
-    setFilter: (QuestionFilter) -> Unit,
+    onFilterChange: (QuestionFilter) -> Unit,
     sort: QuestionSort,
-    setSort: (QuestionSort) -> Unit,
+    onSortChange: (QuestionSort) -> Unit,
     reverseSort: Boolean,
-    setReverseSort: (Boolean) -> Unit
+    onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
         filters = QuestionFilter.entries,
-        onFilterSelect = setFilter,
+        onFilterSelect = onFilterChange,
         filterToString = { it.displayText },
         sortBottomSheetContent = {
             Row(
@@ -212,14 +212,14 @@ private fun QuestionsFilterSortMenuBar(
                 Text("Sort By")
                 CheckboxWithText(
                     checked = reverseSort,
-                    onCheckedChange = setReverseSort,
+                    onChange = onReverseSortChange,
                     text = "Reversed"
                 )
             }
             QuestionSort.entries.forEach {
                 RadioButtonWithText(
                     selected = sort == it,
-                    onClick = { setSort(it) },
+                    onClick = { onSortChange(it) },
                     text = it.displayText
                 )
             }
@@ -246,7 +246,7 @@ private fun QuestionCard(question: Question, modifier: Modifier = Modifier) {
         }
         if (expanded)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Answer(question.correctAnswer, correct = true)
+                Answer(question.correctAnswer, isCorrect = true)
                 question.incorrectAnswers.forEach {
                     Answer(it, false)
                 }
@@ -255,16 +255,16 @@ private fun QuestionCard(question: Question, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Answer(answer: String, correct: Boolean) {
+private fun Answer(answer: String, isCorrect: Boolean) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.run {
-                if (correct) Check else Close
+                if (isCorrect) Check else Close
             },
-            contentDescription = "Icon for ${if (correct) "correct" else "incorrect"} answer."
+            contentDescription = "Icon for ${if (isCorrect) "correct" else "incorrect"} answer."
         )
         Text(answer)
     }
@@ -289,7 +289,7 @@ private fun QuestionsPreview() {
                 mockQuestion.copy(question = "bcd", difficulty = Difficulty.EASY, id = UUID.randomUUID()),
                 mockQuestion.copy(question = "efg", difficulty = Difficulty.HARD, id = UUID.randomUUID()),
             ),
-            goBack = {},
+            onExit = {},
             onAboutClick = {}
         )
     }

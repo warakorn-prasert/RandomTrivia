@@ -57,7 +57,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
             composable<About> {
                 requestFullScreen()
                 AboutScreen(
-                    goBack = { navController.navigateUp() },
+                    onExit = { navController.navigateUp() },
                     modifier = Modifier.systemBarsPadding()
                 )
             }
@@ -65,8 +65,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 composable<Categories.Default> {
                     dismissFullScreen()
                     Categories(
-                        fetchStatus = sharedViewModel.categoriesFetchStatus,
-                        fetchCategories = { sharedViewModel.fetchCategories() },
+                        categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
+                        onRetryFetch = { sharedViewModel.fetchCategories() },
                         onCategoryClick = { categoryId ->
                             navController.navigate(Categories.Questions(categoryId))
                         },
@@ -78,7 +78,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     dismissFullScreen()
                     Questions(
                         categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId,
-                        goBack = { navController.navigateUp() },
+                        onExit = { navController.navigateUp() },
                         onAboutClick = { navController.navigate(About) },
                         modifier = Modifier.padding(paddingValues)
                     )
@@ -89,8 +89,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     dismissFullScreen()
                     SettingBeforePlaying(
                         categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
-                        fetchCategories = { sharedViewModel.fetchCategories() },
-                        submit = { onlineMode, settings ->
+                        onRetryFetch = { sharedViewModel.fetchCategories() },
+                        onSubmit = { onlineMode, settings ->
                             navController.navigate(Play.Loading(onlineMode, settings.serialized()))
                         },
                         modifier = Modifier.padding(paddingValues)
@@ -104,7 +104,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     LoadingBeforePlaying(
                         onlineMode = onlineMode,
                         settings = settings.deserialized(),
-                        cancel = { navController.navigateUp() },
+                        onCancel = { navController.navigateUp() },
                         onDone = { game ->
                             sharedViewModel.game = game
                             navController.navigate(Game) {
@@ -120,8 +120,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     requestFullScreen()
                     Playing(
                         game = sharedViewModel.game,
-                        exit = { navController.navigateUp() },
-                        submit = { game ->
+                        onExit = { navController.navigateUp() },
+                        onSubmit = { game ->
                             sharedViewModel.game = game
                             sharedViewModel.saveGame()
                             navController.navigate(Game.Result) {
@@ -134,13 +134,13 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     requestFullScreen()
                     Result(
                         game = sharedViewModel.game,
-                        exit = { navController.navigateUp() },
-                        replay = { _ ->
+                        onExit = { navController.navigateUp() },
+                        onReplay = { _ ->
                             navController.navigate(Game.Play) {
                                 popUpTo(Game.Result) { inclusive = true }
                             }
                         },
-                        inspect = { game ->
+                        onInspect = { game ->
                             sharedViewModel.game = game
                             navController.navigate(Inspect) {
                                 popUpTo(Game.Result) { inclusive = true }
@@ -152,16 +152,16 @@ fun MainScreen(modifier: Modifier = Modifier) {
             composable<History> {
                 dismissFullScreen()
                 PastGames(
-                    replay = { game ->
+                    pastGames = sharedViewModel.pastGames.collectAsState(emptyList()).value,
+                    onDelete = { sharedViewModel.deleteGame(it) },
+                    onReplay = { game ->
                         sharedViewModel.game = game
                         navController.navigate(Game.Play)
                     },
-                    inspect = { game ->
+                    onInspect = { game ->
                         sharedViewModel.game = game
                         navController.navigate(Inspect)
                     },
-                    pastGames = sharedViewModel.pastGames.collectAsState(emptyList()).value,
-                    deleteGame = { sharedViewModel.deleteGame(it) },
                     onAboutClick = { navController.navigate(About) },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -169,13 +169,13 @@ fun MainScreen(modifier: Modifier = Modifier) {
             composable<Inspect> {
                 requestFullScreen()
                 Inspect(
-                    goBack = { navController.navigateUp() },
-                    replay = { _ ->
+                    game = sharedViewModel.game,
+                    onExit = { navController.navigateUp() },
+                    onReplay = { _ ->
                         navController.navigate(Game) {
                             popUpTo(Inspect) { inclusive = true }
                         }
-                    },
-                    game = sharedViewModel.game
+                    }
                 )
             }
         }
