@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -87,6 +88,8 @@ fun Inspect(
     onReplay: (Game) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler { onExit() }
+
     val pagerState = rememberPagerState(pageCount = { game.questions.size })
     val currentIdx = pagerState.currentPage
     ScrimmableBottomSheetScaffold(

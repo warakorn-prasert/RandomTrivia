@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +51,8 @@ fun Result(
     onInspect: (Game) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler { onExit() }
+
     // Extract data from game
     val totalTimeSecond = game.detail.totalTimeSecond
     val score = game.questions.fold(0) { score, question ->

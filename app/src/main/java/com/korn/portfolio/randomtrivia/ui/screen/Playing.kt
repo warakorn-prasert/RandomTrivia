@@ -4,6 +4,7 @@ package com.korn.portfolio.randomtrivia.ui.screen
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -97,6 +98,8 @@ fun Playing(
     onSubmit: (Game) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler { onExit() }
+
     val questions = remember { game.questions.toMutableStateList() }
     val pagerState = rememberPagerState(pageCount = { questions.size })
     val currentIdx = pagerState.currentPage

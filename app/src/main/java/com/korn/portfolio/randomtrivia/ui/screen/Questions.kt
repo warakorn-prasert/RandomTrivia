@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -85,6 +86,8 @@ fun Questions(
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler { onExit() }
+
     var searchWord by rememberSaveable { mutableStateOf("") }
     Scaffold(
         modifier = modifier,
