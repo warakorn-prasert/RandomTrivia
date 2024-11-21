@@ -33,12 +33,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +48,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
@@ -58,110 +57,57 @@ import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
 import com.korn.portfolio.randomtrivia.ui.common.hhmmssFrom
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
-import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryFilter
-import com.korn.portfolio.randomtrivia.ui.viewmodel.HistorySort
-import com.korn.portfolio.randomtrivia.ui.viewmodel.HistoryViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
 
-private const val deleteAnimDuration = 500
+private const val DELETE_ANIM_DURATION = 500
 
-data class GameDisplay(
-    val day: Int,
-    val month: String,
-    val year: Int,
-    val time: String,
-    val score: Int,
-    val totalQuestions: Int,
-    val totalTimeSecond: Int,
-    val gameId: UUID
-)
-
-fun Game.asDisplay() =
-    Calendar.getInstance()
-        .apply { timeInMillis = detail.timestamp.time }
-        .let { calendar ->
-            GameDisplay(
-                day = calendar.get(Calendar.DATE),
-                month = when(calendar.get(Calendar.MONTH)) {
-                    0 -> "Jan"
-                    1 -> "Feb"
-                    2 -> "Mar"
-                    3 -> "Apr"
-                    4 -> "May"
-                    5 -> "Jun"
-                    6 -> "Jul"
-                    7 -> "Aug"
-                    8 -> "Sep"
-                    9 -> "Oct"
-                    10 -> "Nov"
-                    else -> "Dec"
-                },
-                year = calendar.get(Calendar.YEAR),
-                time = calendar.run  {
-                    fun Int.doubleDigit() = if (toString().length == 1) "0$this" else toString()
-                    val hh = get(Calendar.HOUR)
-                    val mm = get(Calendar.MINUTE).doubleDigit()
-                    val ampm = if (get(Calendar.AM_PM) == 0) "am" else "pm"
-                    "$hh:$mm $ampm"
-                },
-                score = questions.fold(0) { score, question ->
-                    if (question.answer.answer == question.question.correctAnswer)
-                        score + 1
-                    else
-                        score
-                },
-                totalQuestions = questions.size,
-                totalTimeSecond = detail.totalTimeSecond,
-                gameId = detail.gameId
-            )
+private enum class HistoryFilter(
+    val displayText: String,
+    val invoke: (List<Game>) -> List<Game>
+) {
+    ALL("All", { it }),
+    TODAY("Today", { games ->
+        fun Calendar.toTimeString() =
+            "${get(Calendar.YEAR)}:${get(Calendar.MONTH)}:${get(Calendar.DAY_OF_MONTH)}"
+        val calendar = Calendar.getInstance()
+        val today = calendar.toTimeString()
+        games.filter { game ->
+            calendar.run {
+                timeInMillis = game.detail.timestamp.time
+                today == toTimeString()
+            }
         }
+    })
+}
+
+private enum class HistorySort(
+    val displayText: String,
+    val invoke: (List<Game>) -> List<Game>
+) {
+    MOST_RECENT("Most recent", { games ->
+        games.sortedByDescending { it.detail.timestamp }
+    })
+}
 
 @Composable
 fun PastGames(
     replay: (Game) -> Unit,
     inspect: (Game) -> Unit,
-    onAboutClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory)
-
-    val filter: HistoryFilter by viewModel.filter.collectAsState()
-    val sort: HistorySort by viewModel.sort.collectAsState()
-    val reverseSort by viewModel.reverseSort.collectAsState()
-    val games by viewModel.games.collectAsState(emptyList())
-
-    PastGames(
-        replay = replay,
-        inspect = inspect,
-        filter = filter, setFilter = { viewModel.setFilter(it) },
-        sort = sort, setSort = { viewModel.setSort(it) },
-        reverseSort = reverseSort, setReverseSort = { viewModel.setReverseSort(it) },
-        games = games,
-        deleteGame = { viewModel.deleteGame(it) },
-        onAboutClick = onAboutClick,
-        modifier = modifier
-    )
-}
-
-@Composable
-private fun PastGames(
-    replay: (Game) -> Unit,
-    inspect: (Game) -> Unit,
-
-    filter: HistoryFilter, setFilter: (HistoryFilter) -> Unit,
-    sort: HistorySort, setSort: (HistorySort) -> Unit,
-    reverseSort: Boolean, setReverseSort: (Boolean) -> Unit,
-
-    games: List<Game>,
+    pastGames: List<Game>,
     deleteGame: (gameId: UUID) -> Unit,
-
     onAboutClick: () -> Unit,
-
     modifier: Modifier = Modifier
 ) {
+    var filter by rememberSaveable { mutableStateOf(HistoryFilter.ALL) }
+    var sort by rememberSaveable { mutableStateOf(HistorySort.MOST_RECENT) }
+    var reverseSort by rememberSaveable { mutableStateOf(false) }
+    val displayGames = pastGames
+        .let { filter.invoke(it) }
+        .let { sort.invoke(it) }
+        .let { if (reverseSort) it.reversed() else it }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -178,14 +124,14 @@ private fun PastGames(
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
             HistoryFilterSortMenuBar(
-                filter,
-                setFilter,
-                sort,
-                setSort,
-                reverseSort,
-                setReverseSort
+                filter = filter,
+                setFilter = { filter = it },
+                sort = sort,
+                setSort = { sort = it },
+                reverseSort = reverseSort,
+                setReverseSort = { reverseSort = it }
             )
-            if (games.isEmpty())
+            if (displayGames.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("No game played yet.")
                 }
@@ -210,10 +156,9 @@ private fun PastGames(
                     bottom = 8.dp
                 )
             ) {
-                itemsIndexed(games, key = { _, game -> game.detail.gameId }) { idx, game ->
-                    val isInView = game.detail.gameId in itemsInView
+                itemsIndexed(displayGames, key = { _, game -> game.detail.gameId }) { idx, game ->
                     val alpha by animateFloatAsState(
-                        targetValue = if (isInView) 1f else 0f,
+                        targetValue = if (game.detail.gameId in itemsInView) 1f else 0f,
                         animationSpec = tween(
                             durationMillis = 600,
                             delayMillis = 50,
@@ -223,7 +168,7 @@ private fun PastGames(
                     Column(
                         Modifier
                             .alpha(alpha)
-                            .animateContentSize(tween(deleteAnimDuration))
+                            .animateContentSize(tween(DELETE_ANIM_DURATION))
                     ) {
                         var deleting by remember { mutableStateOf(false) }
                         if (!deleting) {
@@ -234,14 +179,14 @@ private fun PastGames(
                                 delete = {
                                     scope.launch {
                                         deleting = true
-                                        delay(deleteAnimDuration.toLong())
+                                        delay(DELETE_ANIM_DURATION.toLong())
                                         deleteGame(game.detail.gameId)
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 endPadding = 16.dp
                             )
-                            if (idx < games.size - 1)
+                            if (idx < displayGames.size - 1)
                                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
                         }
                     }
@@ -303,24 +248,45 @@ private fun GameDisplayItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        game.asDisplay().run {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("$day / $month / $year, $time", fontWeight = FontWeight.Bold)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.sports_score),
-                        contentDescription = null
-                    )
-                    Text("$score / $totalQuestions")
-                    Icon(
-                        painter = painterResource(R.drawable.ic_timer),
-                        contentDescription = null
-                    )
-                    Text(hhmmssFrom(totalTimeSecond))
-                }
+        // Get game data to display
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = game.detail.timestamp.time
+        }
+        val day = calendar.get(Calendar.DATE)
+        val month = calendar.getDisplayName(Calendar.MONTH, Calendar.SHORT, java.util.Locale.getDefault())
+        val year = calendar.get(Calendar.YEAR)
+        val time = calendar.run {
+            fun Int.doubleDigit() = if (toString().length == 1) "0$this" else toString()
+            val hh = get(Calendar.HOUR)
+            val mm = get(Calendar.MINUTE).doubleDigit()
+            val ampm = if (get(Calendar.AM_PM) == 0) "am" else "pm"
+            "$hh:$mm $ampm"
+        }
+        val score = game.questions.fold(0) { score, question ->
+            if (question.answer.answer == question.question.correctAnswer)
+                score + 1
+            else
+                score
+        }
+        val totalQuestions = game.questions.size
+        val totalTimeSecond = game.detail.totalTimeSecond
+
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("$day / $month / $year, $time", fontWeight = FontWeight.Bold)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.sports_score),
+                    contentDescription = null
+                )
+                Text("$score / $totalQuestions")
+                Icon(
+                    painter = painterResource(R.drawable.ic_timer),
+                    contentDescription = null
+                )
+                Text(hhmmssFrom(totalTimeSecond))
             }
         }
         Column {
@@ -376,10 +342,7 @@ private fun PastGamesPreview() {
         PastGames(
             replay = {},
             inspect = {},
-            filter = HistoryFilter.ALL, setFilter = {},
-            sort = HistorySort.MOST_RECENT, setSort = {},
-            reverseSort = false, setReverseSort = {},
-            games = List(2) { getGame(totalQuestions = 10, played = true) },
+            pastGames = List(2) { getGame(totalQuestions = 10, played = true) },
             deleteGame = {},
             onAboutClick = {}
         )

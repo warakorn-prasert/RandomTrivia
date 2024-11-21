@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -159,6 +160,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         sharedViewModel.game = game
                         navController.navigate(Inspect)
                     },
+                    pastGames = sharedViewModel.pastGames.collectAsState(emptyList()).value,
+                    deleteGame = { sharedViewModel.deleteGame(it) },
                     onAboutClick = { navController.navigate(About) },
                     modifier = Modifier.padding(paddingValues)
                 )

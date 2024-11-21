@@ -15,8 +15,10 @@ import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.util.Date
+import java.util.UUID
 
 class SharedViewModel(private val triviaRepository: TriviaRepository) : ViewModel() {
     var categoriesFetchStatus: FetchStatus by mutableStateOf(FetchStatus.Success)
@@ -46,6 +48,14 @@ class SharedViewModel(private val triviaRepository: TriviaRepository) : ViewMode
     fun saveGame() {
         viewModelScope.launch {
             triviaRepository.saveGame(game)
+        }
+    }
+
+    val pastGames: Flow<List<Game>> = triviaRepository.savedGames
+
+    fun deleteGame(gameId: UUID) {
+        viewModelScope.launch {
+            triviaRepository.deleteGame(gameId)
         }
     }
 
