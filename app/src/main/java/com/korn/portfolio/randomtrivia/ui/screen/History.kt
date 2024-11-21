@@ -301,37 +301,35 @@ private fun GameDisplayItem(
                     contentDescription = null,
                 )
             }
-            if (showMenu) {
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    offset = DpOffset(x = -endPadding, y = 0.dp)
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Inspect") },
-                        onClick = {
-                            showMenu = false
-                            onInspect()
-                        },
-                        leadingIcon = { Icon(Icons.Default.Search, null) }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Replay") },
-                        onClick = {
-                            showMenu = false
-                            onReplay()
-                        },
-                        leadingIcon = { Icon(Icons.Default.Refresh, null) }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Delete") },
-                        onClick = {
-                            showMenu = false
-                            onDelete()
-                        },
-                        leadingIcon = { Icon(Icons.Outlined.Delete, null) }
-                    )
-                }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false },
+                offset = DpOffset(x = -endPadding, y = 0.dp)
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Inspect") },
+                    onClick = {
+                        showMenu = false
+                        onInspect()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Search, null) }
+                )
+                DropdownMenuItem(
+                    text = { Text("Replay") },
+                    onClick = {
+                        showMenu = false
+                        onReplay()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Refresh, null) }
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    onClick = {
+                        showMenu = false
+                        onDelete()
+                    },
+                    leadingIcon = { Icon(Icons.Outlined.Delete, null) }
+                )
             }
         }
     }
