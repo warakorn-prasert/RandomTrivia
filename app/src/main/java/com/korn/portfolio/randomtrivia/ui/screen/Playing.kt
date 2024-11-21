@@ -3,10 +3,7 @@
 package com.korn.portfolio.randomtrivia.ui.screen
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.ContextWrapper
 import android.content.res.Configuration
-import androidx.activity.ComponentActivity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -54,12 +51,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.korn.portfolio.randomtrivia.R
-import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
@@ -74,13 +69,6 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
 import kotlin.concurrent.timer
-
-private fun Context.getActivity(): ComponentActivity? =
-    when (this) {
-        is ComponentActivity -> this
-        is ContextWrapper -> baseContext.getActivity()
-        else -> null
-    }
 
 enum class AnswerButtonState(
     val containerColor: @Composable () -> Color,
@@ -125,10 +113,10 @@ fun Playing(
         }
     }
 
-    val scope = rememberCoroutineScope()
     ScrimmableBottomSheetScaffold(
         modifier = modifier,
         sheetContent = { paddingValues, spaceUnderPeekContent ->
+            val scope = rememberCoroutineScope()
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = questions,
@@ -154,32 +142,24 @@ fun Playing(
                     )
                 },
                 actions = {
-                    val context = LocalContext.current
                     IconButtonWithText(
                         onClick = {
-                            scope.launch {
-                                val newGameId = UUID.randomUUID()
-                                val saveableGame = game.copy(
-                                    detail = game.detail.copy(
-                                        timestamp = Date(),
-                                        totalTimeSecond = second,
-                                        gameId = newGameId
-                                    ),
-                                    questions = questions.map {
-                                        it.copy(
-                                            answer = it.answer.copy(
-                                                gameId = newGameId
-                                            )
+                            val newGameId = UUID.randomUUID()
+                            val saveableGame = game.copy(
+                                detail = game.detail.copy(
+                                    timestamp = Date(),
+                                    totalTimeSecond = second,
+                                    gameId = newGameId
+                                ),
+                                questions = questions.map {
+                                    it.copy(
+                                        answer = it.answer.copy(
+                                            gameId = newGameId
                                         )
-                                    }
-                                )
-                                context.getActivity()?.run {
-                                    (application as TriviaApplication)
-                                        .triviaRepository
-                                        .saveGame(saveableGame)
+                                    )
                                 }
-                                submit(saveableGame)
-                            }
+                            )
+                            submit(saveableGame)
                         },
                         imageVector = Icons.Default.Check,
                         contentDescription = "Button to submit game answers.",

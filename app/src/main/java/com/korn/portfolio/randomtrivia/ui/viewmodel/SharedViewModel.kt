@@ -43,6 +43,12 @@ class SharedViewModel(private val triviaRepository: TriviaRepository) : ViewMode
 
     var game = Game(GameDetail(Date(), 0), emptyList())
 
+    fun saveGame() {
+        viewModelScope.launch {
+            triviaRepository.saveGame(game)
+        }
+    }
+
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

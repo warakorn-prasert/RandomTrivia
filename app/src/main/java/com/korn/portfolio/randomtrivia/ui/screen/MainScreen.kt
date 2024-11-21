@@ -122,6 +122,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         exit = { navController.navigateUp() },
                         submit = { game ->
                             sharedViewModel.game = game
+                            sharedViewModel.saveGame()
                             navController.navigate(Game.Result) {
                                 popUpTo(Game.Play) { inclusive = true }
                             }
