@@ -33,7 +33,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,7 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
@@ -60,7 +58,6 @@ import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
 import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
-import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryDisplay
 
 private enum class CategoryFilter(
@@ -88,26 +85,6 @@ private const val reverseSortDefault = false
 
 @Composable
 fun Categories(
-    categoriesFetchStatus: FetchStatus,
-    onRetryFetch: () -> Unit,
-    onCategoryClick: (categoryId: Int) -> Unit,
-    onAboutClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
-    val categories by viewModel.categories.collectAsState(emptyList())
-    Categories(
-        categories = categories,
-        categoriesFetchStatus = categoriesFetchStatus,
-        onRetryFetch = onRetryFetch,
-        onCategoryClick = onCategoryClick,
-        onAboutClick = onAboutClick,
-        modifier = modifier
-    )
-}
-
-@Composable
-private fun Categories(
     categories: List<CategoryDisplay>,
     categoriesFetchStatus: FetchStatus,
     onRetryFetch: () -> Unit,

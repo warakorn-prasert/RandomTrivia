@@ -32,6 +32,10 @@ import com.korn.portfolio.randomtrivia.ui.navigation.Play
 import com.korn.portfolio.randomtrivia.ui.navigation.SerializableGameSetting
 import com.korn.portfolio.randomtrivia.ui.navigation.deserialized
 import com.korn.portfolio.randomtrivia.ui.navigation.serialized
+import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.QuestionsViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SharedViewModel
 import kotlin.reflect.typeOf
 
@@ -64,7 +68,10 @@ fun MainScreen(modifier: Modifier = Modifier) {
             navigation<Categories>(startDestination = Categories.Default) {
                 composable<Categories.Default> {
                     dismissFullScreen()
+                    val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
+                    val categories by viewModel.categories.collectAsState(emptyList())
                     Categories(
+                        categories = categories,
                         categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
                         onRetryFetch = { sharedViewModel.fetchCategories() },
                         onCategoryClick = { categoryId ->
@@ -76,8 +83,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 }
                 composable<Categories.Questions> { backStackEntry ->
                     dismissFullScreen()
+                    val categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId
+                    val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
                     Questions(
-                        categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId,
+                        categoryName = viewModel.categoryName,
+                        questions = viewModel.questions,
                         onExit = { navController.navigateUp() },
                         onAboutClick = { navController.navigate(About) },
                         modifier = Modifier.padding(paddingValues)
@@ -87,10 +97,19 @@ fun MainScreen(modifier: Modifier = Modifier) {
             navigation<Play>(startDestination = Play.Setting) {
                 composable<Play.Setting> {
                     dismissFullScreen()
+                    val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
+                    val onlineMode by viewModel.onlineMode.collectAsState()
+                    val catsWithCounts by viewModel.categoriesWithQuestionCounts.collectAsState(emptyList())
                     SettingBeforePlaying(
+                        categoriesWithQuestionCounts = catsWithCounts,
+                        onlineMode = onlineMode,
+                        onOnlineModeChange = { online -> viewModel.changeOnlineMode(online) },
                         categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
-                        onRetryFetch = { sharedViewModel.fetchCategories() },
-                        onSubmit = { onlineMode, settings ->
+                        onFetchCategoriesRequest = { sharedViewModel.fetchCategories() },
+                        onFetchQuestionCountRequest = { categoryId, onFetchStatusChange ->
+                            viewModel.fetchQuestionCountIfNotAlready(categoryId, onFetchStatusChange)
+                        },
+                        onSubmit = { settings ->
                             navController.navigate(Play.Loading(onlineMode, settings.serialized()))
                         },
                         modifier = Modifier.padding(paddingValues)
@@ -101,16 +120,28 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 ) { backStackEntry ->
                     requestFullScreen()
                     val (onlineMode, settings) = backStackEntry.toRoute<Play.Loading>()
-                    LoadingBeforePlaying(
-                        onlineMode = onlineMode,
-                        settings = settings.deserialized(),
-                        onCancel = { navController.navigateUp() },
-                        onDone = { game ->
-                            sharedViewModel.game = game
-                            navController.navigate(Game) {
-                                popUpTo(Play.Setting)
+                    val viewModel: LoadingBeforePlayingViewModel = viewModel(
+                        factory = LoadingBeforePlayingViewModel.Factory(
+                            onlineMode = onlineMode,
+                            settings = settings.deserialized(),
+                            onDone = { game ->
+                                sharedViewModel.game = game
+                                navController.navigate(Game) {
+                                    popUpTo(Play.Setting)
+                                }
                             }
+                        )
+                    )
+                    val fetchStatus by viewModel.fetchStatus.collectAsState()
+                    LoadingBeforePlaying(
+                        progress = viewModel.progress,
+                        statusText = viewModel.statusText,
+                        fetchStatus = fetchStatus,
+                        onCancel = {
+                            viewModel.cancelFetch()
+                            navController.navigateUp()
                         },
+                        onRetry = { viewModel.fetch() },
                         modifier = Modifier.systemBarsPadding()
                     )
                 }

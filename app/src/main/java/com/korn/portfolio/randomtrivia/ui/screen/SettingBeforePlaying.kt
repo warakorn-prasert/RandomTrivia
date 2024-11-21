@@ -56,7 +56,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -80,7 +79,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
@@ -98,7 +96,6 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting.Companion.MAX_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting.Companion.MIN_AMOUNT
-import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -112,40 +109,11 @@ private val GameSettingListSaver = listSaver<SnapshotStateList<GameSetting>, Gam
 
 @Composable
 fun SettingBeforePlaying(
-    categoriesFetchStatus: FetchStatus,
-    onRetryFetch: () -> Unit,
-    onSubmit: (onlineMode: Boolean, settings: List<GameSetting>) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
-    val onlineMode by viewModel.onlineMode.collectAsState()
-    val catsWithCounts by viewModel.categoriesWithQuestionCounts.collectAsState(emptyList())
-
-    SettingBeforePlaying(
-        categoriesWithQuestionCounts = catsWithCounts,
-        onlineMode = onlineMode,
-        onOnlineModeChange = { online ->
-            viewModel.changeOnlineMode(online)
-            if (online && categoriesFetchStatus is FetchStatus.Error)
-                onRetryFetch()
-        },
-        categoriesFetchStatus = categoriesFetchStatus,
-        onRetryFetch = onRetryFetch,
-        onFetchQuestionCountRequest = { categoryId, onFetchStatusChange ->
-            viewModel.fetchQuestionCountIfNotAlready(categoryId, onFetchStatusChange)
-        },
-        onSubmit = { settings -> onSubmit(onlineMode, settings) },
-        modifier = modifier
-    )
-}
-
-@Composable
-private fun SettingBeforePlaying(
     categoriesWithQuestionCounts: List<Pair<Category, QuestionCount>>,
     onlineMode: Boolean,
     onOnlineModeChange: (Boolean) -> Unit,
     categoriesFetchStatus: FetchStatus,
-    onRetryFetch: () -> Unit,
+    onFetchCategoriesRequest: () -> Unit,
     onFetchQuestionCountRequest:
         (categoryId: Int?, onFetchStatusChange: (FetchStatus) -> Unit) -> Unit,
     onSubmit: (List<GameSetting>) -> Unit,
@@ -181,9 +149,11 @@ private fun SettingBeforePlaying(
         Column(Modifier.padding(paddingValues)) {
             OnlineModeToggleMenu(
                 onlineMode = onlineMode,
-                onChange = {
+                onChange = { online ->
                     settings.clear()
-                    onOnlineModeChange(it)
+                    onOnlineModeChange(online)
+                    if (online && categoriesFetchStatus is FetchStatus.Error)
+                        onFetchCategoriesRequest()
                 }
             )
             if (showDialog)
@@ -196,7 +166,7 @@ private fun SettingBeforePlaying(
             if (onlineMode)
                 FetchStatusBar(
                     fetchStatus = categoriesFetchStatus,
-                    onRetry = onRetryFetch
+                    onRetry = onFetchCategoriesRequest
                 )
             if (settings.isEmpty())
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
@@ -658,7 +628,7 @@ private fun SettingBeforePlayingPreview() {
             onlineMode = true,
             onOnlineModeChange = {},
             categoriesFetchStatus = FetchStatus.Success,
-            onRetryFetch = {},
+            onFetchCategoriesRequest = {},
             onFetchQuestionCountRequest = { _, _ -> },
             categoriesWithQuestionCounts = emptyList()
         )
@@ -674,7 +644,7 @@ private fun LoadingPreview() {
             onlineMode = true,
             onOnlineModeChange = {},
             categoriesFetchStatus = FetchStatus.Loading,
-            onRetryFetch = {},
+            onFetchCategoriesRequest = {},
             onFetchQuestionCountRequest = { _, _ -> },
             categoriesWithQuestionCounts = emptyList()
         )
@@ -690,7 +660,7 @@ private fun ErrorPreview() {
             onlineMode = true,
             onOnlineModeChange = {},
             categoriesFetchStatus = FetchStatus.Error("Some error message."),
-            onRetryFetch = {},
+            onFetchCategoriesRequest = {},
             onFetchQuestionCountRequest = { _, _ -> },
             categoriesWithQuestionCounts = emptyList()
         )

@@ -66,9 +66,8 @@ class LoadingBeforePlayingViewModel(
 
     private var fetchJob: Job = Job().apply { complete() }
 
-    fun cancel(action: () -> Unit) {
+    fun cancelFetch() {
         fetchJob.cancel()
-        action()
     }
 
     fun fetch() {

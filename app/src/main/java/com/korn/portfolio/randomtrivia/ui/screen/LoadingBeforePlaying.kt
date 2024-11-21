@@ -26,7 +26,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -38,46 +37,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
-import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.GameFetchStatus
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.M3ProgressBar
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
-import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
-import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewModel
 
 @Composable
 fun LoadingBeforePlaying(
-    onlineMode: Boolean,
-    settings: List<GameSetting>,
-    onCancel: () -> Unit,
-    onDone: (Game) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val viewModel: LoadingBeforePlayingViewModel = viewModel(
-        factory = LoadingBeforePlayingViewModel.Factory(
-            onlineMode = onlineMode, settings = settings, onDone = onDone
-        )
-    )
-    val fetchStatus by viewModel.fetchStatus.collectAsState()
-    LoadingBeforePlaying(
-        progress = viewModel.progress,
-        statusText = viewModel.statusText,
-        fetchStatus = fetchStatus,
-        onCancel = {
-            viewModel.cancel(onCancel)
-        },
-        onRetry = { viewModel.fetch() },
-        modifier = modifier
-    )
-    BackHandler { viewModel.cancel(onCancel) }
-}
-
-@Composable
-private fun LoadingBeforePlaying(
     progress: Float,
     statusText: String,
     fetchStatus: GameFetchStatus,
@@ -85,6 +53,8 @@ private fun LoadingBeforePlaying(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler { onCancel() }
+
     Column(modifier) {
         Box(
             modifier = Modifier
