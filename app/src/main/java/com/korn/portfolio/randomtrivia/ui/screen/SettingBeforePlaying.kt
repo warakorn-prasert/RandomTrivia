@@ -60,11 +60,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
@@ -99,6 +103,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val DELETE_ANIM_DURATION = 500
+
+// Ref. : https://stackoverflow.com/a/68887484
+private val GameSettingListSaver = listSaver<SnapshotStateList<GameSetting>, GameSetting>(
+    save = { stateList -> stateList.toList() },
+    restore = { it.toMutableStateList() },
+)
 
 @Composable
 fun SettingBeforePlaying(
@@ -144,7 +154,9 @@ private fun SettingBeforePlaying(
     modifier: Modifier = Modifier
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    var settings: List<GameSetting> by rememberSaveable { mutableStateOf(emptyList()) }
+    val settings = rememberSaveable(saver = GameSettingListSaver) {
+        mutableStateListOf()
+    }
     val categories = dialogChoiceGetter.getCategories(settings)
 
     Scaffold(
@@ -168,14 +180,14 @@ private fun SettingBeforePlaying(
             OnlineModeToggleMenu(
                 onlineMode = onlineMode,
                 onChange = {
-                    settings = emptyList()
+                    settings.clear()
                     onOnlineModeChange(it)
                 }
             )
             if (showDialog)
                 AddGameSettingDialog(
                     onDismissRequest = { showDialog = false },
-                    onAddClick = { settings = settings + it },
+                    onAddClick = { settings.add(it) },
                     categories = categories,
                     getDifficulties = { category ->
                         dialogChoiceGetter.getDifficulties(category, settings)
@@ -203,7 +215,7 @@ private fun SettingBeforePlaying(
                                     && it.difficulty == setting.difficulty
                                     && it.amount == setting.amount
                         }
-                        settings = settings.run { subList(0, idx) + drop(idx + 1) }
+                        settings.removeAt(idx)
                     }
                 )
         }

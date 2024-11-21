@@ -1,5 +1,6 @@
 package com.korn.portfolio.randomtrivia.ui.viewmodel
 
+import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -21,13 +22,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 import kotlin.coroutines.cancellation.CancellationException
 
+@Parcelize
 data class GameSetting(
-    val category: Category?,  // null = random
+    val category: @RawValue Category?,  // null = random
     val difficulty: Difficulty?,  // null = random
     val amount: Int
-) {
+) : Parcelable {
     companion object {
         const val MAX_AMOUNT = 50
         const val MIN_AMOUNT = 1
