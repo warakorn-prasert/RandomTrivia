@@ -53,6 +53,7 @@ object GameSettingSerializer : KSerializer<GameSetting> {
             var difficulty: Difficulty? = null
             var amount = 0
 
+            var decodeCount = 0
             loop@ while(true) {
                 when (val index = decodeElementIndex(descriptor)) {
                     DECODE_DONE -> break@loop
@@ -66,7 +67,10 @@ object GameSettingSerializer : KSerializer<GameSetting> {
                     3 -> amount = decodeIntElement(descriptor, 3)
                     else -> throw SerializationException("Unexpected index $index")
                 }
+                decodeCount++
             }
+
+            require(decodeCount == descriptor.elementsCount)
 
             GameSetting(
                 category =
