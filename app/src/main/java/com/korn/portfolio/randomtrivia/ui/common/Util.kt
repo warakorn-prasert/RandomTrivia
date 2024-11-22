@@ -40,10 +40,10 @@ val Difficulty?.displayName: String
 @OptIn(ExperimentalSerializationApi::class)
 object GameSettingSerializer : KSerializer<GameSetting> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("GameSetting") {
-        element<String?>("categoryName", isOptional = true)
-        element<String?>("categoryId", isOptional = true)
-        element<String?>("difficulty", isOptional = true)
-        element<String>("amount")
+        element<String?>("categoryName")
+        element<Int?>("categoryId")
+        element<String?>("difficulty")
+        element<Int>("amount")
     }
 
     override fun deserialize(decoder: Decoder): GameSetting {
