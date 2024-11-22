@@ -14,6 +14,7 @@ import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
+import com.korn.portfolio.randomtrivia.ui.common.GameSettingSerializer
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -24,9 +25,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
+import kotlinx.serialization.Serializable
 import kotlin.coroutines.cancellation.CancellationException
 
-@Parcelize
+@Parcelize  // For rememberSaveable
+@Serializable(with = GameSettingSerializer::class)  // For navigation argument
 data class GameSetting(
     val category: @RawValue Category?,  // null = random
     val difficulty: Difficulty?,  // null = random

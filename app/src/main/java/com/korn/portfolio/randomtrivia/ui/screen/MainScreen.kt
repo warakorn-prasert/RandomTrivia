@@ -29,10 +29,8 @@ import com.korn.portfolio.randomtrivia.ui.navigation.GameSettingType
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
 import com.korn.portfolio.randomtrivia.ui.navigation.Play
-import com.korn.portfolio.randomtrivia.ui.navigation.SerializableGameSetting
-import com.korn.portfolio.randomtrivia.ui.navigation.deserialized
-import com.korn.portfolio.randomtrivia.ui.navigation.serialized
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.QuestionsViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
@@ -110,20 +108,20 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             viewModel.fetchQuestionCountIfNotAlready(categoryId, onFetchStatusChange)
                         },
                         onSubmit = { settings ->
-                            navController.navigate(Play.Loading(onlineMode, settings.serialized()))
+                            navController.navigate(Play.Loading(onlineMode, settings))
                         },
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
                 composable<Play.Loading>(
-                    typeMap = mapOf(typeOf<List<SerializableGameSetting>>() to GameSettingType)
+                    typeMap = mapOf(typeOf<List<GameSetting>>() to GameSettingType)
                 ) { backStackEntry ->
                     requestFullScreen()
                     val (onlineMode, settings) = backStackEntry.toRoute<Play.Loading>()
                     val viewModel: LoadingBeforePlayingViewModel = viewModel(
                         factory = LoadingBeforePlayingViewModel.Factory(
                             onlineMode = onlineMode,
-                            settings = settings.deserialized(),
+                            settings = settings,
                             onDone = { game ->
                                 sharedViewModel.game = game
                                 navController.navigate(Game) {

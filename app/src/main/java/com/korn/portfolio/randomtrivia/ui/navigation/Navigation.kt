@@ -2,17 +2,14 @@ package com.korn.portfolio.randomtrivia.ui.navigation
 
 import android.os.Build
 import android.os.Bundle
-import android.os.Parcelable
 import androidx.annotation.DrawableRes
 import androidx.navigation.NavType
 import com.korn.portfolio.randomtrivia.R
-import com.korn.portfolio.randomtrivia.database.model.Difficulty
-import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
-import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.util.ArrayList
 
 @Serializable
 sealed interface BottomNav {
@@ -38,7 +35,7 @@ data object Play : BottomNav {
     @Serializable data object Setting
     @Serializable data class Loading(
         val onlineMode: Boolean,
-        val settings: List<SerializableGameSetting>
+        val settings: List<GameSetting>
     )
 }
 
@@ -56,55 +53,28 @@ data object Game {
 @Serializable data object Inspect
 @Serializable data object About
 
-@Parcelize
-@Serializable
-data class SerializableGameSetting(
-    val categoryId: Int?,
-    val categoryName: String?,
-    val difficulty: Difficulty?,
-    val amount: Int
-) : Parcelable
-
-fun List<GameSetting>.serialized() = map {
-    SerializableGameSetting(
-        categoryId = it.category?.id,
-        categoryName = it.category?.name,
-        difficulty = it.difficulty,
-        amount = it.amount
-    )
-}
-
-fun List<SerializableGameSetting>.deserialized() = map {
-    GameSetting(
-        category =
-        if (it.categoryId == null || it.categoryName == null) null
-        else Category(
-            name = it.categoryName,
-            id = it.categoryId
-        ),
-        difficulty = it.difficulty,
-        amount = it.amount
-    )
-}
-
-val GameSettingType = object : NavType<List<SerializableGameSetting>>(isNullableAllowed = false) {
-    override fun get(bundle: Bundle, key: String): List<SerializableGameSetting> {
+val GameSettingType = object : NavType<List<GameSetting>>(isNullableAllowed = false) {
+    override fun get(bundle: Bundle, key: String): List<GameSetting> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            return bundle.getParcelableArrayList(key, SerializableGameSetting::class.java)!!.toList()
+            return bundle.getParcelableArrayList(key, GameSetting::class.java)!!.toList()
         else
             @Suppress("DEPRECATION")
-            return bundle.getParcelableArrayList<SerializableGameSetting>(key)!!.toList()
+            return bundle.getParcelableArrayList<GameSetting>(key)!!.toList()
+        // If GameSetting is not Parcelable, use this.
+        // return bundle.getStringArrayList(key)!!.map(Json::decodeFromString)
     }
 
-    override fun parseValue(value: String): List<SerializableGameSetting> {
+    override fun parseValue(value: String): List<GameSetting> {
         return Json.decodeFromString(value)
     }
 
-    override fun serializeAsValue(value: List<SerializableGameSetting>): String {
+    override fun serializeAsValue(value: List<GameSetting>): String {
         return Json.encodeToString(value)
     }
 
-    override fun put(bundle: Bundle, key: String, value: List<SerializableGameSetting>) {
+    override fun put(bundle: Bundle, key: String, value: List<GameSetting>) {
         bundle.putParcelableArrayList(key, ArrayList(value))
+        // If GameSetting is not Parcelable, use this.
+        // bundle.putStringArrayList(key, ArrayList(value.map(Json::encodeToString)))
     }
 }
