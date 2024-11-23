@@ -22,14 +22,14 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CheckboxWithText(
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+    onChange: (Boolean) -> Unit,
     text: String,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .clip(CircleShape)
-            .clickable { onCheckedChange(!checked) }
+            .clickable { onChange(!checked) }
             .heightIn(min = 40.dp)
             .padding(start = 12.dp, end = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),

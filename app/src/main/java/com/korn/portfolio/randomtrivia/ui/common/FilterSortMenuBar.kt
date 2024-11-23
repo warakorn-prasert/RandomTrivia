@@ -31,8 +31,7 @@ import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 /**
- * Sort button to show bottom sheet
- * , followed by filter buttons initially selects the first item of collection.
+ * Sort button to show bottom sheet, followed by filter buttons.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

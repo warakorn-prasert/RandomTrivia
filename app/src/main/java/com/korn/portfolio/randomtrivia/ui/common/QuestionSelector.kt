@@ -72,7 +72,7 @@ import kotlin.random.Random
 fun ColumnScope.QuestionSelector(
     currentIdx: Int,
     questions: List<GameQuestion>,
-    selectAction: (Int) -> Unit,
+    onSelect: (Int) -> Unit,
     paddingValues: PaddingValues = PaddingValues(),
     isInspecting: Boolean = false,
     spaceUnderQuestionIdx: (@Composable () -> Unit)? = null
@@ -96,14 +96,14 @@ fun ColumnScope.QuestionSelector(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = { selectAction(currentIdx - 1) },
+                onClick = { onSelect(currentIdx - 1) },
                 enabled = currentIdx > 0
             ) {
                 Icon(Icons.AutoMirrored.Default.ArrowBack, "Button to go to previous question.")
             }
             Text("Q ${currentIdx + 1} / $totalQuestions")
             IconButton(
-                onClick = { selectAction(currentIdx + 1) },
+                onClick = { onSelect(currentIdx + 1) },
                 enabled = currentIdx + 1 < totalQuestions
             ) {
                 Icon(Icons.AutoMirrored.Default.ArrowForward, "Button to go to next question.")
@@ -168,8 +168,8 @@ fun ColumnScope.QuestionSelector(
             }
             Box {
                 QuestionButton(
-                    onClick = { selectAction(questionNumber - 1) },
                     questionNumber = questionNumber,
+                    onClick = { onSelect(questionNumber - 1) },
                     state = state
                 )
                 if (state == QuestionButtonState.CORRECT || state == QuestionButtonState.INCORRECT)
@@ -181,8 +181,8 @@ fun ColumnScope.QuestionSelector(
 
 @Composable
 private fun QuestionButton(
-    onClick: () -> Unit,
     questionNumber: Int,
+    onClick: () -> Unit,
     state: QuestionButtonState
 ) {
     OutlinedButton(
@@ -291,7 +291,7 @@ private fun QuestionSelectorPreview() {
                 questions = List(12) {
                     getGameQuestion(getCategory(it), correctAnswer = Random.nextBoolean())
                 },
-                selectAction = {},
+                onSelect = {},
                 isInspecting = false
             )
         }
@@ -308,7 +308,7 @@ private fun InspectModePreview() {
                 questions = List(12) {
                     getGameQuestion(getCategory(it), correctAnswer = Random.nextBoolean())
                 },
-                selectAction = {},
+                onSelect = {},
                 isInspecting = true
             )
         }

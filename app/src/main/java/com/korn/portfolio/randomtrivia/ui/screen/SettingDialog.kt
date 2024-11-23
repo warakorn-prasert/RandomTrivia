@@ -35,7 +35,6 @@ fun SettingDialog(onDismissRequest: () -> Unit) {
     val isDark: IsDark by themeViewModel.getIsDark(context).collectAsState(IsDark.Default)
     val sourceColor: SourceColor by themeViewModel.getSourceColor(context).collectAsState(SourceColor.Default)
     PaddedDialog(
-        show = true,
         onDismissRequest = onDismissRequest,
         title = {
             IconButton(

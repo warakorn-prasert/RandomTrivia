@@ -11,14 +11,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -29,7 +26,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -41,51 +37,24 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
-import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.GameFetchStatus
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.M3ProgressBar
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
-import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
-import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewModel
 
 @Composable
 fun LoadingBeforePlaying(
-    modifier: Modifier = Modifier,
-    onlineMode: Boolean,
-    settings: List<GameSetting>,
-    onCancel: () -> Unit,
-    onStart: (Game) -> Unit
-) {
-    val viewModel: LoadingBeforePlayingViewModel = viewModel(
-        factory = LoadingBeforePlayingViewModel.Factory(
-            onlineMode = onlineMode, settings = settings, onSuccess = onStart
-        )
-    )
-    val fetchStatus by viewModel.fetchStatus.collectAsState()
-    LoadingBeforePlaying(
-        modifier = modifier,
-        cancelAction = { viewModel.cancel(onCancel) },
-        progress = viewModel.progress,
-        fetchStatus = fetchStatus,
-        statusText = viewModel.statusText,
-        fetchAction = viewModel::fetch
-    )
-}
-
-@Composable
-private fun LoadingBeforePlaying(
-    modifier: Modifier = Modifier,
-    cancelAction: () -> Unit,
     progress: Float,
-    fetchStatus: GameFetchStatus,
     statusText: String,
-    fetchAction: () -> Unit
+    fetchStatus: GameFetchStatus,
+    onCancel: () -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    BackHandler(onBack = cancelAction)
+    BackHandler { onCancel() }
+
     Column(modifier) {
         Box(
             modifier = Modifier
@@ -94,7 +63,7 @@ private fun LoadingBeforePlaying(
             contentAlignment = Alignment.Center
         ) {
             IconButtonWithText(
-                onClick = { cancelAction() },
+                onClick = { onCancel() },
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Button to cancel loading game.",
                 text = "Cancel"
@@ -141,7 +110,7 @@ private fun LoadingBeforePlaying(
                             textAlign = TextAlign.Center
                         )
                         IconButtonWithText(
-                            onClick = fetchAction,
+                            onClick = onRetry,
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Button to retry fetching new game.",
                             text = "Retry"
@@ -171,11 +140,11 @@ private fun LoadingPreview() {
     RandomTriviaTheme {
         Surface {
             LoadingBeforePlaying(
-                cancelAction = {},
                 progress = 0.3f,
-                fetchStatus = GameFetchStatus.Loading,
                 statusText = "Loading",
-                fetchAction = {}
+                fetchStatus = GameFetchStatus.Loading,
+                onCancel = {},
+                onRetry = {}
             )
         }
     }
@@ -187,11 +156,11 @@ private fun ErrorPreview() {
     RandomTriviaTheme {
         Surface {
             LoadingBeforePlaying(
-                cancelAction = {},
                 progress = 0.3f,
-                fetchStatus = GameFetchStatus.Error("Error message"),
                 statusText = "Display error message",
-                fetchAction = {}
+                fetchStatus = GameFetchStatus.Error("Error message"),
+                onCancel = {},
+                onRetry = {}
             )
         }
     }
@@ -203,11 +172,11 @@ private fun SuccessPreview() {
     RandomTriviaTheme {
         Surface {
             LoadingBeforePlaying(
-                cancelAction = {},
                 progress = 1f,
-                fetchStatus = GameFetchStatus.Success(getGame(0)),
                 statusText = "Success message",
-                fetchAction = {}
+                fetchStatus = GameFetchStatus.Success(getGame(0)),
+                onCancel = {},
+                onRetry = {}
             )
         }
     }

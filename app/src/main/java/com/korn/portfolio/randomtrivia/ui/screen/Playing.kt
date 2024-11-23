@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
@@ -41,7 +42,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,22 +55,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.Game
-import com.korn.portfolio.randomtrivia.database.model.GameQuestion
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
-import com.korn.portfolio.randomtrivia.ui.hhmmssFrom
-import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
-import com.korn.portfolio.randomtrivia.ui.previewdata.getGameQuestion
+import com.korn.portfolio.randomtrivia.ui.common.displayName
+import com.korn.portfolio.randomtrivia.ui.common.hhmmssFrom
+import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
-import com.korn.portfolio.randomtrivia.ui.viewmodel.PlayingViewModel
-import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
 import kotlinx.coroutines.launch
+import java.util.Date
+import java.util.UUID
+import kotlin.concurrent.timer
 
 enum class AnswerButtonState(
     val containerColor: @Composable () -> Color,
@@ -87,42 +90,32 @@ enum class AnswerButtonState(
     }
 }
 
-@Composable
-fun Playing(
-    modifier: Modifier = Modifier,
-    game: Game,
-    onExit: () -> Unit,
-    onSubmit: (Game) -> Unit
-) {
-    val viewModel: PlayingViewModel = viewModel(factory = PlayingViewModel.Factory(game))
-    Playing(
-        modifier = modifier,
-        exitAction = { viewModel.exit(onExit) },
-        submitAction = { viewModel.submit(onSubmit) },
-        currentIdx = viewModel.currentIdx,
-        questions = viewModel.questions,
-        selectQuestion = viewModel::selectQuestion,
-        submittable = viewModel.submittable,
-        second = viewModel.second,
-        answerAction = viewModel::answer
-    )
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Playing(
-    modifier: Modifier = Modifier,
-    exitAction: () -> Unit,
-    submitAction: () -> Unit,
-    currentIdx: Int,
-    questions: List<GameQuestion>,
-    selectQuestion: (Int) -> Unit,
-    submittable: Boolean,
-    second: Int,
-    answerAction: (String) -> Unit
+fun Playing(
+    game: Game,
+    onExit: () -> Unit,
+    onSubmit: (Game) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    BackHandler(onBack = exitAction)
+    BackHandler { onExit() }
+
+    val questions = remember { game.questions.toMutableStateList() }
     val pagerState = rememberPagerState(pageCount = { questions.size })
+    val currentIdx = pagerState.currentPage
+
+    @SuppressLint("ProduceStateDoesNotAssignValue")
+    val second by run {
+        produceState(initialValue = 0) {
+            val timer = timer(initialDelay = 2000L, period = 1000L) {
+                value++
+            }
+            awaitDispose {
+                timer.cancel()
+            }
+        }
+    }
+
     ScrimmableBottomSheetScaffold(
         modifier = modifier,
         sheetContent = { paddingValues, spaceUnderPeekContent ->
@@ -130,8 +123,7 @@ private fun Playing(
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = questions,
-                selectAction = { idx ->
-                    selectQuestion(idx)
+                onSelect = { idx ->
                     scope.launch {
                         pagerState.animateScrollToPage(idx)
                     }
@@ -146,7 +138,7 @@ private fun Playing(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = exitAction,
+                        onClick = onExit,
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to return to main menu.",
                         text = "Exit"
@@ -154,11 +146,32 @@ private fun Playing(
                 },
                 actions = {
                     IconButtonWithText(
-                        onClick = submitAction,
+                        onClick = {
+                            val newGameId = UUID.randomUUID()
+                            val saveableGame = game.copy(
+                                detail = game.detail.copy(
+                                    timestamp = Date(),
+                                    totalTimeSecond = second,
+                                    gameId = newGameId
+                                ),
+                                questions = questions.map {
+                                    it.copy(
+                                        answer = it.answer.copy(
+                                            gameId = newGameId
+                                        )
+                                    )
+                                }
+                            )
+                            onSubmit(saveableGame)
+                        },
                         imageVector = Icons.Default.Check,
                         contentDescription = "Button to submit game answers.",
                         text = "Submit",
-                        enabled = submittable
+                        enabled = questions.all {
+                            it.answer.answer in it.question.run {
+                                incorrectAnswers + correctAnswer
+                            }
+                        }
                     )
                 }
             )
@@ -199,7 +212,15 @@ private fun Playing(
                     AnswerButtons(
                         userAnswer = question.answer.answer,
                         answers = question.question.run { incorrectAnswers + correctAnswer },
-                        answerAction = answerAction,
+                        onAnswer = { answer ->
+                            questions[currentIdx] = questions[currentIdx].let {
+                                it.copy(
+                                    answer = it.answer.copy(
+                                        answer = answer
+                                    )
+                                )
+                            }
+                        },
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
@@ -283,7 +304,7 @@ fun QuestionStatementCard(questionStatement: String, modifier: Modifier = Modifi
 private fun AnswerButtons(
     userAnswer: String,
     answers: List<String>,
-    answerAction: (String) -> Unit,
+    onAnswer: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -293,7 +314,7 @@ private fun AnswerButtons(
         answers.forEachIndexed { idx, answer ->
             val state = AnswerButtonState.getState(userAnswer, answer)
             ElevatedCard(
-                onClick = { answerAction(answer) },
+                onClick = { onAnswer(answer) },
                 colors = CardDefaults.elevatedCardColors().copy(
                     containerColor =
                         if (state == AnswerButtonState.ANSWERED) MaterialTheme.colorScheme.surface
@@ -341,14 +362,9 @@ private fun AnswerButtons(
 private fun PlayingPreview() {
     RandomTriviaTheme {
         Playing(
-            exitAction = {},
-            submitAction = {},
-            currentIdx = 2,
-            questions = List(12) { getGameQuestion(getCategory(it % 2)) },
-            selectQuestion = {},
-            submittable = true,
-            second = 100,
-            answerAction = {}
+            game = getGame(11),
+            onExit = {},
+            onSubmit = {},
         )
     }
 }
@@ -358,14 +374,9 @@ private fun PlayingPreview() {
 private fun OverflowQuestionPreview() {
     RandomTriviaTheme {
         Playing(
-            exitAction = {},
-            submitAction = {},
-            currentIdx = 0,
-            questions = listOf(getGameQuestion(getCategory(0), overflow = true)),
-            selectQuestion = {},
-            submittable = true,
-            second = 100,
-            answerAction = {}
+            game = getGame(1, true),
+            onExit = {},
+            onSubmit = {},
         )
     }
 }
@@ -377,7 +388,7 @@ private fun OverflowAnswerButtonsPreview() {
         AnswerButtons(
             userAnswer = "",
             answers = listOf("OverflowAnswer".repeat(20)),
-            answerAction = {}
+            onAnswer = {}
         )
     }
 }

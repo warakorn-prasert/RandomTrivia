@@ -29,11 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -87,14 +83,15 @@ private enum class InspectAnswerButtonState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Inspect(
-    modifier: Modifier = Modifier,
-    onBack: () -> Unit,
+    game: Game,
+    onExit: () -> Unit,
     onReplay: (Game) -> Unit,
-    game: Game
+    modifier: Modifier = Modifier
 ) {
-    BackHandler(onBack = onBack)
+    BackHandler { onExit() }
+
     val pagerState = rememberPagerState(pageCount = { game.questions.size })
-    var currentIdx by remember { mutableIntStateOf(0) }
+    val currentIdx = pagerState.currentPage
     ScrimmableBottomSheetScaffold(
         modifier = modifier,
         sheetContent = { paddingValues, spaceUnderPeekContent ->
@@ -102,8 +99,7 @@ fun Inspect(
             QuestionSelector(
                 currentIdx = currentIdx,
                 questions = game.questions,
-                selectAction = { idx ->
-                    currentIdx = idx
+                onSelect = { idx ->
                     scope.launch {
                         pagerState.animateScrollToPage(idx)
                     }
@@ -119,7 +115,7 @@ fun Inspect(
                 title = {},
                 navigationIcon = {
                     IconButtonWithText(
-                        onClick = onBack,
+                        onClick = onExit,
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Button to return to main menu.",
                         text = "Exit"
@@ -172,8 +168,7 @@ fun Inspect(
                         userAnswer = question.answer.answer,
                         answers = question.question.run { incorrectAnswers + correctAnswer },
                         correctAnswer = question.question.correctAnswer,
-                        modifier = Modifier
-                            .padding(vertical = 16.dp)
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
                 }
             }
@@ -231,9 +226,9 @@ private fun InspectAnswerButtons(
 private fun InspectPreview() {
     RandomTriviaTheme {
         Inspect(
-            onBack = {},
-            onReplay = {},
-            game = getGame(totalQuestions = 44, played = true)
+            game = getGame(totalQuestions = 44, played = true),
+            onExit = {},
+            onReplay = {}
         )
     }
 }

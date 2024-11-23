@@ -27,7 +27,7 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 @Composable
 fun FetchStatusBar(
     fetchStatus: FetchStatus,
-    retryAction: () -> Unit
+    onRetry: () -> Unit
 ) {
     if (fetchStatus !is FetchStatus.Success)
         Box(
@@ -51,7 +51,7 @@ fun FetchStatusBar(
                 } else if (fetchStatus is FetchStatus.Error) {
                     Text(fetchStatus.message, style = MaterialTheme.typography.labelLarge)
                     IconButtonWithText(
-                        onClick = retryAction,
+                        onClick = onRetry,
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Retry button for fetching categories.",
                         text = "Retry"
@@ -68,11 +68,11 @@ private fun FetchStatusBarPreview() {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             FetchStatusBar(
                 fetchStatus = FetchStatus.Loading,
-                retryAction = {}
+                onRetry = {}
             )
             FetchStatusBar(
                 fetchStatus = FetchStatus.Error("Some error message"),
-                retryAction = {}
+                onRetry = {}
             )
         }
     }

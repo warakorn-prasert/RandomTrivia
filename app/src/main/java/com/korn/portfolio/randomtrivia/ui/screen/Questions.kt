@@ -10,13 +10,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -35,6 +33,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +42,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.entity.Question
@@ -51,14 +49,13 @@ import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
 import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBarWithBackButton
+import com.korn.portfolio.randomtrivia.ui.common.displayName
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
-import com.korn.portfolio.randomtrivia.ui.viewmodel.QuestionsViewModel
-import com.korn.portfolio.randomtrivia.ui.viewmodel.displayName
 import java.util.UUID
 
 private enum class QuestionFilter(
     val displayText: String,
-    val function: (List<Question>) -> List<Question>
+    val invoke: (List<Question>) -> List<Question>
 ) {
     ALL("All", { it }),
     EASY("Easy", { all -> all.filter { it.difficulty == Difficulty.EASY } }),
@@ -68,7 +65,7 @@ private enum class QuestionFilter(
 
 private enum class QuestionSort(
     val displayText: String,
-    val function: (List<Question>) -> List<Question>
+    val invoke: (List<Question>) -> List<Question>
 ) {
     QUESTION_STATEMENT("Question statement (A-Z)", { all -> all.sortedBy { it.question.lowercase() } }),
     DIFFICULTY("Difficulty (Easy-Hard)", { all -> all.sortedBy { it.difficulty.sortIndex } });
@@ -81,72 +78,41 @@ private val Difficulty.sortIndex: Int
         Difficulty.HARD -> 2
     }
 
-private fun List<Question>.process(
-    filter: QuestionFilter,
-    searchWord: String,
-    sort: QuestionSort,
-    reverseSort: Boolean
-): List<Question> = this
-    .let { filter.function(it) }
-    .let { questions ->
-        if (searchWord.isNotBlank()) questions.filter {
-            it.question.lowercase().contains(searchWord.lowercase())
-        }
-        else questions
-    }
-    .let { sort.function(it) }
-    .let { if (reverseSort) it.reversed() else it }
-
 @Composable
 fun Questions(
-    modifier: Modifier = Modifier,
-    categoryId: Int,
-    onBack: () -> Unit,
-    navToAboutScreen: () -> Unit
-) {
-    val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
-    Questions(
-        modifier = modifier,
-        categoryName = viewModel.categoryName,
-        questions = viewModel.questions,
-        onBack = onBack,
-        navToAboutScreen = navToAboutScreen
-    )
-}
-
-@Composable
-private fun Questions(
-    modifier: Modifier = Modifier,
     categoryName: String,
     questions: List<Question>,
-    onBack: () -> Unit,
-    navToAboutScreen: () -> Unit
+    onExit: () -> Unit,
+    onAboutClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    var searchWord by remember { mutableStateOf("") }
-    BackHandler(onBack = onBack)
+    BackHandler { onExit() }
+
+    var searchWord by rememberSaveable { mutableStateOf("") }
     Scaffold(
         modifier = modifier,
         topBar = {
             SearchableTopBarWithBackButton(
                 searchWord = searchWord,
                 onChange = { searchWord = it },
-                navToAboutScreen = navToAboutScreen,
+                onAboutClick = onAboutClick,
                 hint = "Search for questions",
                 title = categoryName,
-                onBackButtonClick = onBack
+                onBackClick = onExit
             )
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
         Column(Modifier.padding(paddingValues)) {
-            var filter by remember { mutableStateOf(QuestionFilter.ALL) }
-            var sort by remember { mutableStateOf(QuestionSort.QUESTION_STATEMENT) }
-            var reverseSort by remember { mutableStateOf(false) }
-
             val listState = rememberLazyListState()
+            var filter by rememberSaveable { mutableStateOf(QuestionFilter.ALL) }
+            var sort by rememberSaveable { mutableStateOf(QuestionSort.QUESTION_STATEMENT) }
+            var reverseSort by rememberSaveable { mutableStateOf(false) }
+
             LaunchedEffect(searchWord, filter, sort, reverseSort) {
                 listState.animateScrollToItem(0)
             }
+
             val itemsInView by remember {
                 derivedStateOf {
                     listState.layoutInfo
@@ -159,6 +125,7 @@ private fun Questions(
                 sort, { sort = it },
                 reverseSort, { reverseSort = it }
             )
+
             val imePadding = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
             val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
             val bottomBarPadding = 80.dp
@@ -173,12 +140,17 @@ private fun Questions(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(
-                    items = questions.process(filter, searchWord, sort, reverseSort),
+                    items = questions
+                        .let { filter.invoke(it) }
+                        .filter {
+                            it.question.lowercase().contains(searchWord.lowercase())
+                        }
+                        .let { sort.invoke(it) }
+                        .let { if (reverseSort) it.reversed() else it },
                     key = { it.id }
                 ) {
-                    val isInView = it.id in itemsInView
                     val alpha by animateFloatAsState(
-                        targetValue = if (isInView) 1f else 0f,
+                        targetValue = if (it.id in itemsInView) 1f else 0f,
                         animationSpec = tween(
                             durationMillis = 600,
                             delayMillis = 50,
@@ -197,40 +169,36 @@ private fun Questions(
 @Composable
 private fun QuestionsFilterSortMenuBar(
     filter: QuestionFilter,
-    onFilterSelect: (QuestionFilter) -> Unit,
+    onFilterChange: (QuestionFilter) -> Unit,
     sort: QuestionSort,
-    onSortSelect: (QuestionSort) -> Unit,
+    onSortChange: (QuestionSort) -> Unit,
     reverseSort: Boolean,
     onReverseSortChange: (Boolean) -> Unit
 ) {
     FilterSortMenuBar(
         selectedFilter = filter,
         filters = QuestionFilter.entries,
-        onFilterSelect = onFilterSelect,
+        onFilterSelect = onFilterChange,
         filterToString = { it.displayText },
         sortBottomSheetContent = {
-            Column(Modifier.height(IntrinsicSize.Min)) {
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Sort By")
-                    CheckboxWithText(
-                        checked = reverseSort,
-                        onCheckedChange = onReverseSortChange,
-                        text = "Reversed"
-                    )
-                }
-                QuestionSort.entries.forEach {
-                    RadioButtonWithText(
-                        selected = sort == it,
-                        onClick = { onSortSelect(it) },
-                        text = it.displayText
-                    )
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Sort By")
+                CheckboxWithText(
+                    checked = reverseSort,
+                    onChange = onReverseSortChange,
+                    text = "Reversed"
+                )
+            }
+            QuestionSort.entries.forEach {
+                RadioButtonWithText(
+                    selected = sort == it,
+                    onClick = { onSortChange(it) },
+                    text = it.displayText
+                )
             }
         }
     )
@@ -255,7 +223,7 @@ private fun QuestionCard(question: Question, modifier: Modifier = Modifier) {
         }
         if (expanded)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Answer(question.correctAnswer, correct = true)
+                Answer(question.correctAnswer, isCorrect = true)
                 question.incorrectAnswers.forEach {
                     Answer(it, false)
                 }
@@ -264,16 +232,16 @@ private fun QuestionCard(question: Question, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Answer(answer: String, correct: Boolean) {
+private fun Answer(answer: String, isCorrect: Boolean) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.run {
-                if (correct) Check else Close
+                if (isCorrect) Check else Close
             },
-            contentDescription = "Icon for ${if (correct) "correct" else "incorrect"} answer."
+            contentDescription = "Icon for ${if (isCorrect) "correct" else "incorrect"} answer."
         )
         Text(answer)
     }
@@ -298,8 +266,8 @@ private fun QuestionsPreview() {
                 mockQuestion.copy(question = "bcd", difficulty = Difficulty.EASY, id = UUID.randomUUID()),
                 mockQuestion.copy(question = "efg", difficulty = Difficulty.HARD, id = UUID.randomUUID()),
             ),
-            onBack = {},
-            navToAboutScreen = {}
+            onExit = {},
+            onAboutClick = {}
         )
     }
 }

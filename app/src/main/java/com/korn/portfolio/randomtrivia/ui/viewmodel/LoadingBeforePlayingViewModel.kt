@@ -15,6 +15,7 @@ import com.korn.portfolio.randomtrivia.network.model.ResponseCode
 import com.korn.portfolio.randomtrivia.repository.GameOption
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.GameFetchStatus
+import com.korn.portfolio.randomtrivia.ui.common.displayName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,7 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
-private const val prepareText = "Preparing to fetch"
+private const val PREPARE_TEXT = "Preparing to fetch"
 
 private val ResponseCode.message: String
     get() = when (this) {
@@ -48,7 +49,7 @@ private fun List<GameSetting>.toGameOptions(): List<GameOption> =
     }
 
 class LoadingBeforePlayingViewModel(
-    private val onSuccess: (Game) -> Unit,
+    private val onDone: (Game) -> Unit,
     private val onlineMode: Boolean,
     private val settings: List<GameSetting>,
     private val triviaRepository: TriviaRepository
@@ -56,7 +57,7 @@ class LoadingBeforePlayingViewModel(
     val fetchStatus: StateFlow<GameFetchStatus> get() = mutableFetchStatus
     private val mutableFetchStatus = MutableStateFlow<GameFetchStatus>(GameFetchStatus.Loading)
 
-    var statusText: String by mutableStateOf(prepareText)
+    var statusText: String by mutableStateOf(PREPARE_TEXT)
         private set
 
     // 0f..1f
@@ -65,9 +66,8 @@ class LoadingBeforePlayingViewModel(
 
     private var fetchJob: Job = Job().apply { complete() }
 
-    fun cancel(action: () -> Unit) {
+    fun cancelFetch() {
         fetchJob.cancel()
-        action()
     }
 
     fun fetch() {
@@ -80,7 +80,7 @@ class LoadingBeforePlayingViewModel(
                 try {
                     mutableFetchStatus.emit(GameFetchStatus.Loading)
                     progress = 0f
-                    statusText = prepareText
+                    statusText = PREPARE_TEXT
                     mutableFetchStatus.emit(
                         try {
                             var currentSettingDisplayName = ""
@@ -104,6 +104,8 @@ class LoadingBeforePlayingViewModel(
 //                                else "Unhandled network request error (${e.message})"
                                 else "Failed to load."
                             )
+                        } catch (_: CancellationException) {
+                            GameFetchStatus.Error("Canceled.")
                         } catch (_: Exception) {
 //                            GameFetchStatus.Error("Unhandled error (${e.message})")
                             GameFetchStatus.Error("Failed to load.")
@@ -115,10 +117,15 @@ class LoadingBeforePlayingViewModel(
                         GameFetchStatus.Loading -> {}
                         is GameFetchStatus.Success -> {
                             progress = 1f
-                            statusText = "Finished"
+                            if (onlineMode) {
+                                statusText = "Saving questions."
+                                triviaRepository.saveQuestions(f.game)
+                            }
+                            delay(1000)
+                            statusText = "Finished."
                             delay(1000)
                             withContext(Dispatchers.Main) {
-                                onSuccess(f.game)
+                                onDone(f.game)
                             }
                         }
                     }
@@ -134,7 +141,7 @@ class LoadingBeforePlayingViewModel(
     class Factory(
         private val onlineMode: Boolean,
         private val settings: List<GameSetting>,
-        private val onSuccess: (Game) -> Unit
+        private val onDone: (Game) -> Unit
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(
@@ -143,7 +150,7 @@ class LoadingBeforePlayingViewModel(
         ): T {
             val application = checkNotNull(extras[APPLICATION_KEY]) as TriviaApplication
             return LoadingBeforePlayingViewModel(
-                onSuccess,
+                onDone,
                 onlineMode,
                 settings,
                 application.triviaRepository,

@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,9 +44,11 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
-    modifier: Modifier = Modifier,
-    onBack: () -> Unit
+    onExit: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    BackHandler { onExit() }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -54,7 +57,7 @@ fun AboutScreen(
                     Text("About this app", style = MaterialTheme.typography.titleMedium)
                 },
                 navigationIcon = {
-                    IconButton(onBack) {
+                    IconButton(onExit) {
                         Icon(Icons.Default.Close, "Close setting menu")
                     }
                 }
@@ -180,6 +183,6 @@ private fun ColumnScope.LicenseIndication() {
 @Composable
 fun AboutDialogPreview() {
     RandomTriviaTheme {
-        AboutScreen {}
+        AboutScreen({})
     }
 }

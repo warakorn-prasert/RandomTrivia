@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -110,46 +111,51 @@ private fun AnimatedIcon(start: Boolean) {
         animationSpec = tween(ANIM_SHRINK_ICON)
     )
 
-    // grayscale
-    val gR = anim * R_GRAYSCALE
-    val gG = anim * G_GRAYSCALE
-    val gB = anim * B_GRAYSCALE
-    val srcR = 1f - anim + gR
-    val srcG = 1f - anim + gG
-    val srcB = 1f - anim + gB
-    val mat1 = ColorMatrix(floatArrayOf(
-        srcR, gG, gB, 0f, 0f,
-        gR, srcG, gB, 0f, 0f,
-        gR, gG, srcB, 0f, 0f,
-        0f, 0f, 0f, 1f, 0f
-    ))
-
-    // average with primary color
     val (pR, pG, pB) = MaterialTheme.colorScheme.primary
-    val weight = anim * PRIMARY_COLOR_WEIGHT
-    val mat2 = ColorMatrix(floatArrayOf(
-        1f - weight, 0f, 0f, 0f, pR * weight * 255f,
-        0f, 1f - weight, 0f, 0f, pG * weight * 255f,
-        0f, 0f, 1f - weight, 0f, pB * weight * 255f,
-        0f, 0f, 0f, 1f, 0f
-    ))
+    val colorMatrix by remember {
+        derivedStateOf {
+            // grayscale
+            val gR = anim * R_GRAYSCALE
+            val gG = anim * G_GRAYSCALE
+            val gB = anim * B_GRAYSCALE
+            val srcR = 1f - anim + gR
+            val srcG = 1f - anim + gG
+            val srcB = 1f - anim + gB
+            val mat1 = ColorMatrix(floatArrayOf(
+                srcR, gG, gB, 0f, 0f,
+                gR, srcG, gB, 0f, 0f,
+                gR, gG, srcB, 0f, 0f,
+                0f, 0f, 0f, 1f, 0f
+            ))
 
-    // adjust brightness to be near primary color
-    // (tested on primary colors from themes of app color (0xFFCAD49E) and M3Purple (0xFF6750A4))
-    val target = 255f * (pR * R_GRAYSCALE + pG * G_GRAYSCALE + pB * B_GRAYSCALE)
-    val contrast = 1f + anim * 2f  // brighter target (ex. dark theme's primary) -> brighter result
-    val brightness = anim * -1f * target  // reduce brightness from contrast
-    mat2.values[0] *= contrast
-    mat2.values[6] *= contrast
-    mat2.values[12] *= contrast
-    mat2.values[4] += brightness
-    mat2.values[9] += brightness
-    mat2.values[14] += brightness
+            // average with primary color
+            val weight = anim * PRIMARY_COLOR_WEIGHT
+            val mat2 = ColorMatrix(floatArrayOf(
+                1f - weight, 0f, 0f, 0f, pR * weight * 255f,
+                0f, 1f - weight, 0f, 0f, pG * weight * 255f,
+                0f, 0f, 1f - weight, 0f, pB * weight * 255f,
+                0f, 0f, 0f, 1f, 0f
+            ))
 
-    // combine mat2 and mat1 before apply
-    //  - transform : mat2 * (mat1 * rgbaVector)
-    //  - to : mat21 * rgbaVector
-    val colorMatrix = mat2.multiplyRgb(mat1)
+            // adjust brightness to be near primary color
+            // (tested on primary colors from themes of app color (0xFFCAD49E) and M3Purple (0xFF6750A4))
+            val target = 255f * (pR * R_GRAYSCALE + pG * G_GRAYSCALE + pB * B_GRAYSCALE)
+            val contrast = 1f + anim * 2f  // brighter target (ex. dark theme's primary) -> brighter result
+            val brightness = anim * -1f * target  // reduce brightness from contrast
+            mat2.values[0] *= contrast
+            mat2.values[6] *= contrast
+            mat2.values[12] *= contrast
+            mat2.values[4] += brightness
+            mat2.values[9] += brightness
+            mat2.values[14] += brightness
+
+            // combine mat2 and mat1 before apply
+            //  - transform : mat2 * (mat1 * rgbaVector)
+            //  - to : mat21 * rgbaVector
+            mat2.multiplyRgb(mat1)
+        }
+    }
+
     AdaptiveIcon(iconSize, colorMatrix)
 }
 

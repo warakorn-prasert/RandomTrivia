@@ -10,13 +10,16 @@ import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.korn.portfolio.randomtrivia.ui.screen.MainScreen
 import com.korn.portfolio.randomtrivia.ui.screen.Splash
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
-import com.korn.portfolio.randomtrivia.ui.viewmodel.MainViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.ThemeViewModel
 import kotlinx.coroutines.launch
 
@@ -24,8 +27,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-
-        val mainViewModel: MainViewModel by viewModels(factoryProducer = { MainViewModel.Factory })
 
         // Enable edgeToEdge and make detectDarkMode follows custom dark mode
         val themeViewModel: ThemeViewModel by viewModels()
@@ -48,14 +49,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             RandomTriviaTheme {
                 Surface(Modifier.fillMaxSize()) {
-                    MainScreen(
-                        mainViewModel = mainViewModel,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    AnimatedVisibility(mainViewModel.showSplashScreen) {
+                    var showSplashScreen by remember { mutableStateOf(true) }
+                    MainScreen(Modifier.fillMaxSize())
+                    AnimatedVisibility(showSplashScreen) {
                         Splash(
                             onDone = {
-                                mainViewModel.showSplashScreen = false
+                                showSplashScreen = false
                             }
                         )
                     }

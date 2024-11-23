@@ -14,17 +14,11 @@ import com.google.android.material.color.utilities.DynamicScheme
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.SchemeContent
-import com.korn.portfolio.randomtrivia.data.CONTRAST_LEVEL
-import com.korn.portfolio.randomtrivia.data.CONTRAST_LEVEL_VALUE
-import com.korn.portfolio.randomtrivia.data.IS_DARK
-import com.korn.portfolio.randomtrivia.data.IS_DARK_VALUE
-import com.korn.portfolio.randomtrivia.data.SOURCE_COLOR
-import com.korn.portfolio.randomtrivia.data.SOURCE_COLOR_VALUE
-import com.korn.portfolio.randomtrivia.data.dataStore
 import com.korn.portfolio.randomtrivia.ui.theme.ContrastLevel
 import com.korn.portfolio.randomtrivia.ui.theme.IsDark
 import com.korn.portfolio.randomtrivia.ui.theme.SourceColor
 import com.korn.portfolio.randomtrivia.ui.theme.TriviaAppColor
+import com.korn.portfolio.randomtrivia.ui.theme.dataStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combineTransform
@@ -103,40 +97,43 @@ fun dynamicColorScheme(
 class ThemeViewModel : ViewModel() {
     fun getIsDark(context: Context): Flow<IsDark> {
         val str = context.dataStore.data
-            .map { it[IS_DARK] }
+            .map { it[IsDark.TYPE_KEY] ?: IsDark.Default.TYPE_VALUE }
         val value = context.dataStore.data
-            .map { it[IS_DARK_VALUE] ?: isSystemInDarkTheme(context) }
+            .map { it[IsDark.VALUE_KEY] ?: isSystemInDarkTheme(context) }
         return combineTransform(str, value) { s, v ->
             when (s) {
-                IsDark.Custom::class.simpleName -> emit(IsDark.Custom(v))
-                else -> emit(IsDark.Default)
+                IsDark.Custom.TYPE_VALUE -> emit(IsDark.Custom(v))
+                IsDark.Default.TYPE_VALUE -> emit(IsDark.Default)
+                else -> throw IllegalStateException()
             }
         }
     }
 
     fun getSourceColor(context: Context): Flow<SourceColor> {
         val str = context.dataStore.data
-            .map { it[SOURCE_COLOR] }
+            .map { it[SourceColor.TYPE_KEY] ?: SourceColor.Default.TYPE_VALUE }
         val value = context.dataStore.data
-            .map { it[SOURCE_COLOR_VALUE] ?: TriviaAppColor }
+            .map { it[SourceColor.VALUE_KEY] ?: TriviaAppColor }
         return combineTransform(str, value) { s, v ->
             when (s) {
-                SourceColor.Custom::class.simpleName -> emit(SourceColor.Custom(v))
-                SourceColor.Wallpaper::class.simpleName -> emit(SourceColor.Wallpaper)
-                else -> emit(SourceColor.Default)
+                SourceColor.Custom.TYPE_VALUE -> emit(SourceColor.Custom(v))
+                SourceColor.Wallpaper.TYPE_VALUE -> emit(SourceColor.Wallpaper)
+                SourceColor.Default.TYPE_VALUE -> emit(SourceColor.Default)
+                else -> throw IllegalStateException()
             }
         }
     }
 
     fun getContrastLevel(context: Context): Flow<ContrastLevel> {
         val str = context.dataStore.data
-            .map { it[CONTRAST_LEVEL] }
+            .map { it[ContrastLevel.TYPE_KEY] ?: ContrastLevel.Default.TYPE_VALUE }
         val value = context.dataStore.data
-            .map { it[CONTRAST_LEVEL_VALUE] ?: getSystemContrast(context) }
+            .map { it[ContrastLevel.VALUE_KEY] ?: getSystemContrast(context) }
         return combineTransform(str, value) { s, v ->
             when (s) {
-                ContrastLevel.Custom::class.simpleName -> emit(ContrastLevel.Custom(v))
-                else -> emit(ContrastLevel.Default)
+                ContrastLevel.Custom.TYPE_VALUE -> emit(ContrastLevel.Custom(v))
+                ContrastLevel.Default.TYPE_VALUE -> emit(ContrastLevel.Default)
+                else -> throw IllegalStateException()
             }
         }
     }
@@ -164,9 +161,9 @@ class ThemeViewModel : ViewModel() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 context.dataStore.edit {
-                    it[IS_DARK] = value::class.simpleName!!
+                    it[IsDark.TYPE_KEY] = value::class.simpleName!!
                     if (value is IsDark.Custom)
-                        it[IS_DARK_VALUE] = value.value
+                        it[IsDark.VALUE_KEY] = value.value
                 }
             }
         }
@@ -176,9 +173,9 @@ class ThemeViewModel : ViewModel() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 context.dataStore.edit {
-                    it[SOURCE_COLOR] = value::class.simpleName!!
+                    it[SourceColor.TYPE_KEY] = value::class.simpleName!!
                     if (value is SourceColor.Custom)
-                        it[SOURCE_COLOR_VALUE] = value.value
+                        it[SourceColor.VALUE_KEY] = value.value
                 }
             }
         }
@@ -188,9 +185,9 @@ class ThemeViewModel : ViewModel() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 context.dataStore.edit {
-                    it[CONTRAST_LEVEL] = value::class.simpleName!!
+                    it[ContrastLevel.TYPE_KEY] = value::class.simpleName!!
                     if (value is ContrastLevel.Custom)
-                        it[CONTRAST_LEVEL_VALUE] = value.value
+                        it[ContrastLevel.VALUE_KEY] = value.value
                 }
             }
         }

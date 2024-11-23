@@ -2,245 +2,219 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.korn.portfolio.randomtrivia.ui.common.BottomBar
-import com.korn.portfolio.randomtrivia.ui.common.navigateBottomNav
 import com.korn.portfolio.randomtrivia.ui.navigation.About
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
+import com.korn.portfolio.randomtrivia.ui.navigation.Play
+import com.korn.portfolio.randomtrivia.ui.navigation.GameSettingType
+import com.korn.portfolio.randomtrivia.ui.navigation.WrappedGameType
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
-import com.korn.portfolio.randomtrivia.ui.navigation.Play
-import com.korn.portfolio.randomtrivia.ui.viewmodel.MainViewModel
+import com.korn.portfolio.randomtrivia.ui.navigation.PrePlay
+import com.korn.portfolio.randomtrivia.ui.navigation.WrappedGame
+import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
+import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.QuestionsViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
+import com.korn.portfolio.randomtrivia.ui.viewmodel.SharedViewModel
+import kotlin.reflect.typeOf
 
 @Composable
-fun MainScreen(
-    mainViewModel: MainViewModel,
-    modifier: Modifier = Modifier
-) {
+fun MainScreen(modifier: Modifier = Modifier) {
     var showBottomBar by remember { mutableStateOf(true) }
     fun requestFullScreen() { showBottomBar = false }
     fun dismissFullScreen() { showBottomBar = true }
 
     val navController = rememberNavController()
+    val sharedViewModel: SharedViewModel = viewModel(factory = SharedViewModel.Factory)
 
     Scaffold(
         modifier = modifier,
-        bottomBar = { if (showBottomBar) BottomBar(navController) },
+        bottomBar = {
+            Box(Modifier.animateContentSize()) {
+                if (showBottomBar) BottomBar(navController)
+            }
+        },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
-        NavHost(navController = navController, startDestination = Categories) {
+        NavHost(navController, startDestination = Categories) {
+            composable<About> {
+                requestFullScreen()
+                AboutScreen(
+                    onExit = { navController.navigateUp() },
+                    modifier = Modifier.systemBarsPadding()
+                )
+            }
             navigation<Categories>(startDestination = Categories.Default) {
-                composable<About> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
-                    AboutScreen(
-                        modifier = Modifier.systemBarsPadding(),
-                        onBack = { navController.navigateUp() }
-                    )
-                }
                 composable<Categories.Default> {
-                    LaunchedEffect(Unit) {
-                        dismissFullScreen()
-                    }
+                    dismissFullScreen()
+                    val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
+                    val categories by viewModel.categories.collectAsState(emptyList())
                     Categories(
-                        modifier = Modifier.padding(paddingValues),
-                        fetchStatus = mainViewModel.categoriesFetchStatus,
-                        fetchCategories = mainViewModel::fetchCategories,
-                        navToQuestions = { categoryId ->
+                        categories = categories,
+                        categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
+                        onRetryFetch = { sharedViewModel.fetchCategories() },
+                        onCategoryClick = { categoryId ->
                             navController.navigate(Categories.Questions(categoryId))
                         },
-                        navToAboutScreen = { navController.navigate(About) }
+                        onAboutClick = { navController.navigate(About) },
+                        modifier = Modifier.padding(paddingValues)
                     )
                 }
                 composable<Categories.Questions> { backStackEntry ->
-                    LaunchedEffect(Unit) {
-                        dismissFullScreen()
-                    }
+                    dismissFullScreen()
+                    val categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId
+                    val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
                     Questions(
-                        modifier = Modifier.padding(paddingValues),
-                        categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId,
-                        onBack = {
-                            navController.navigate(Categories.Default) {
-                                popUpTo(Categories.Default) { inclusive = true }
-                            }
-                        },
-                        navToAboutScreen = { navController.navigate(About) }
+                        categoryName = viewModel.categoryName,
+                        questions = viewModel.questions,
+                        onExit = { navController.navigateUp() },
+                        onAboutClick = { navController.navigate(About) },
+                        modifier = Modifier.padding(paddingValues)
                     )
                 }
             }
-            navigation<Play>(startDestination = Play.Setting) {
-                composable<Play.Setting> {
-                    LaunchedEffect(Unit) {
-                        dismissFullScreen()
-                    }
+            navigation<PrePlay>(startDestination = PrePlay.Setting) {
+                composable<PrePlay.Setting> {
+                    dismissFullScreen()
+                    val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
+                    val onlineMode by viewModel.onlineMode.collectAsState()
+                    val catsWithCounts by viewModel.categoriesWithQuestionCounts.collectAsState(emptyList())
                     SettingBeforePlaying(
-                        modifier = Modifier.padding(paddingValues),
-                        categoriesFetchStatus = mainViewModel.categoriesFetchStatus,
-                        fetchCategories = mainViewModel::fetchCategories,
-                        onSubmit = { onlineMode, settings ->
-                            mainViewModel.onlineMode = onlineMode
-                            mainViewModel.settings = settings
-                            navController.navigate(Play.Loading)
-                        }
+                        categoriesWithQuestionCounts = catsWithCounts,
+                        onlineMode = onlineMode,
+                        onOnlineModeChange = { online -> viewModel.changeOnlineMode(online) },
+                        categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
+                        onFetchCategoriesRequest = { sharedViewModel.fetchCategories() },
+                        onFetchQuestionCountRequest = { categoryId, onFetchStatusChange ->
+                            viewModel.fetchQuestionCountIfNotAlready(categoryId, onFetchStatusChange)
+                        },
+                        onSubmit = { settings ->
+                            navController.navigate(PrePlay.Loading(onlineMode, settings))
+                        },
+                        modifier = Modifier.padding(paddingValues)
                     )
                 }
-                composable<Play.Loading> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
-                    LoadingBeforePlaying(
-                        modifier = Modifier.systemBarsPadding(),
-                        onlineMode = mainViewModel.onlineMode,
-                        settings = mainViewModel.settings,
-                        onCancel = {
-                            navController.navigate(Play.Setting) {
-                                popUpTo(Play.Setting) { inclusive = true }
-                            }
-                        },
-                        onStart = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(Play.Playing) {
-                                popUpTo(Play.Playing) { inclusive = true }
-                            }
-                        }
-                    )
-                }
-                composable<Play.Playing> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
-                    Playing(
-                        game = mainViewModel.game,
-                        onExit = {
-                            navController.navigate(Play.Setting) {
-                                popUpTo(Play.Setting) { inclusive = true }
-                            }
-                        },
-                        onSubmit = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(Play.Result) {
-                                popUpTo(Play.Result) { inclusive = true }
-                            }
-                        }
-                    )
-                }
-                composable<Play.Result> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
-                    Result(
-                        game = mainViewModel.game,
-                        onExit = {
-                            navController.navigate(Play.Setting) {
-                                popUpTo(Play.Setting) { inclusive = true }
-                            }
-                        },
-                        onReplay = { _ ->
-                            navController.navigate(Play.Playing) {
-                                popUpTo(Play.Playing) { inclusive = true }
-                            }
-                        },
-                        onInspect = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(Inspect) {
-                                popUpTo(Inspect) { inclusive = true }
-                            }
-                        }
-                    )
-                }
-            }
-            navigation<History>(startDestination = History.Default) {
-                composable<History.Default> {
-                    LaunchedEffect(Unit) {
-                        dismissFullScreen()
-                    }
-                    PastGames(
-                        modifier = Modifier.padding(paddingValues),
-                        onReplay = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(History.Replay)
-                        },
-                        onInspect = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(Inspect)
-                        },
-                        navToAboutScreen = { navController.navigate(About) }
-                    )
-                }
-                composable<History.Replay> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
-                    Playing(
-                        game = mainViewModel.game,
-                        onExit = {
-                            navController.navigate(History.Default) {
-                                popUpTo(History.Default) { inclusive = true }
-                            }
-                        },
-                        onSubmit = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(History.Result) {
-                                popUpTo(History.Result) { inclusive = true }
-                            }
-                        }
-                    )
-                }
-                composable<History.Result> {
-                    LaunchedEffect(Unit) {
-                        requestFullScreen()
-                    }
-                    Result(
-                        game = mainViewModel.game,
-                        onExit = {
-                            navController.navigate(History.Default) {
-                                popUpTo(History.Default) { inclusive = true }
-                            }
-                        },
-                        onReplay = { _ ->
-                            navController.navigate(History.Replay) {
-                                popUpTo(History.Replay) { inclusive = true }
-                            }
-                        },
-                        onInspect = { game ->
-                            mainViewModel.game = game
-                            navController.navigate(Inspect) {
-                                popUpTo(Inspect) { inclusive = true }
-                            }
-                        }
-                    )
-                }
-            }
-            composable<Inspect> {
-                LaunchedEffect(Unit) {
+                composable<PrePlay.Loading>(
+                    typeMap = mapOf(typeOf<List<GameSetting>>() to GameSettingType)
+                ) { backStackEntry ->
                     requestFullScreen()
+                    val (onlineMode, settings) = backStackEntry.toRoute<PrePlay.Loading>()
+                    val viewModel: LoadingBeforePlayingViewModel = viewModel(
+                        factory = LoadingBeforePlayingViewModel.Factory(
+                            onlineMode = onlineMode,
+                            settings = settings,
+                            onDone = { game ->
+                                navController.navigate(Play(WrappedGame(game))) {
+                                    popUpTo(PrePlay.Setting)
+                                }
+                            }
+                        )
+                    )
+                    val fetchStatus by viewModel.fetchStatus.collectAsState()
+                    LoadingBeforePlaying(
+                        progress = viewModel.progress,
+                        statusText = viewModel.statusText,
+                        fetchStatus = fetchStatus,
+                        onCancel = {
+                            viewModel.cancelFetch()
+                            navController.navigateUp()
+                        },
+                        onRetry = { viewModel.fetch() },
+                        modifier = Modifier.systemBarsPadding()
+                    )
                 }
-                Inspect(
-                    onBack = {
-                        navController.navigateBottomNav(History)
-                    },
-                    onReplay = { _ ->
-                        navController.navigate(History.Replay) {
-                            popUpTo(History.Replay) { inclusive = true }
+            }
+            navigation<Play>(
+                startDestination = Play.SubNav.Playing,
+                typeMap = mapOf(typeOf<WrappedGame>() to WrappedGameType)
+            ) {
+                composable<Play.SubNav.Playing> { backStackEntry ->
+                    requestFullScreen()
+                    val parentEntry = remember(backStackEntry) {
+                        navController.getBackStackEntry<Play>()
+                    }
+                    val inputGame = parentEntry.toRoute<Play>().wrappedGame.game
+                    Playing(
+                        game = inputGame,
+                        onExit = { navController.navigateUp() },
+                        onSubmit = { game ->
+                            sharedViewModel.saveGame(game)
+                            navController.navigate(Play.SubNav.Result(WrappedGame(game))) {
+                                popUpTo<Play.SubNav.Playing> { inclusive = true }
+                            }
                         }
+                    )
+                }
+                composable<Play.SubNav.Result>(
+                    typeMap = mapOf(typeOf<WrappedGame>() to WrappedGameType)
+                ) { backStackEntry ->
+                    requestFullScreen()
+                    val inputGame = backStackEntry.toRoute<Play.SubNav.Result>().wrappedGame.game
+                    Result(
+                        game = inputGame,
+                        onExit = { navController.navigateUp() },
+                        onReplay = { game ->
+                            navController.navigate(Play(WrappedGame(game))) {
+                                popUpTo<Play.SubNav.Result> { inclusive = true }
+                            }
+                        },
+                        onInspect = { game ->
+                            navController.navigate(Inspect(WrappedGame(game))) {
+                                popUpTo<Play.SubNav.Result> { inclusive = true }
+                            }
+                        }
+                    )
+                }
+            }
+            composable<History> {
+                dismissFullScreen()
+                PastGames(
+                    pastGames = sharedViewModel.pastGames.collectAsState(emptyList()).value,
+                    onDelete = { sharedViewModel.deleteGame(it) },
+                    onReplay = { game ->
+                        navController.navigate(Play(WrappedGame(game)))
                     },
-                    game = mainViewModel.game
+                    onInspect = { game ->
+                        navController.navigate(Inspect(WrappedGame(game)))
+                    },
+                    onAboutClick = { navController.navigate(About) },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+            composable<Inspect>(
+                typeMap = mapOf(typeOf<WrappedGame>() to WrappedGameType)
+            ) { backStackEntry ->
+                requestFullScreen()
+                val inputGame = backStackEntry.toRoute<Inspect>().wrappedGame.game
+                Inspect(
+                    game = inputGame,
+                    onExit = { navController.navigateUp() },
+                    onReplay = { game ->
+                        navController.navigate(Play(WrappedGame(game))) {
+                            popUpTo<Inspect> { inclusive = true }
+                        }
+                    }
                 )
             }
         }
