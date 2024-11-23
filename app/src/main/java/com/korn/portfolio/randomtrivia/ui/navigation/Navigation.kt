@@ -79,11 +79,11 @@ val GameSettingType = object : NavType<List<GameSetting>>(isNullableAllowed = fa
     }
 
     override fun parseValue(value: String): List<GameSetting> {
-        return Json.decodeFromString(value)
+        return Json.decodeFromString(Uri.decode(value))
     }
 
     override fun serializeAsValue(value: List<GameSetting>): String {
-        return Json.encodeToString(value)
+        return Uri.encode(Json.encodeToString(value))
     }
 
     override fun put(bundle: Bundle, key: String, value: List<GameSetting>) {
