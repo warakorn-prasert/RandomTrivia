@@ -1,15 +1,20 @@
 package com.korn.portfolio.randomtrivia.ui.navigation
 
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.annotation.DrawableRes
 import androidx.navigation.NavType
 import com.korn.portfolio.randomtrivia.R
+import com.korn.portfolio.randomtrivia.database.model.Game
+import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
+import com.korn.portfolio.randomtrivia.ui.common.WrappedGameSerializer
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.ArrayList
+import java.util.Date
 
 @Serializable
 sealed interface BottomNav {
@@ -28,7 +33,7 @@ data object Categories : BottomNav {
 }
 
 @Serializable
-data object Play : BottomNav {
+data object PrePlay : BottomNav {
     override val title = "Play"
     override val icon = R.drawable.ic_play
 
@@ -46,12 +51,21 @@ data object History : BottomNav {
 }
 
 @Serializable
-data object Game {
-    @Serializable data object Play
-    @Serializable data object Result
+data class Play(val wrappedGame: WrappedGame = WrappedGame()) {
+    companion object SubNav {
+        @Serializable data object Playing
+        @Serializable data class Result(val wrappedGame: WrappedGame = WrappedGame())
+    }
 }
-@Serializable data object Inspect
+
+@Serializable data class Inspect(val wrappedGame: WrappedGame = WrappedGame())
 @Serializable data object About
+
+// Fix : Custom serializers declared directly on a class field via @Serializable(with = ...) is currently not supported by safe args for both custom types and third-party types.
+@Serializable(with = WrappedGameSerializer::class)
+data class WrappedGame(
+    val game: Game = Game(GameDetail(Date(), 0), emptyList())
+)
 
 val GameSettingType = object : NavType<List<GameSetting>>(isNullableAllowed = false) {
     override fun get(bundle: Bundle, key: String): List<GameSetting> {
@@ -76,5 +90,23 @@ val GameSettingType = object : NavType<List<GameSetting>>(isNullableAllowed = fa
         bundle.putParcelableArrayList(key, ArrayList(value))
         // If GameSetting is not Parcelable, use this.
         // bundle.putStringArrayList(key, ArrayList(value.map(Json::encodeToString)))
+    }
+}
+
+val WrappedGameType = object : NavType<WrappedGame>(isNullableAllowed = false) {
+    override fun get(bundle: Bundle, key: String): WrappedGame {
+        return Json.decodeFromString(bundle.getString(key)!!)
+    }
+
+    override fun parseValue(value: String): WrappedGame {
+        return Json.decodeFromString(Uri.decode(value))
+    }
+
+    override fun serializeAsValue(value: WrappedGame): String {
+        return Uri.encode(Json.encodeToString(value))
+    }
+
+    override fun put(bundle: Bundle, key: String, value: WrappedGame) {
+         bundle.putString(key, Json.encodeToString(value))
     }
 }

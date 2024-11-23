@@ -11,13 +11,11 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.Game
-import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import java.util.Date
 import java.util.UUID
 
 class SharedViewModel(private val triviaRepository: TriviaRepository) : ViewModel() {
@@ -43,9 +41,7 @@ class SharedViewModel(private val triviaRepository: TriviaRepository) : ViewMode
         }
     }
 
-    var game = Game(GameDetail(Date(), 0), emptyList())
-
-    fun saveGame() {
+    fun saveGame(game: Game) {
         viewModelScope.launch {
             triviaRepository.saveGame(game)
         }

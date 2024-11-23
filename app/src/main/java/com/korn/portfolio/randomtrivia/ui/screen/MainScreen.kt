@@ -24,11 +24,13 @@ import androidx.navigation.toRoute
 import com.korn.portfolio.randomtrivia.ui.common.BottomBar
 import com.korn.portfolio.randomtrivia.ui.navigation.About
 import com.korn.portfolio.randomtrivia.ui.navigation.Categories
-import com.korn.portfolio.randomtrivia.ui.navigation.Game
+import com.korn.portfolio.randomtrivia.ui.navigation.Play
 import com.korn.portfolio.randomtrivia.ui.navigation.GameSettingType
+import com.korn.portfolio.randomtrivia.ui.navigation.WrappedGameType
 import com.korn.portfolio.randomtrivia.ui.navigation.History
 import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
-import com.korn.portfolio.randomtrivia.ui.navigation.Play
+import com.korn.portfolio.randomtrivia.ui.navigation.PrePlay
+import com.korn.portfolio.randomtrivia.ui.navigation.WrappedGame
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewModel
@@ -92,8 +94,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     )
                 }
             }
-            navigation<Play>(startDestination = Play.Setting) {
-                composable<Play.Setting> {
+            navigation<PrePlay>(startDestination = PrePlay.Setting) {
+                composable<PrePlay.Setting> {
                     dismissFullScreen()
                     val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
                     val onlineMode by viewModel.onlineMode.collectAsState()
@@ -108,24 +110,23 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             viewModel.fetchQuestionCountIfNotAlready(categoryId, onFetchStatusChange)
                         },
                         onSubmit = { settings ->
-                            navController.navigate(Play.Loading(onlineMode, settings))
+                            navController.navigate(PrePlay.Loading(onlineMode, settings))
                         },
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
-                composable<Play.Loading>(
+                composable<PrePlay.Loading>(
                     typeMap = mapOf(typeOf<List<GameSetting>>() to GameSettingType)
                 ) { backStackEntry ->
                     requestFullScreen()
-                    val (onlineMode, settings) = backStackEntry.toRoute<Play.Loading>()
+                    val (onlineMode, settings) = backStackEntry.toRoute<PrePlay.Loading>()
                     val viewModel: LoadingBeforePlayingViewModel = viewModel(
                         factory = LoadingBeforePlayingViewModel.Factory(
                             onlineMode = onlineMode,
                             settings = settings,
                             onDone = { game ->
-                                sharedViewModel.game = game
-                                navController.navigate(Game) {
-                                    popUpTo(Play.Setting)
+                                navController.navigate(Play(WrappedGame(game))) {
+                                    popUpTo(PrePlay.Setting)
                                 }
                             }
                         )
@@ -144,35 +145,43 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     )
                 }
             }
-            navigation<Game>(startDestination = Game.Play) {
-                composable<Game.Play> {
+            navigation<Play>(
+                startDestination = Play.SubNav.Playing,
+                typeMap = mapOf(typeOf<WrappedGame>() to WrappedGameType)
+            ) {
+                composable<Play.SubNav.Playing> { backStackEntry ->
                     requestFullScreen()
+                    val parentEntry = remember(backStackEntry) {
+                        navController.getBackStackEntry<Play>()
+                    }
+                    val inputGame = parentEntry.toRoute<Play>().wrappedGame.game
                     Playing(
-                        game = sharedViewModel.game,
+                        game = inputGame,
                         onExit = { navController.navigateUp() },
                         onSubmit = { game ->
-                            sharedViewModel.game = game
-                            sharedViewModel.saveGame()
-                            navController.navigate(Game.Result) {
-                                popUpTo(Game.Play) { inclusive = true }
+                            sharedViewModel.saveGame(game)
+                            navController.navigate(Play.SubNav.Result(WrappedGame(game))) {
+                                popUpTo<Play.SubNav.Playing> { inclusive = true }
                             }
                         }
                     )
                 }
-                composable<Game.Result> {
+                composable<Play.SubNav.Result>(
+                    typeMap = mapOf(typeOf<WrappedGame>() to WrappedGameType)
+                ) { backStackEntry ->
                     requestFullScreen()
+                    val inputGame = backStackEntry.toRoute<Play.SubNav.Result>().wrappedGame.game
                     Result(
-                        game = sharedViewModel.game,
+                        game = inputGame,
                         onExit = { navController.navigateUp() },
-                        onReplay = { _ ->
-                            navController.navigate(Game.Play) {
-                                popUpTo(Game.Result) { inclusive = true }
+                        onReplay = { game ->
+                            navController.navigate(Play(WrappedGame(game))) {
+                                popUpTo<Play.SubNav.Result> { inclusive = true }
                             }
                         },
                         onInspect = { game ->
-                            sharedViewModel.game = game
-                            navController.navigate(Inspect) {
-                                popUpTo(Game.Result) { inclusive = true }
+                            navController.navigate(Inspect(WrappedGame(game))) {
+                                popUpTo<Play.SubNav.Result> { inclusive = true }
                             }
                         }
                     )
@@ -184,25 +193,26 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     pastGames = sharedViewModel.pastGames.collectAsState(emptyList()).value,
                     onDelete = { sharedViewModel.deleteGame(it) },
                     onReplay = { game ->
-                        sharedViewModel.game = game
-                        navController.navigate(Game.Play)
+                        navController.navigate(Play(WrappedGame(game)))
                     },
                     onInspect = { game ->
-                        sharedViewModel.game = game
-                        navController.navigate(Inspect)
+                        navController.navigate(Inspect(WrappedGame(game)))
                     },
                     onAboutClick = { navController.navigate(About) },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
-            composable<Inspect> {
+            composable<Inspect>(
+                typeMap = mapOf(typeOf<WrappedGame>() to WrappedGameType)
+            ) { backStackEntry ->
                 requestFullScreen()
+                val inputGame = backStackEntry.toRoute<Inspect>().wrappedGame.game
                 Inspect(
-                    game = sharedViewModel.game,
+                    game = inputGame,
                     onExit = { navController.navigateUp() },
-                    onReplay = { _ ->
-                        navController.navigate(Game) {
-                            popUpTo(Inspect) { inclusive = true }
+                    onReplay = { game ->
+                        navController.navigate(Play(WrappedGame(game))) {
+                            popUpTo<Inspect> { inclusive = true }
                         }
                     }
                 )
