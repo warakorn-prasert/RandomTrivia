@@ -80,7 +80,7 @@ fun <T> FilterSortMenuBar(
             ModalBottomSheet(
                 onDismissRequest = { showSortMenu = false },
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                windowInsets = WindowInsets(0, 0, 0, 0)
+                contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
             ) {
                 Column(
                     Modifier

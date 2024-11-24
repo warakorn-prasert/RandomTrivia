@@ -2,12 +2,15 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -15,21 +18,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.korn.portfolio.randomtrivia.ui.common.BottomBar
-import com.korn.portfolio.randomtrivia.ui.navigation.About
-import com.korn.portfolio.randomtrivia.ui.navigation.Categories
-import com.korn.portfolio.randomtrivia.ui.navigation.Play
 import com.korn.portfolio.randomtrivia.ui.navigation.GameSettingType
 import com.korn.portfolio.randomtrivia.ui.navigation.WrappedGameType
-import com.korn.portfolio.randomtrivia.ui.navigation.History
-import com.korn.portfolio.randomtrivia.ui.navigation.Inspect
-import com.korn.portfolio.randomtrivia.ui.navigation.PrePlay
+import com.korn.portfolio.randomtrivia.ui.navigation.TopLevelDestination
 import com.korn.portfolio.randomtrivia.ui.navigation.WrappedGame
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
@@ -41,32 +43,70 @@ import kotlin.reflect.typeOf
 
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
-    var showBottomBar by remember { mutableStateOf(true) }
-    fun requestFullScreen() { showBottomBar = false }
-    fun dismissFullScreen() { showBottomBar = true }
+    var showNavigationUi by remember { mutableStateOf(true) }
+    fun requestFullScreen() { showNavigationUi = false }
+    fun dismissFullScreen() { showNavigationUi = true }
 
     val navController = rememberNavController()
     val sharedViewModel: SharedViewModel = viewModel(factory = SharedViewModel.Factory)
 
-    Scaffold(
-        modifier = modifier,
-        bottomBar = {
-            Box(Modifier.animateContentSize()) {
-                if (showBottomBar) BottomBar(navController)
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    NavigationSuiteScaffold(
+        navigationSuiteItems = {
+            TopLevelDestination.entries.forEach { topDest ->
+                val selected = topDest.screens.any { screen ->
+                    currentDestination?.hierarchy?.any { it.hasRoute(screen) } == true
+                }
+                item(
+                    icon = {
+                        Icon(
+                            painter = painterResource(topDest.icon),
+                            contentDescription = topDest.contentDescription
+                        )
+                    },
+                    label = { Text(topDest.label) },
+                    selected = selected,
+                    onClick = {
+                        if (!selected)
+                            navController.navigate(topDest) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                restoreState = true
+                                // fix: 2nd back press from non-start bottom nav destination doesn't exit app
+                                launchSingleTop = true
+                            }
+                    }
+                )
             }
         },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
-    ) { paddingValues ->
-        NavHost(navController, startDestination = Categories) {
-            composable<About> {
+        layoutType =
+            if (showNavigationUi)
+                NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfo())
+            else
+                NavigationSuiteType.None,
+        navigationSuiteColors = NavigationSuiteDefaults.colors(
+            navigationBarContainerColor = MaterialTheme.colorScheme.surface,
+            navigationBarContentColor = MaterialTheme.colorScheme.onSurface,
+            navigationRailContainerColor = MaterialTheme.colorScheme.surface,
+            navigationRailContentColor = MaterialTheme.colorScheme.onSurface,
+            navigationDrawerContainerColor = MaterialTheme.colorScheme.surface,
+            navigationDrawerContentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        modifier = modifier
+    ) {
+        NavHost(navController, startDestination = TopLevelDestination.Categories) {
+            composable<TopLevelDestination.About> {
                 requestFullScreen()
                 AboutScreen(
                     onExit = { navController.navigateUp() },
                     modifier = Modifier.systemBarsPadding()
                 )
             }
-            navigation<Categories>(startDestination = Categories.Default) {
-                composable<Categories.Default> {
+            navigation<TopLevelDestination.Categories>(startDestination = TopLevelDestination.Categories.Categories) {
+                composable<TopLevelDestination.Categories.Categories> {
                     dismissFullScreen()
                     val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
                     val categories by viewModel.categories.collectAsState(emptyList())
@@ -75,27 +115,25 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
                         onRetryFetch = { sharedViewModel.fetchCategories() },
                         onCategoryClick = { categoryId ->
-                            navController.navigate(Categories.Questions(categoryId))
+                            navController.navigate(TopLevelDestination.Categories.Questions(categoryId))
                         },
-                        onAboutClick = { navController.navigate(About) },
-                        modifier = Modifier.padding(paddingValues)
+                        onAboutClick = { navController.navigate(TopLevelDestination.About) }
                     )
                 }
-                composable<Categories.Questions> { backStackEntry ->
+                composable<TopLevelDestination.Categories.Questions> { backStackEntry ->
                     dismissFullScreen()
-                    val categoryId = backStackEntry.toRoute<Categories.Questions>().categoryId
+                    val categoryId = backStackEntry.toRoute<TopLevelDestination.Categories.Questions>().categoryId
                     val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
                     Questions(
                         categoryName = viewModel.categoryName,
                         questions = viewModel.questions,
                         onExit = { navController.navigateUp() },
-                        onAboutClick = { navController.navigate(About) },
-                        modifier = Modifier.padding(paddingValues)
+                        onAboutClick = { navController.navigate(TopLevelDestination.About) }
                     )
                 }
             }
-            navigation<PrePlay>(startDestination = PrePlay.Setting) {
-                composable<PrePlay.Setting> {
+            navigation<TopLevelDestination.PrePlay>(startDestination = TopLevelDestination.PrePlay.Setting) {
+                composable<TopLevelDestination.PrePlay.Setting> {
                     dismissFullScreen()
                     val viewModel: SettingBeforePlayingViewModel = viewModel(factory = SettingBeforePlayingViewModel.Factory)
                     val onlineMode by viewModel.onlineMode.collectAsState()
@@ -110,23 +148,22 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             viewModel.fetchQuestionCountIfNotAlready(categoryId, onFetchStatusChange)
                         },
                         onSubmit = { settings ->
-                            navController.navigate(PrePlay.Loading(onlineMode, settings))
-                        },
-                        modifier = Modifier.padding(paddingValues)
+                            navController.navigate(TopLevelDestination.PrePlay.Loading(onlineMode, settings))
+                        }
                     )
                 }
-                composable<PrePlay.Loading>(
+                composable<TopLevelDestination.PrePlay.Loading>(
                     typeMap = mapOf(typeOf<List<GameSetting>>() to GameSettingType)
                 ) { backStackEntry ->
                     requestFullScreen()
-                    val (onlineMode, settings) = backStackEntry.toRoute<PrePlay.Loading>()
+                    val (onlineMode, settings) = backStackEntry.toRoute<TopLevelDestination.PrePlay.Loading>()
                     val viewModel: LoadingBeforePlayingViewModel = viewModel(
                         factory = LoadingBeforePlayingViewModel.Factory(
                             onlineMode = onlineMode,
                             settings = settings,
                             onDone = { game ->
-                                navController.navigate(Play(WrappedGame(game))) {
-                                    popUpTo(PrePlay.Setting)
+                                navController.navigate(TopLevelDestination.Play(WrappedGame(game))) {
+                                    popUpTo(TopLevelDestination.PrePlay.Setting)
                                 }
                             }
                         )
@@ -145,74 +182,73 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     )
                 }
             }
-            navigation<Play>(
-                startDestination = Play.SubNav.Playing,
+            navigation<TopLevelDestination.Play>(
+                startDestination = TopLevelDestination.Play.Screen.Playing,
                 typeMap = mapOf(typeOf<WrappedGame>() to WrappedGameType)
             ) {
-                composable<Play.SubNav.Playing> { backStackEntry ->
+                composable<TopLevelDestination.Play.Screen.Playing> { backStackEntry ->
                     requestFullScreen()
                     val parentEntry = remember(backStackEntry) {
-                        navController.getBackStackEntry<Play>()
+                        navController.getBackStackEntry<TopLevelDestination.Play>()
                     }
-                    val inputGame = parentEntry.toRoute<Play>().wrappedGame.game
+                    val inputGame = parentEntry.toRoute<TopLevelDestination.Play>().wrappedGame.game
                     Playing(
                         game = inputGame,
                         onExit = { navController.navigateUp() },
                         onSubmit = { game ->
                             sharedViewModel.saveGame(game)
-                            navController.navigate(Play.SubNav.Result(WrappedGame(game))) {
-                                popUpTo<Play.SubNav.Playing> { inclusive = true }
+                            navController.navigate(TopLevelDestination.Play.Screen.Result(WrappedGame(game))) {
+                                popUpTo<TopLevelDestination.Play.Screen.Playing> { inclusive = true }
                             }
                         }
                     )
                 }
-                composable<Play.SubNav.Result>(
+                composable<TopLevelDestination.Play.Screen.Result>(
                     typeMap = mapOf(typeOf<WrappedGame>() to WrappedGameType)
                 ) { backStackEntry ->
                     requestFullScreen()
-                    val inputGame = backStackEntry.toRoute<Play.SubNav.Result>().wrappedGame.game
+                    val inputGame = backStackEntry.toRoute<TopLevelDestination.Play.Screen.Result>().wrappedGame.game
                     Result(
                         game = inputGame,
                         onExit = { navController.navigateUp() },
                         onReplay = { game ->
-                            navController.navigate(Play(WrappedGame(game))) {
-                                popUpTo<Play.SubNav.Result> { inclusive = true }
+                            navController.navigate(TopLevelDestination.Play(WrappedGame(game))) {
+                                popUpTo<TopLevelDestination.Play.Screen.Result> { inclusive = true }
                             }
                         },
                         onInspect = { game ->
-                            navController.navigate(Inspect(WrappedGame(game))) {
-                                popUpTo<Play.SubNav.Result> { inclusive = true }
+                            navController.navigate(TopLevelDestination.Inspect(WrappedGame(game))) {
+                                popUpTo<TopLevelDestination.Play.Screen.Result> { inclusive = true }
                             }
                         }
                     )
                 }
             }
-            composable<History> {
+            composable<TopLevelDestination.History> {
                 dismissFullScreen()
                 PastGames(
                     pastGames = sharedViewModel.pastGames.collectAsState(emptyList()).value,
                     onDelete = { sharedViewModel.deleteGame(it) },
                     onReplay = { game ->
-                        navController.navigate(Play(WrappedGame(game)))
+                        navController.navigate(TopLevelDestination.Play(WrappedGame(game)))
                     },
                     onInspect = { game ->
-                        navController.navigate(Inspect(WrappedGame(game)))
+                        navController.navigate(TopLevelDestination.Inspect(WrappedGame(game)))
                     },
-                    onAboutClick = { navController.navigate(About) },
-                    modifier = Modifier.padding(paddingValues)
+                    onAboutClick = { navController.navigate(TopLevelDestination.About) }
                 )
             }
-            composable<Inspect>(
+            composable<TopLevelDestination.Inspect>(
                 typeMap = mapOf(typeOf<WrappedGame>() to WrappedGameType)
             ) { backStackEntry ->
                 requestFullScreen()
-                val inputGame = backStackEntry.toRoute<Inspect>().wrappedGame.game
+                val inputGame = backStackEntry.toRoute<TopLevelDestination.Inspect>().wrappedGame.game
                 Inspect(
                     game = inputGame,
                     onExit = { navController.navigateUp() },
                     onReplay = { game ->
-                        navController.navigate(Play(WrappedGame(game))) {
-                            popUpTo<Inspect> { inclusive = true }
+                        navController.navigate(TopLevelDestination.Play(WrappedGame(game))) {
+                            popUpTo<TopLevelDestination.Inspect> { inclusive = true }
                         }
                     }
                 )

@@ -121,6 +121,7 @@ fun ColumnScope.QuestionSelector(
     val totalTabs = ceil(totalQuestions / 10f).toInt()
     TabRow(
         selectedTabIndex = currentTabIdx,
+        containerColor = Color.Transparent,
         indicator = { tabPositions ->
             Box(
                 Modifier
