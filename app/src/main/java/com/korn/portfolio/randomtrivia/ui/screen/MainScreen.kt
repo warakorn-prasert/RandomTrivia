@@ -107,7 +107,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         onCategoryClick = { categoryId ->
                             navController.navigate(TopLevelDestination.Categories.Questions(categoryId))
                         },
-                        onAboutClick = { navController.navigate(TopLevelDestination.About) }
+                        onAboutClick = { navController.navigate(TopLevelDestination.About) },
+                        modifier = Modifier.systemBarsPadding()
                     )
                 }
                 composable<TopLevelDestination.Categories.Questions> { backStackEntry ->
@@ -118,7 +119,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         categoryName = viewModel.categoryName,
                         questions = viewModel.questions,
                         onExit = { navController.navigateUp() },
-                        onAboutClick = { navController.navigate(TopLevelDestination.About) }
+                        onAboutClick = { navController.navigate(TopLevelDestination.About) },
+                        modifier = Modifier.systemBarsPadding()
                     )
                 }
             }
@@ -139,7 +141,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         },
                         onSubmit = { settings ->
                             navController.navigate(TopLevelDestination.PrePlay.Loading(onlineMode, settings))
-                        }
+                        },
+                        modifier = Modifier.systemBarsPadding()
                     )
                 }
                 composable<TopLevelDestination.PrePlay.Loading>(
@@ -225,7 +228,8 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     onInspect = { game ->
                         navController.navigate(TopLevelDestination.Inspect(WrappedGame(game)))
                     },
-                    onAboutClick = { navController.navigate(TopLevelDestination.About) }
+                    onAboutClick = { navController.navigate(TopLevelDestination.About) },
+                    modifier = Modifier.systemBarsPadding()
                 )
             }
             composable<TopLevelDestination.Inspect>(
