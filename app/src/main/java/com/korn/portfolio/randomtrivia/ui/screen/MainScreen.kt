@@ -4,10 +4,8 @@ package com.korn.portfolio.randomtrivia.ui.screen
 
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
@@ -87,14 +85,6 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfo())
             else
                 NavigationSuiteType.None,
-        navigationSuiteColors = NavigationSuiteDefaults.colors(
-            navigationBarContainerColor = MaterialTheme.colorScheme.surface,
-            navigationBarContentColor = MaterialTheme.colorScheme.onSurface,
-            navigationRailContainerColor = MaterialTheme.colorScheme.surface,
-            navigationRailContentColor = MaterialTheme.colorScheme.onSurface,
-            navigationDrawerContainerColor = MaterialTheme.colorScheme.surface,
-            navigationDrawerContentColor = MaterialTheme.colorScheme.onSurface
-        ),
         modifier = modifier
     ) {
         NavHost(navController, startDestination = TopLevelDestination.Categories) {
