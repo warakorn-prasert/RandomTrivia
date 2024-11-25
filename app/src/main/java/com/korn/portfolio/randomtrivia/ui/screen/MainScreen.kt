@@ -34,7 +34,6 @@ import com.korn.portfolio.randomtrivia.ui.navigation.WrappedGame
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoriesViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import com.korn.portfolio.randomtrivia.ui.viewmodel.LoadingBeforePlayingViewModel
-import com.korn.portfolio.randomtrivia.ui.viewmodel.QuestionsViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SettingBeforePlayingViewModel
 import com.korn.portfolio.randomtrivia.ui.viewmodel.SharedViewModel
 import kotlin.reflect.typeOf
@@ -95,34 +94,20 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier.systemBarsPadding()
                 )
             }
-            navigation<TopLevelDestination.Categories>(startDestination = TopLevelDestination.Categories.Categories) {
-                composable<TopLevelDestination.Categories.Categories> {
-                    dismissFullScreen()
-                    val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
-                    val categories by viewModel.categories.collectAsState(emptyList())
-                    Categories(
-                        categories = categories,
-                        categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
-                        onRetryFetch = { sharedViewModel.fetchCategories() },
-                        onCategoryClick = { categoryId ->
-                            navController.navigate(TopLevelDestination.Categories.Questions(categoryId))
-                        },
-                        onAboutClick = { navController.navigate(TopLevelDestination.About) },
-                        modifier = Modifier.systemBarsPadding()
-                    )
-                }
-                composable<TopLevelDestination.Categories.Questions> { backStackEntry ->
-                    dismissFullScreen()
-                    val categoryId = backStackEntry.toRoute<TopLevelDestination.Categories.Questions>().categoryId
-                    val viewModel: QuestionsViewModel = viewModel(factory = QuestionsViewModel.Factory(categoryId))
-                    Questions(
-                        categoryName = viewModel.categoryName,
-                        questions = viewModel.questions,
-                        onExit = { navController.navigateUp() },
-                        onAboutClick = { navController.navigate(TopLevelDestination.About) },
-                        modifier = Modifier.systemBarsPadding()
-                    )
-                }
+            composable<TopLevelDestination.Categories> {
+                dismissFullScreen()
+                val viewModel: CategoriesViewModel = viewModel(factory = CategoriesViewModel.Factory)
+                val categories by viewModel.categories.collectAsState(emptyList())
+                CategoriesAndQuestions(
+                    categories = categories,
+                    categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
+                    onRetryFetch = { sharedViewModel.fetchCategories() },
+                    onAboutClick = { navController.navigate(TopLevelDestination.About) },
+                    onGetQuestionsRequest = { categoryId, onDone ->
+                        viewModel.getQuestions(categoryId, onDone)
+                    },
+                    modifier = Modifier.systemBarsPadding()
+                )
             }
             navigation<TopLevelDestination.PrePlay>(startDestination = TopLevelDestination.PrePlay.Setting) {
                 composable<TopLevelDestination.PrePlay.Setting> {

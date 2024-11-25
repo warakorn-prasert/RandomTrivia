@@ -4,15 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.asFlow
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 data class CategoryDisplay(
     val name: String,
@@ -30,7 +33,7 @@ private fun Pair<Category, QuestionCount>.asDisplay(playedQuestions: Int) =
         id = first.id
     )
 
-class CategoriesViewModel(triviaRepository: TriviaRepository) : ViewModel() {
+class CategoriesViewModel(private val triviaRepository: TriviaRepository) : ViewModel() {
     // local categories that have saved questions
     private val playedCategories: Flow<List<Pair<Category, QuestionCount>>> =
         triviaRepository.localCategories.map { categories ->
@@ -52,6 +55,12 @@ class CategoriesViewModel(triviaRepository: TriviaRepository) : ViewModel() {
                     p.asDisplay(playedQuestions = p.second.total)
                 }
         }
+
+    fun getQuestions(categoryId: Int, onDone: (List<Question>) -> Unit) {
+        viewModelScope.launch {
+            triviaRepository.getLocalQuestions(categoryId).let(onDone)
+        }
+    }
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {

@@ -51,6 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import com.korn.portfolio.randomtrivia.R
+import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatusBar
@@ -88,7 +89,7 @@ fun Categories(
     categories: List<CategoryDisplay>,
     categoriesFetchStatus: FetchStatus,
     onRetryFetch: () -> Unit,
-    onCategoryClick: (categoryId: Int) -> Unit,
+    onCategoryClick: (Category) -> Unit,
     onAboutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -169,7 +170,7 @@ fun Categories(
                             totalQuestions = total,
                             playedQuestions = totalPlayed,
                             isPlayed = isPlayed,
-                            onClick = { onCategoryClick(id) },
+                            onClick = { onCategoryClick(Category(name, id)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

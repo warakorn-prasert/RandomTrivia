@@ -26,12 +26,7 @@ sealed interface TopLevelDestination {
         override val label = "Categories"
         override val icon = R.drawable.ic_lists
         override val contentDescription = "Categories menu icon"
-        override val screens = listOf(Categories::class, Questions::class)
-
-        @Serializable
-        data object Categories
-        @Serializable
-        data class Questions(val categoryId: Int)
+        override val screens = listOf(Categories::class)
     }
 
     @Serializable
