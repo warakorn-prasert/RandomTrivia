@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -168,7 +169,10 @@ fun PastGames(
                     )
                     Column(
                         Modifier
-                            .alpha(alpha)
+                            .let {
+                                if (LocalInspectionMode.current) it
+                                else it.alpha(alpha)
+                            }
                             .animateContentSize(tween(DELETE_ANIM_DURATION))
                     ) {
                         var deleting by remember { mutableStateOf(false) }
