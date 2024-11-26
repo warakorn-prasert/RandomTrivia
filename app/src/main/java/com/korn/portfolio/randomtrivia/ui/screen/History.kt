@@ -16,9 +16,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -31,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -46,10 +48,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.CheckboxWithText
@@ -57,7 +60,9 @@ import com.korn.portfolio.randomtrivia.ui.common.FilterSortMenuBar
 import com.korn.portfolio.randomtrivia.ui.common.RadioButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.SearchableTopBar
 import com.korn.portfolio.randomtrivia.ui.common.hhmmssFrom
+import com.korn.portfolio.randomtrivia.ui.previewdata.PreviewWindowSizes
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
+import com.korn.portfolio.randomtrivia.ui.previewdata.windowSizeForPreview
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -101,7 +106,8 @@ fun PastGames(
     onReplay: (Game) -> Unit,
     onInspect: (Game) -> Unit,
     onAboutClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 ) {
     var filter by rememberSaveable { mutableStateOf(HistoryFilter.ALL) }
     var sort by rememberSaveable { mutableStateOf(HistorySort.MOST_RECENT) }
@@ -138,20 +144,27 @@ fun PastGames(
                     Text("No game played yet.")
                 }
 
-            val listState = rememberLazyListState()
+            val gridState = rememberLazyGridState()
             LaunchedEffect(filter, reverseSort, sort) {
-                listState.animateScrollToItem(0)
+                gridState.animateScrollToItem(0)
             }
             val itemsInView by remember {
                 derivedStateOf {
-                    listState.layoutInfo
+                    gridState.layoutInfo
                         .visibleItemsInfo.map { it.key as UUID }
                 }
             }
 
             val scope = rememberCoroutineScope()
-            LazyColumn(
-                state = listState,
+            val totalColumns = when (windowSizeClass.windowWidthSizeClass) {
+                WindowWidthSizeClass.EXPANDED -> 3
+                WindowWidthSizeClass.MEDIUM -> 2
+                else -> 1
+            }
+            val remainderItems = displayGames.size % totalColumns
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(totalColumns),
+                state = gridState,
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     top = 8.dp,
@@ -191,8 +204,9 @@ fun PastGames(
                                 modifier = Modifier.fillMaxWidth(),
                                 endPadding = 16.dp
                             )
-                            if (idx < displayGames.size - 1)
-                                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                            val showDivider = idx < displayGames.size - if (remainderItems == 0) totalColumns else remainderItems
+                            if (showDivider)
+                                HorizontalDivider(Modifier.padding(top = 8.dp, end = 16.dp, bottom = 8.dp))
                         }
                     }
                 }
@@ -339,16 +353,17 @@ private fun GameDisplayItem(
     }
 }
 
-@Preview
+@PreviewWindowSizes
 @Composable
 private fun PastGamesPreview() {
     RandomTriviaTheme {
         PastGames(
-            pastGames = List(2) { getGame(totalQuestions = 10, played = true) },
+            pastGames = List(5) { getGame(totalQuestions = 10, played = true) },
             onDelete = {},
             onReplay = {},
             onInspect = {},
-            onAboutClick = {}
+            onAboutClick = {},
+            windowSizeClass = windowSizeForPreview()
         )
     }
 }
