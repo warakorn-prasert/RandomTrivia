@@ -43,11 +43,11 @@ import androidx.window.core.layout.WindowSizeClass
     name = "Foldable - Landscape",
     device = "spec:id=reference_foldable,shape=Normal,width=841,height=673,unit=dp,dpi=420"
 )
-@Preview(name = "Tablet", device = Devices.TABLET)
 @Preview(
-    name = "Tablet - Landscape",
+    name = "Tablet",
     device = "spec:id=reference_tablet,shape=Normal,width=800,height=1280,unit=dp,dpi=240"
 )
+@Preview(name = "Tablet - Landscape", device = Devices.TABLET)
 annotation class PreviewWindowSizes
 
 /**
