@@ -2,7 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
-import android.annotation.SuppressLint
+import android.os.Parcelable
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -45,9 +45,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,6 +70,7 @@ import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.database.model.GameQuestion
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.ui.common.GameQuestionParceler
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
@@ -78,6 +81,8 @@ import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.previewdata.windowSizeForPreview
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.WriteWith
 import java.util.Date
 import java.util.UUID
 import kotlin.concurrent.timer
@@ -111,6 +116,17 @@ private fun MutableList<GameQuestion>.answer(questionIdx: Int, answer: String) {
     }
 }
 
+@Parcelize
+private data class WrappedGameQuestion(
+    val question: @WriteWith<GameQuestionParceler> GameQuestion
+) : Parcelable
+
+// Ref. : https://stackoverflow.com/a/68887484
+private val GameQuestionListSaver = listSaver<SnapshotStateList<GameQuestion>, WrappedGameQuestion>(
+    save = { stateList -> stateList.map { WrappedGameQuestion(it) }.toList() },
+    restore = { it.map { it.question }.toMutableStateList() },
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Playing(
@@ -122,19 +138,15 @@ fun Playing(
 ) {
     BackHandler { onExit() }
 
-    val questions = remember { game.questions.toMutableStateList() }
+    val questions = rememberSaveable(saver = GameQuestionListSaver) {
+        game.questions.toMutableStateList()
+    }
     val pagerState = rememberPagerState(pageCount = { questions.size })
     val currentIdx = pagerState.currentPage
 
-    @SuppressLint("ProduceStateDoesNotAssignValue")
-    val second by run {
-        produceState(initialValue = 0) {
-            val timer = timer(initialDelay = 2000L, period = 1000L) {
-                value++
-            }
-            awaitDispose {
-                timer.cancel()
-            }
+    val second by rememberSaveable {
+        mutableIntStateOf(0).apply {
+            timer(period = 1000L) { intValue++ }
         }
     }
 

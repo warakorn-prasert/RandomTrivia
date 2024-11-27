@@ -1,5 +1,6 @@
 package com.korn.portfolio.randomtrivia.ui.common
 
+import android.os.Parcel
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.database.model.GameQuestion
@@ -9,6 +10,7 @@ import com.korn.portfolio.randomtrivia.database.model.entity.GameDetail
 import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.ui.navigation.WrappedGame
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
+import kotlinx.parcelize.Parceler
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -272,4 +274,54 @@ object WrappedGameSerializer : KSerializer<WrappedGame> {
             encodeSerializableElement(descriptor, 0, GameSerializer, value.game)
         }
     }
+}
+
+object GameQuestionParceler : Parceler<GameQuestion> {
+    override fun create(parcel: Parcel): GameQuestion {
+        val categoryName = parcel.readString()
+        val categoryId = parcel.readString()?.toInt()
+        val gameId = UUID.fromString(parcel.readString()!!)
+        val answer = parcel.readString()!!
+        val question = parcel.readString()!!
+        val difficulty = Difficulty.valueOf(parcel.readString()!!)
+        val correctAnswer = parcel.readString()!!
+        val incorrectAnswers = mutableListOf<String>().apply {
+            parcel.readStringList(this)
+        }
+        val questionId = UUID.fromString(parcel.readString()!!)
+        return GameQuestion(
+            category = categoryName?.let {
+                Category(
+                    name = it,
+                    id = categoryId!!
+                )
+            },
+            answer = GameAnswer(
+                gameId = gameId,
+                questionId = questionId,
+                answer = answer,
+                categoryId = categoryId
+            ),
+            question = Question(
+                question = question,
+                difficulty = difficulty,
+                categoryId = categoryId,
+                correctAnswer = correctAnswer,
+                incorrectAnswers = incorrectAnswers,
+            )
+        )
+    }
+
+    override fun GameQuestion.write(parcel: Parcel, flags: Int) {
+        parcel.writeString(category?.name)
+        parcel.writeString(category?.id.toString())
+        parcel.writeString(answer.gameId.toString())
+        parcel.writeString(answer.answer)
+        parcel.writeString(question.question)
+        parcel.writeString(question.difficulty.toString())
+        parcel.writeString(question.correctAnswer)
+        parcel.writeStringList(question.incorrectAnswers)
+        parcel.writeString(question.id.toString())
+    }
+
 }
