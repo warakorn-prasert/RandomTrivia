@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -86,7 +87,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 NavigationSuiteType.None,
         modifier = modifier
     ) {
-        NavHost(navController, startDestination = TopLevelDestination.Categories) {
+        NavHost(
+            navController = navController,
+            startDestination = TopLevelDestination.Categories,
+            modifier = Modifier.displayCutoutPadding()
+        ) {
             composable<TopLevelDestination.About> {
                 requestFullScreen()
                 AboutScreen(
