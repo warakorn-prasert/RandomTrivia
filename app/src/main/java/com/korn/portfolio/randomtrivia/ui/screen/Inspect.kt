@@ -9,13 +9,17 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -28,19 +32,28 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowHeightSizeClass
+import androidx.window.core.layout.WindowSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
+import com.korn.portfolio.randomtrivia.ui.previewdata.PreviewWindowSizes
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
+import com.korn.portfolio.randomtrivia.ui.previewdata.windowSizeForPreview
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import kotlinx.coroutines.launch
 
@@ -86,7 +99,8 @@ fun Inspect(
     game: Game,
     onExit: () -> Unit,
     onReplay: (Game) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 ) {
     BackHandler { onExit() }
 
@@ -132,9 +146,14 @@ fun Inspect(
             )
         }
     ) { paddingValues ->
+        val layoutDir = LocalLayoutDirection.current
         Column(
             modifier = Modifier
-                .padding(paddingValues)
+                .padding(
+                    start = paddingValues.calculateStartPadding(layoutDir),
+                    top = paddingValues.calculateTopPadding(),
+                    end = paddingValues.calculateStartPadding(layoutDir)
+                )
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -153,24 +172,51 @@ fun Inspect(
                 pageSpacing = 16.dp,
                 userScrollEnabled = false
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    QuestionStatementCard(
-                        questionStatement = question.question.question,
+                val showInColumn = windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT
+                        || windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.EXPANDED
+                if (showInColumn)
+                    Column(
                         modifier = Modifier
-                            .weight(1f)
-                            .wrapContentSize()
-                    )
-                    InspectAnswerButtons(
-                        userAnswer = question.answer.answer,
-                        answers = question.question.run { incorrectAnswers + correctAnswer },
-                        correctAnswer = question.question.correctAnswer,
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                }
+                            .padding(bottom = paddingValues.calculateBottomPadding())
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        QuestionStatementCard(
+                            questionStatement = question.question.question,
+                            modifier = Modifier.weight(1f).wrapContentSize()
+                        )
+                        InspectAnswerButtons(
+                            userAnswer = question.answer.answer,
+                            answers = question.question.run { incorrectAnswers + correctAnswer },
+                            correctAnswer = question.question.correctAnswer,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    }
+                else
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        QuestionStatementCard(
+                            questionStatement = question.question.question,
+                            modifier = Modifier
+                                .padding(bottom = 12.dp + paddingValues.calculateBottomPadding())
+                                .weight(1f)
+                                .wrapContentSize()
+                        )
+                        val configuration = LocalConfiguration.current
+                        val screenWidth = configuration.screenWidthDp.dp
+                        InspectAnswerButtons(
+                            userAnswer = question.answer.answer,
+                            answers = question.question.run { incorrectAnswers + correctAnswer },
+                            correctAnswer = question.question.correctAnswer,
+                            modifier = Modifier
+                                .padding(bottom = 16.dp + paddingValues.calculateBottomPadding())
+                                .widthIn(max = screenWidth * 2 / 3)
+                        )
+                    }
             }
         }
     }
@@ -183,8 +229,19 @@ private fun InspectAnswerButtons(
     correctAnswer: String,
     modifier: Modifier = Modifier
 ) {
+    // make scrollable in case of not enough space
+    val scrollState = rememberScrollState()
+
+    // scroll to top every revisit
+    LaunchedEffect(Unit) {
+        scrollState.scrollTo(0)
+    }
+
     Column(
-        modifier = modifier.width(IntrinsicSize.Max),
+        modifier = Modifier
+            .width(IntrinsicSize.Max)  // to have same width
+            .verticalScroll(scrollState)
+            .then(modifier),
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
     ) {
         answers.forEachIndexed { idx, answer ->
@@ -221,14 +278,15 @@ private fun InspectAnswerButtons(
     }
 }
 
-@Preview
+@PreviewWindowSizes
 @Composable
 private fun InspectPreview() {
     RandomTriviaTheme {
         Inspect(
-            game = getGame(totalQuestions = 44, played = true),
+            game = getGame(totalQuestions = 11, played = true),
             onExit = {},
-            onReplay = {}
+            onReplay = {},
+            windowSizeClass = windowSizeForPreview()
         )
     }
 }

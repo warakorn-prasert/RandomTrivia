@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,9 +19,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -53,6 +53,7 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TooltipState
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -79,6 +80,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
@@ -91,7 +94,9 @@ import com.korn.portfolio.randomtrivia.ui.common.PaddedDialog
 import com.korn.portfolio.randomtrivia.ui.common.displayName
 import com.korn.portfolio.randomtrivia.ui.previewdata.BooleanDataProvider
 import com.korn.portfolio.randomtrivia.ui.previewdata.GameSettingDataProvider
+import com.korn.portfolio.randomtrivia.ui.previewdata.PreviewWindowSizes
 import com.korn.portfolio.randomtrivia.ui.previewdata.getCategory
+import com.korn.portfolio.randomtrivia.ui.previewdata.windowSizeForPreview
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting.Companion.MAX_AMOUNT
@@ -117,7 +122,8 @@ fun SettingBeforePlaying(
     onFetchQuestionCountRequest:
         (categoryId: Int?, onFetchStatusChange: (FetchStatus) -> Unit) -> Unit,
     onSubmit: (List<GameSetting>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val settings = rememberSaveable(saver = GameSettingListSaver) {
@@ -182,7 +188,8 @@ fun SettingBeforePlaying(
                                     && it.amount == setting.amount
                         }
                         settings.removeAt(idx)
-                    }
+                    },
+                    windowSizeClass = windowSizeClass
                 )
         }
     }
@@ -477,21 +484,29 @@ private fun AddGameSettingDialog(
 @Composable
 private fun SettingListItems(
     settings: List<GameSetting>,
-    onDelete: (GameSetting) -> Unit
+    onDelete: (GameSetting) -> Unit,
+    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 ) {
-    val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
-    LaunchedEffect(settings.size) {
-        scope.launch {
-            listState.animateScrollToItem(settings.size - 1)
-        }
+    val totalSettings = settings.size
+    val gridState = rememberLazyGridState()
+    LaunchedEffect(totalSettings) {
+        gridState.animateScrollToItem(totalSettings - 1)
     }
-    LazyColumn(
-        state = listState,
+
+    val scope = rememberCoroutineScope()
+    val totalColumns = when (windowSizeClass.windowWidthSizeClass) {
+        WindowWidthSizeClass.EXPANDED -> 3
+        WindowWidthSizeClass.MEDIUM -> 2
+        else -> 1
+    }
+    val remainderItems = totalSettings % totalColumns
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(totalColumns),
+        state = gridState,
         contentPadding = PaddingValues(
             start = 16.dp,
             top = 8.dp,
-            bottom = 8.dp
+            bottom = 8.dp + (56 + 16).dp  // with FAB
         )
     ) {
         itemsIndexed(
@@ -513,17 +528,12 @@ private fun SettingListItems(
                         modifier = Modifier.fillMaxWidth(),
                         endPadding = 16.dp
                     )
-                    if (idx < settings.size - 1) {
-                        HorizontalDivider(
-                            Modifier.padding(top = 8.dp, end = 16.dp, bottom = 8.dp)
-                        )
-                    }
+                    val showDivider = idx < totalSettings - if (remainderItems == 0) totalColumns else remainderItems
+                    if (showDivider)
+                        HorizontalDivider(Modifier.padding(top = 8.dp, end = 16.dp, bottom = 8.dp))
                 }
             }
 
-        }
-        item {
-            Spacer(Modifier.height((56 + 16).dp))  // FAB
         }
     }
 }
@@ -619,7 +629,7 @@ private class DialogChoiceGetter(
             .coerceAtMost(MAX_AMOUNT)
 }
 
-@Preview
+@PreviewWindowSizes
 @Composable
 private fun SettingBeforePlayingPreview() {
     RandomTriviaTheme {
@@ -630,8 +640,29 @@ private fun SettingBeforePlayingPreview() {
             categoriesFetchStatus = FetchStatus.Success,
             onFetchCategoriesRequest = {},
             onFetchQuestionCountRequest = { _, _ -> },
-            categoriesWithQuestionCounts = emptyList()
+            categoriesWithQuestionCounts = emptyList(),
+            windowSizeClass = windowSizeForPreview()
         )
+    }
+}
+
+@PreviewWindowSizes
+@Composable
+private fun SettingListItemsPreview() {
+    RandomTriviaTheme {
+        Surface {
+            SettingListItems(
+                settings = List(5) {
+                    GameSetting(
+                        category = getCategory(it),
+                        difficulty = Difficulty.entries.random(),
+                        amount = it * 2
+                    )
+                },
+                onDelete = {},
+                windowSizeClass = windowSizeForPreview()
+            )
+        }
     }
 }
 

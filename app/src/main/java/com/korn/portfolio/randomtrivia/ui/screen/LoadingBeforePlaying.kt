@@ -26,6 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -51,9 +52,14 @@ fun LoadingBeforePlaying(
     fetchStatus: GameFetchStatus,
     onCancel: () -> Unit,
     onRetry: () -> Unit,
+    onMaxProgress: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     BackHandler { onCancel() }
+
+    LaunchedEffect(progress == 1f) {
+        if (progress == 1f) onMaxProgress()
+    }
 
     Column(modifier) {
         Box(
@@ -144,7 +150,8 @@ private fun LoadingPreview() {
                 statusText = "Loading",
                 fetchStatus = GameFetchStatus.Loading,
                 onCancel = {},
-                onRetry = {}
+                onRetry = {},
+                onMaxProgress = {}
             )
         }
     }
@@ -160,7 +167,8 @@ private fun ErrorPreview() {
                 statusText = "Display error message",
                 fetchStatus = GameFetchStatus.Error("Error message"),
                 onCancel = {},
-                onRetry = {}
+                onRetry = {},
+                onMaxProgress = {}
             )
         }
     }
@@ -176,7 +184,8 @@ private fun SuccessPreview() {
                 statusText = "Success message",
                 fetchStatus = GameFetchStatus.Success(getGame(0)),
                 onCancel = {},
-                onRetry = {}
+                onRetry = {},
+                onMaxProgress = {}
             )
         }
     }

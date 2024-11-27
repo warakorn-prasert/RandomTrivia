@@ -16,13 +16,11 @@ import com.korn.portfolio.randomtrivia.repository.GameOption
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.GameFetchStatus
 import com.korn.portfolio.randomtrivia.ui.common.displayName
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val PREPARE_TEXT = "Preparing to fetch"
@@ -49,7 +47,6 @@ private fun List<GameSetting>.toGameOptions(): List<GameOption> =
     }
 
 class LoadingBeforePlayingViewModel(
-    private val onDone: (Game) -> Unit,
     private val onlineMode: Boolean,
     private val settings: List<GameSetting>,
     private val triviaRepository: TriviaRepository
@@ -69,6 +66,9 @@ class LoadingBeforePlayingViewModel(
     fun cancelFetch() {
         fetchJob.cancel()
     }
+
+    var game: Game? = null
+        private set
 
     fun fetch() {
         viewModelScope.launch {
@@ -116,7 +116,7 @@ class LoadingBeforePlayingViewModel(
                         is GameFetchStatus.Error -> statusText = f.message
                         GameFetchStatus.Loading -> {}
                         is GameFetchStatus.Success -> {
-                            progress = 1f
+                            progress = 0.99f
                             if (onlineMode) {
                                 statusText = "Saving questions."
                                 triviaRepository.saveQuestions(f.game)
@@ -124,9 +124,8 @@ class LoadingBeforePlayingViewModel(
                             delay(1000)
                             statusText = "Finished."
                             delay(1000)
-                            withContext(Dispatchers.Main) {
-                                onDone(f.game)
-                            }
+                            game = f.game
+                            progress = 1f
                         }
                     }
                 } catch (_: CancellationException) {}
@@ -140,8 +139,7 @@ class LoadingBeforePlayingViewModel(
 
     class Factory(
         private val onlineMode: Boolean,
-        private val settings: List<GameSetting>,
-        private val onDone: (Game) -> Unit
+        private val settings: List<GameSetting>
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(
@@ -150,7 +148,6 @@ class LoadingBeforePlayingViewModel(
         ): T {
             val application = checkNotNull(extras[APPLICATION_KEY]) as TriviaApplication
             return LoadingBeforePlayingViewModel(
-                onDone,
                 onlineMode,
                 settings,
                 application.triviaRepository,

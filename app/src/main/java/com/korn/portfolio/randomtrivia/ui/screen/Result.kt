@@ -79,7 +79,11 @@ fun Result(
             )
         },
         bottomBar = {
-            BottomAppBar(tonalElevation = 0.dp) {
+            BottomAppBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                tonalElevation = 0.dp
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,

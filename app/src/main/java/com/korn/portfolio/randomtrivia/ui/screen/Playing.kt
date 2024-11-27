@@ -2,8 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
-import android.annotation.SuppressLint
-import android.content.res.Configuration
+import android.os.Parcelable
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -15,12 +14,14 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -39,12 +40,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,21 +57,32 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowHeightSizeClass
+import androidx.window.core.layout.WindowSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.korn.portfolio.randomtrivia.R
 import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.Game
+import com.korn.portfolio.randomtrivia.database.model.GameQuestion
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
+import com.korn.portfolio.randomtrivia.ui.common.GameQuestionParceler
 import com.korn.portfolio.randomtrivia.ui.common.IconButtonWithText
 import com.korn.portfolio.randomtrivia.ui.common.QuestionSelector
 import com.korn.portfolio.randomtrivia.ui.common.ScrimmableBottomSheetScaffold
 import com.korn.portfolio.randomtrivia.ui.common.displayName
 import com.korn.portfolio.randomtrivia.ui.common.hhmmssFrom
+import com.korn.portfolio.randomtrivia.ui.previewdata.PreviewWindowSizes
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
+import com.korn.portfolio.randomtrivia.ui.previewdata.windowSizeForPreview
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.WriteWith
 import java.util.Date
 import java.util.UUID
 import kotlin.concurrent.timer
@@ -90,29 +106,47 @@ enum class AnswerButtonState(
     }
 }
 
+private fun MutableList<GameQuestion>.answer(questionIdx: Int, answer: String) {
+    this[questionIdx] = this[questionIdx].let {
+        it.copy(
+            answer = it.answer.copy(
+                answer = answer
+            )
+        )
+    }
+}
+
+@Parcelize
+private data class WrappedGameQuestion(
+    val question: @WriteWith<GameQuestionParceler> GameQuestion
+) : Parcelable
+
+// Ref. : https://stackoverflow.com/a/68887484
+private val GameQuestionListSaver = listSaver<SnapshotStateList<GameQuestion>, WrappedGameQuestion>(
+    save = { stateList -> stateList.map { WrappedGameQuestion(it) }.toList() },
+    restore = { it.map { it.question }.toMutableStateList() },
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Playing(
     game: Game,
     onExit: () -> Unit,
     onSubmit: (Game) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 ) {
     BackHandler { onExit() }
 
-    val questions = remember { game.questions.toMutableStateList() }
+    val questions = rememberSaveable(saver = GameQuestionListSaver) {
+        game.questions.toMutableStateList()
+    }
     val pagerState = rememberPagerState(pageCount = { questions.size })
     val currentIdx = pagerState.currentPage
 
-    @SuppressLint("ProduceStateDoesNotAssignValue")
-    val second by run {
-        produceState(initialValue = 0) {
-            val timer = timer(initialDelay = 2000L, period = 1000L) {
-                value++
-            }
-            awaitDispose {
-                timer.cancel()
-            }
+    val second by rememberSaveable {
+        mutableIntStateOf(0).apply {
+            timer(period = 1000L) { intValue++ }
         }
     }
 
@@ -177,9 +211,14 @@ fun Playing(
             )
         }
     ) { paddingValues ->
+        val layoutDir = LocalLayoutDirection.current
         Column(
             modifier = Modifier
-                .padding(paddingValues)
+                .padding(
+                    start = paddingValues.calculateStartPadding(layoutDir),
+                    top = paddingValues.calculateTopPadding(),
+                    end = paddingValues.calculateStartPadding(layoutDir)
+                )
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -198,32 +237,51 @@ fun Playing(
                 pageSpacing = 16.dp,
                 userScrollEnabled = false
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    QuestionStatementCard(
-                        questionStatement = question.question.question,
+                val showInColumn = windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT
+                        || windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.EXPANDED
+                if (showInColumn)
+                    Column(
                         modifier = Modifier
-                            .weight(1f)
-                            .wrapContentSize()
-                    )
-                    AnswerButtons(
-                        userAnswer = question.answer.answer,
-                        answers = question.question.run { incorrectAnswers + correctAnswer },
-                        onAnswer = { answer ->
-                            questions[currentIdx] = questions[currentIdx].let {
-                                it.copy(
-                                    answer = it.answer.copy(
-                                        answer = answer
-                                    )
-                                )
-                            }
-                        },
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                }
+                            .padding(bottom = paddingValues.calculateBottomPadding())
+                            .fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        QuestionStatementCard(
+                            questionStatement = question.question.question,
+                            modifier = Modifier.weight(1f).wrapContentSize()
+                        )
+                        AnswerButtons(
+                            userAnswer = question.answer.answer,
+                            answers = question.question.run { incorrectAnswers + correctAnswer },
+                            onAnswer = { questions.answer(currentIdx, it) },
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    }
+                else
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        QuestionStatementCard(
+                            questionStatement = question.question.question,
+                            modifier = Modifier
+                                .padding(bottom = 12.dp + paddingValues.calculateBottomPadding())
+                                .weight(1f)
+                                .wrapContentSize()
+                        )
+                        val configuration = LocalConfiguration.current
+                        val screenWidth = configuration.screenWidthDp.dp
+                        AnswerButtons(
+                            userAnswer = question.answer.answer,
+                            answers = question.question.run { incorrectAnswers + correctAnswer },
+                            onAnswer = { questions.answer(currentIdx, it) },
+                            modifier = Modifier
+                                .padding(bottom = 16.dp + paddingValues.calculateBottomPadding())
+                                .widthIn(max = screenWidth * 2 / 3)
+                        )
+                    }
             }
         }
     }
@@ -307,8 +365,19 @@ private fun AnswerButtons(
     onAnswer: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // make scrollable in case of not enough space
+    val scrollState = rememberScrollState()
+
+    // scroll to top every revisit
+    LaunchedEffect(Unit) {
+        scrollState.scrollTo(0)
+    }
+
     Column(
-        modifier = modifier.width(IntrinsicSize.Max),  // to have same width
+        modifier = Modifier
+            .width(IntrinsicSize.Max)  // to have same width
+            .verticalScroll(scrollState)
+            .then(modifier),
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
     ) {
         answers.forEachIndexed { idx, answer ->
@@ -356,8 +425,7 @@ private fun AnswerButtons(
     }
 }
 
-@Preview
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
+@PreviewWindowSizes
 @Composable
 private fun PlayingPreview() {
     RandomTriviaTheme {
@@ -365,6 +433,7 @@ private fun PlayingPreview() {
             game = getGame(11),
             onExit = {},
             onSubmit = {},
+            windowSizeClass = windowSizeForPreview()
         )
     }
 }
@@ -377,6 +446,7 @@ private fun OverflowQuestionPreview() {
             game = getGame(1, true),
             onExit = {},
             onSubmit = {},
+            windowSizeClass = windowSizeForPreview()
         )
     }
 }

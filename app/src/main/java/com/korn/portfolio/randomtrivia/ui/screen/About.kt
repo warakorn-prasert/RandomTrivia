@@ -23,11 +23,14 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -36,16 +39,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowHeightSizeClass
+import androidx.window.core.layout.WindowSizeClass
 import com.korn.portfolio.randomtrivia.R
+import com.korn.portfolio.randomtrivia.ui.previewdata.PreviewWindowSizes
+import com.korn.portfolio.randomtrivia.ui.previewdata.windowSizeForPreview
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
     onExit: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 ) {
     BackHandler { onExit() }
 
@@ -72,13 +79,29 @@ fun AboutScreen(
         ) {
             Credits(Modifier.padding(vertical = 8.dp))
             Spacer(Modifier.height(24.dp))
-            AppDescription()
-            Box(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                LogoWithAppName()
+            if (windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AppDescription(Modifier.padding(24.dp).weight(1f))
+                    LogoWithAppName(
+                        Modifier
+                            .align(Alignment.CenterVertically)
+                            .padding(24.dp)
+                    )
+                }
+            } else {
+                AppDescription()
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LogoWithAppName()
+                }
             }
+            Spacer(Modifier.height(24.dp))
             LicenseIndication()
         }
     }
@@ -124,40 +147,37 @@ private fun CreditText(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun AppDescription() {
+private fun AppDescription(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    Text("        " + context.resources.getString(R.string.about_app))
+    Text(
+        text = "        " + context.resources.getString(R.string.about_app),
+        modifier = modifier
+    )
 }
 
 @Composable
-private fun LogoWithAppName() {
+private fun LogoWithAppName(modifier: Modifier = Modifier) {
     val color = MaterialTheme.colorScheme.primary
-    Column(
-        modifier = Modifier
-            .width(IntrinsicSize.Min)
-            .height(IntrinsicSize.Min),
-        horizontalAlignment = Alignment.End
-    ) {
-        Text(
-            text = "Random",
-            color = color,
-            style = MaterialTheme.typography.displayMedium
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+    CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.displayMedium) {
+        Column(
+            modifier = modifier
+                .width(IntrinsicSize.Min)
+                .height(IntrinsicSize.Min),
+            horizontalAlignment = Alignment.End
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_android),
-                contentDescription = "App icon",
-                modifier = Modifier.fillMaxHeight().aspectRatio(1f),
-                tint = color
-            )
-            Text(
-                text = "Trivia",
-                color = color,
-                style = MaterialTheme.typography.displayMedium
-            )
+            Text(text = "Random", color = color)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_android),
+                    contentDescription = "App icon",
+                    modifier = Modifier.fillMaxHeight().aspectRatio(1f),
+                    tint = color
+                )
+                Text(text = "Trivia", color = color)
+            }
         }
     }
 }
@@ -179,10 +199,10 @@ private fun ColumnScope.LicenseIndication() {
     )
 }
 
-@Preview
+@PreviewWindowSizes
 @Composable
-fun AboutDialogPreview() {
+private fun AboutPreview() {
     RandomTriviaTheme {
-        AboutScreen({})
+        AboutScreen({}, windowSizeClass = windowSizeForPreview())
     }
 }
