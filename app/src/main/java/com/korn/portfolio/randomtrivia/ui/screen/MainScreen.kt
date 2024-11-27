@@ -136,15 +136,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     requestFullScreen()
                     val (onlineMode, settings) = backStackEntry.toRoute<TopLevelDestination.PrePlay.Loading>()
                     val viewModel: LoadingBeforePlayingViewModel = viewModel(
-                        factory = LoadingBeforePlayingViewModel.Factory(
-                            onlineMode = onlineMode,
-                            settings = settings,
-                            onDone = { game ->
-                                navController.navigate(TopLevelDestination.Play(WrappedGame(game))) {
-                                    popUpTo(TopLevelDestination.PrePlay.Setting)
-                                }
-                            }
-                        )
+                        factory = LoadingBeforePlayingViewModel.Factory(onlineMode, settings)
                     )
                     val fetchStatus by viewModel.fetchStatus.collectAsState()
                     LoadingBeforePlaying(
@@ -156,6 +148,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                             navController.navigateUp()
                         },
                         onRetry = { viewModel.fetch() },
+                        onMaxProgress = {
+                            navController.navigate(TopLevelDestination.Play(WrappedGame(viewModel.game!!))) {
+                                popUpTo(TopLevelDestination.PrePlay.Setting)
+                            }
+                        },
                         modifier = Modifier.systemBarsPadding()
                     )
                 }
