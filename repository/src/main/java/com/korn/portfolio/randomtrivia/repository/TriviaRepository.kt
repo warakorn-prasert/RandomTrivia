@@ -132,7 +132,12 @@ class TriviaRepositoryImpl(
     private val fetchQuestionCountContext = newSingleThreadContext("fetchQuestionCount")
 
     override suspend fun fetchQuestionCount(categoryId: Int) {
-        if (remoteCategories.value.isEmpty()) fetchCategories()
+        require(remoteCategories.value.isNotEmpty()) {
+            "Must call fetchCategories() before fetchQuestionCount()."
+        }
+        require(remoteCategories.value.any { it.first.id == categoryId}) {
+            "Category ID must exist."
+        }
         val idx = remoteCategories.value.indexOfFirst { it.first.id == categoryId }
         if (idx >= 0) {
             val questionCount = triviaApiClient.getQuestionCount(categoryId)
@@ -151,7 +156,6 @@ class TriviaRepositoryImpl(
         offline: Boolean,
         processLog: suspend (currentIdx: Int) -> Unit
     ): Pair<ResponseCode, Game> {
-        if (!offline && remoteCategories.value.isEmpty()) fetchCategories()
         val questions = mutableListOf<GameQuestion>()
         val game = Game(
             detail = GameDetail(timestamp = Date(), totalTimeSecond = 0),
@@ -167,6 +171,9 @@ class TriviaRepositoryImpl(
         game: Game,
         processLog: suspend (currentIdx: Int) -> Unit
     ): Pair<ResponseCode, Game> {
+        require(remoteCategories.value.isEmpty()) {
+            "Must call fetchCategories() before fetchOnlineGame()."
+        }
         // get token
         val (respCode1, token) = triviaApiClient.getToken()
         if (respCode1 != ResponseCode.SUCCESS) return respCode1 to game
