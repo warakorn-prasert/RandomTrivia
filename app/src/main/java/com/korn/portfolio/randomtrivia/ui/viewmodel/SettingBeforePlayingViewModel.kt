@@ -4,7 +4,6 @@ import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
-import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -45,10 +44,7 @@ class SettingBeforePlayingViewModel(
     private val triviaRepository: TriviaRepository
 ) : ViewModel() {
     val onlineMode: StateFlow<Boolean> get() = mutableOnlineMode
-    private val mutableOnlineMode = MutableStateFlow(false).apply {
-        // value = !neverFetch
-        value = !triviaRepository.remoteCategories.value.isNullOrEmpty()
-    }
+    private val mutableOnlineMode = MutableStateFlow(triviaRepository.remoteCategories.value.isNotEmpty())
 
     fun changeOnlineMode(online: Boolean) {
         mutableOnlineMode.value = online
@@ -59,7 +55,7 @@ class SettingBeforePlayingViewModel(
     val categoriesWithQuestionCounts: Flow<List<Pair<Category, QuestionCount>>> =
         combine(
             onlineMode,
-            triviaRepository.remoteCategories.asFlow(),
+            triviaRepository.remoteCategories,
             triviaRepository.localCategories
         ) { online, remote, local ->
             (if (online) remote else local)

@@ -24,7 +24,7 @@ class SharedViewModel(private val triviaRepository: TriviaRepository) : ViewMode
 
     init {
         // if never fetch
-        if (triviaRepository.remoteCategories.value.isNullOrEmpty())
+        if (triviaRepository.remoteCategories.value.isEmpty())
             fetchCategories()
     }
 
