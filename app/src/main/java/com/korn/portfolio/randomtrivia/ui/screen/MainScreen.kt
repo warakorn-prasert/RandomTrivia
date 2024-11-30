@@ -126,9 +126,6 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         onOnlineModeChange = { online -> viewModel.changeOnlineMode(online) },
                         categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
                         onFetchCategoriesRequest = { sharedViewModel.fetchCategories() },
-                        onFetchQuestionCountRequest = { categoryId, onFetchStatusChange ->
-                            viewModel.fetchQuestionCountIfNotAlready(categoryId, onFetchStatusChange)
-                        },
                         onSubmit = { settings ->
                             navController.navigate(TopLevelDestination.PrePlay.Loading(onlineMode, settings))
                         },
