@@ -46,9 +46,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -62,6 +64,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
@@ -80,12 +83,12 @@ import com.korn.portfolio.randomtrivia.ui.previewdata.PreviewWindowSizes
 import com.korn.portfolio.randomtrivia.ui.previewdata.getGame
 import com.korn.portfolio.randomtrivia.ui.previewdata.windowSizeForPreview
 import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.WriteWith
 import java.util.Date
 import java.util.UUID
-import kotlin.concurrent.timer
 
 enum class AnswerButtonState(
     val containerColor: @Composable () -> Color,
@@ -144,9 +147,16 @@ fun Playing(
     val pagerState = rememberPagerState(pageCount = { questions.size })
     val currentIdx = pagerState.currentPage
 
-    val second by rememberSaveable {
-        mutableIntStateOf(0).apply {
-            timer(period = 1000L) { intValue++ }
+    var second by rememberSaveable { mutableIntStateOf(0) }
+    var isRunning by rememberSaveable { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        isRunning = true
+        onPauseOrDispose { isRunning = false }
+    }
+    LaunchedEffect(isRunning) {
+        while (isRunning) {
+            delay(1000L)
+            second++
         }
     }
 
