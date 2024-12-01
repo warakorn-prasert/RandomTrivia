@@ -40,6 +40,8 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -55,6 +57,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -428,6 +431,23 @@ private fun AddGameSettingDialog(
                 ),
                 interactionSource = interactionSource
             )
+        }
+        Spacer(Modifier.height(16.dp))
+        CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodySmall) {
+            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
+                when {
+                    category == null && difficulty == null ->
+                        Text("* Adding random category and difficulty will omit all future choices.")
+
+                    category == null && difficulty != null ->
+                        Text("* Adding random category will omit future choices with this difficulty and random difficulty.")
+
+                    category != null && difficulty == null ->
+                        Text("* Adding random difficulty will exclude this category from future choices.")
+
+                    else -> {}
+                }
+            }
         }
     }
 }
