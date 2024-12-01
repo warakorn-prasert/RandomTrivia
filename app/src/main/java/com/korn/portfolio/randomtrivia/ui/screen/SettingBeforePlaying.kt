@@ -342,7 +342,10 @@ private fun AddGameSettingDialog(
         category,  // sometimes new category has the same difficulties
         difficulty
     ) {
-        mutableIntStateOf(gameSettingChoiceGetter.getMaxAmount(category, difficulty))
+        mutableIntStateOf(
+            gameSettingChoiceGetter.getMaxAmount(category, difficulty)
+                .coerceAtMost(MAX_AMOUNT)
+        )
     }
 
     var amount: String by remember { mutableStateOf(MIN_AMOUNT.toString()) }
