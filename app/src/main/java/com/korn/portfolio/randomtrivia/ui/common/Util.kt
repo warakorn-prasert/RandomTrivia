@@ -289,6 +289,27 @@ object CategoryParceler : Parceler<Category?> {
     }
 }
 
+object QuestionParceler : Parceler<Question> {
+    override fun create(parcel: Parcel): Question {
+        val question = parcel.readString()!!
+        val difficulty = parcel.readString()!!.let { Difficulty.valueOf(it) }
+        val categoryId = parcel.readString()?.toInt()
+        val correctAnswer = parcel.readString()!!
+        val incorrectAnswers = mutableListOf<String>().apply { parcel.readStringList(this) }
+        val id = parcel.readString()!!.let { UUID.fromString(it) }
+        return Question(question, difficulty, categoryId, correctAnswer, incorrectAnswers, id)
+    }
+
+    override fun Question.write(parcel: Parcel, flags: Int) {
+        parcel.writeString(question)
+        parcel.writeString(difficulty.toString())
+        parcel.writeString(categoryId?.toString())
+        parcel.writeString(correctAnswer)
+        parcel.writeStringList(incorrectAnswers)
+        parcel.writeString(id.toString())
+    }
+}
+
 object GameQuestionParceler : Parceler<GameQuestion> {
     override fun create(parcel: Parcel): GameQuestion {
         val categoryName = parcel.readString()
