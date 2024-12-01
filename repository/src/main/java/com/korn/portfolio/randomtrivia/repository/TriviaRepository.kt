@@ -14,7 +14,6 @@ import com.korn.portfolio.randomtrivia.network.TriviaApiClient
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.network.model.ResponseCode
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -179,7 +178,7 @@ class TriviaRepositoryImpl(
         if (respCode1 != ResponseCode.SUCCESS) return respCode1 to game
         // get questions
         options.forEachIndexed { idx, option ->
-            withContext(Dispatchers.Main) { processLog(idx) }
+            processLog(idx)
             measureTime {
                 val (respCode2, fetchedQuestions) = triviaApiClient.getQuestions(
                     amount = option.amount,
@@ -224,7 +223,7 @@ class TriviaRepositoryImpl(
         processLog: suspend (currentIdx: Int) -> Unit
     ): Pair<ResponseCode, Game> {
         options.forEachIndexed { idx, option ->
-            withContext(Dispatchers.Main) { processLog(idx) }
+            processLog(idx)
             val fetchedQuestions = when {
                 option.category == null && option.difficulty == null ->
                     questionDao.getBy(
