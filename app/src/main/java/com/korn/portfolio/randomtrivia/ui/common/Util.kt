@@ -276,6 +276,19 @@ object WrappedGameSerializer : KSerializer<WrappedGame> {
     }
 }
 
+object CategoryParceler : Parceler<Category?> {
+    override fun create(parcel: Parcel): Category? {
+        val name = parcel.readString()
+        val id = parcel.readString()?.toInt()
+        return name?.let { Category(it, id!!) }
+    }
+
+    override fun Category?.write(parcel: Parcel, flags: Int) {
+        parcel.writeString(this?.name)
+        parcel.writeString(this?.id.toString())
+    }
+}
+
 object GameQuestionParceler : Parceler<GameQuestion> {
     override fun create(parcel: Parcel): GameQuestion {
         val categoryName = parcel.readString()
@@ -323,5 +336,4 @@ object GameQuestionParceler : Parceler<GameQuestion> {
         parcel.writeStringList(question.incorrectAnswers)
         parcel.writeString(question.id.toString())
     }
-
 }

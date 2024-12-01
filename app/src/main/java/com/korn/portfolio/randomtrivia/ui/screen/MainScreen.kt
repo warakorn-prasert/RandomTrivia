@@ -122,6 +122,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     val catsWithCounts by viewModel.categoriesWithQuestionCounts.collectAsState(emptyList())
                     SettingBeforePlaying(
                         categoriesWithQuestionCounts = catsWithCounts,
+                        settings = viewModel.settings,
                         onlineMode = onlineMode,
                         onOnlineModeChange = { online -> viewModel.changeOnlineMode(online) },
                         categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,

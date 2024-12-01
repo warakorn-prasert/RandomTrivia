@@ -61,15 +61,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
@@ -108,15 +103,10 @@ import kotlinx.coroutines.launch
 
 private const val DELETE_ANIM_DURATION = 500
 
-// Ref. : https://stackoverflow.com/a/68887484
-private val GameSettingListSaver = listSaver<SnapshotStateList<GameSetting>, GameSetting>(
-    save = { stateList -> stateList.toList() },
-    restore = { it.toMutableStateList() },
-)
-
 @Composable
 fun SettingBeforePlaying(
     categoriesWithQuestionCounts: List<Pair<Category, QuestionCount>>,
+    settings: MutableList<GameSetting>,
     onlineMode: Boolean,
     onOnlineModeChange: (Boolean) -> Unit,
     categoriesFetchStatus: FetchStatus,
@@ -126,9 +116,6 @@ fun SettingBeforePlaying(
     windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 ) {
     var showDialog by remember { mutableStateOf(false) }
-    val settings = rememberSaveable(saver = GameSettingListSaver) {
-        mutableStateListOf()
-    }
     val gameSettingChoiceGetter = GameSettingChoiceGetter(categoriesWithQuestionCounts, settings)
     val categories = gameSettingChoiceGetter.categories
 
@@ -538,12 +525,13 @@ private fun SettingListItem(
 private fun SettingBeforePlayingPreview() {
     RandomTriviaTheme {
         SettingBeforePlaying(
-            onSubmit = {},
+            categoriesWithQuestionCounts = emptyList(),
+            settings = mutableListOf(),
             onlineMode = true,
             onOnlineModeChange = {},
             categoriesFetchStatus = FetchStatus.Success,
             onFetchCategoriesRequest = {},
-            categoriesWithQuestionCounts = emptyList(),
+            onSubmit = {},
             windowSizeClass = windowSizeForPreview()
         )
     }
@@ -574,12 +562,14 @@ private fun SettingListItemsPreview() {
 private fun LoadingPreview() {
     RandomTriviaTheme {
         SettingBeforePlaying(
-            onSubmit = {},
+            categoriesWithQuestionCounts = emptyList(),
+            settings = mutableListOf(),
             onlineMode = true,
             onOnlineModeChange = {},
             categoriesFetchStatus = FetchStatus.Loading,
             onFetchCategoriesRequest = {},
-            categoriesWithQuestionCounts = emptyList()
+            onSubmit = {},
+            windowSizeClass = windowSizeForPreview()
         )
     }
 }
@@ -589,12 +579,14 @@ private fun LoadingPreview() {
 private fun ErrorPreview() {
     RandomTriviaTheme {
         SettingBeforePlaying(
-            onSubmit = {},
+            categoriesWithQuestionCounts = emptyList(),
+            settings = mutableListOf(),
             onlineMode = true,
             onOnlineModeChange = {},
             categoriesFetchStatus = FetchStatus.Error("Some error message."),
             onFetchCategoriesRequest = {},
-            categoriesWithQuestionCounts = emptyList()
+            onSubmit = {},
+            windowSizeClass = windowSizeForPreview()
         )
     }
 }
