@@ -99,6 +99,7 @@ import com.korn.portfolio.randomtrivia.ui.theme.RandomTriviaTheme
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting.Companion.MAX_AMOUNT
 import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSetting.Companion.MIN_AMOUNT
+import com.korn.portfolio.randomtrivia.ui.viewmodel.GameSettingChoiceGetter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -125,8 +126,8 @@ fun SettingBeforePlaying(
     val settings = rememberSaveable(saver = GameSettingListSaver) {
         mutableStateListOf()
     }
-    val dialogChoiceGetter = DialogChoiceGetter(categoriesWithQuestionCounts, settings)
-    val categories = dialogChoiceGetter.getCategories()
+    val gameSettingChoiceGetter = GameSettingChoiceGetter(categoriesWithQuestionCounts, settings)
+    val categories = gameSettingChoiceGetter.categories
 
     Scaffold(
         modifier = modifier,
@@ -162,7 +163,7 @@ fun SettingBeforePlaying(
                 AddGameSettingDialog(
                     onDismissRequest = { showDialog = false },
                     onAdd = { settings.add(it) },
-                    dialogChoiceGetter = dialogChoiceGetter
+                    gameSettingChoiceGetter = gameSettingChoiceGetter
                 )
             if (onlineMode)
                 FetchStatusBar(
@@ -315,9 +316,9 @@ private fun ExtendedFAB(
 private fun AddGameSettingDialog(
     onDismissRequest: () -> Unit,
     onAdd: (GameSetting) -> Unit,
-    dialogChoiceGetter: DialogChoiceGetter
+    gameSettingChoiceGetter: GameSettingChoiceGetter
 ) {
-    val categories = dialogChoiceGetter.getCategories()
+    val categories = gameSettingChoiceGetter.categories
     LaunchedEffect(categories) {
         if (categories.isEmpty()) onDismissRequest()
     }
@@ -327,15 +328,18 @@ private fun AddGameSettingDialog(
     }
 
     var difficulties: List<Difficulty?> by remember(category) {
-        mutableStateOf(dialogChoiceGetter.getDifficulties(category))
+        mutableStateOf(gameSettingChoiceGetter.getDifficulties(category))
     }
 
     var difficulty: Difficulty? by remember(difficulties) {
         mutableStateOf(difficulties.firstOrNull())
     }
 
-    val maxAmount: Int by remember(difficulty) {
-        mutableIntStateOf(dialogChoiceGetter.getMaxAmount(category, difficulty))
+    val maxAmount: Int by remember(
+        category,  // sometimes new category has the same difficulties
+        difficulty
+    ) {
+        mutableIntStateOf(gameSettingChoiceGetter.getMaxAmount(category, difficulty))
     }
 
     var amount: String by remember { mutableStateOf(MIN_AMOUNT.toString()) }
@@ -345,7 +349,7 @@ private fun AddGameSettingDialog(
     // replacing remember(maxAmount) to use previous amount in calculation
     LaunchedEffect(maxAmount, isFocus) {
         amount = (amount.toIntOrNull() ?: MIN_AMOUNT)
-            .coerceIn(MIN_AMOUNT..maxAmount.coerceAtLeast(MIN_AMOUNT))
+            .coerceIn(MIN_AMOUNT..maxAmount.coerceIn(MIN_AMOUNT, MAX_AMOUNT))
             .toString()
     }
 
@@ -361,12 +365,12 @@ private fun AddGameSettingDialog(
                     // If categories doesn't update, nothing will,
                     // i.e., when there're other options with same category.
                     // Updating difficulties will update difficulty, max amount, and amount.
-                    difficulties = dialogChoiceGetter.getDifficulties(category)
+                    difficulties = gameSettingChoiceGetter.getDifficulties(category)
                     // dismiss keyboard if shown
                     focusManager.clearFocus()
                 },
                 enabled = amount.toIntOrNull()
-                    ?.let { it in MIN_AMOUNT..maxAmount.coerceAtLeast(MIN_AMOUNT) }
+                    ?.let { it in MIN_AMOUNT..maxAmount.coerceIn(MIN_AMOUNT, MAX_AMOUNT) }
                     ?: false
             ) {
                 Text("ADD")
@@ -488,76 +492,6 @@ private fun SettingListItem(
     }
 }
 
-private class DialogChoiceGetter(
-    private val catsWithCounts: List<Pair<Category, QuestionCount>>,
-    private val settings: List<GameSetting>
-) {
-    private val allDifficulties: List<Difficulty?> = listOf(null) + Difficulty.entries
-
-    private val QuestionCount?.difficultiesWithQuestions: List<Difficulty?>
-        get() =
-            if (this == null) allDifficulties
-            else mutableListOf<Difficulty?>(null).apply {
-                if (easy > 0) add(Difficulty.EASY)
-                if (medium > 0) add(Difficulty.MEDIUM)
-                if (hard > 0) add(Difficulty.HARD)
-            }
-
-    private val Pair<Category, QuestionCount>?.difficultiesWithQuestions: List<Difficulty?>
-        get() = if (this == null) allDifficulties else second.difficultiesWithQuestions
-
-    fun getCategories(): List<Category?> {
-        if (catsWithCounts.isEmpty()) return emptyList()
-        else {
-            // Exclude category in settings whose all difficulties are used.
-            val catIdsToExclude: List<Int?> = settings
-                .filter { setting ->
-                    val usedCombinations = settings.count { it.category?.id == setting.category?.id }
-                    val possibleCombinations =
-                        // Random category has all difficulties
-                        if (setting.category == null) allDifficulties.size
-                        else catsWithCounts
-                            .first { it.first.id == setting.category.id }
-                            .difficultiesWithQuestions
-                            .size
-                    usedCombinations == possibleCombinations
-                }
-                .map { it.category?.id }
-            // Return random category + starting categories - excluded categories
-            return (listOf(null) + catsWithCounts.sortedBy { it.first.name })
-                .filter { all ->
-                    all?.first?.id !in catIdsToExclude
-                }
-                .map { it?.first }
-        }
-    }
-
-    fun getDifficulties(category: Category?): List<Difficulty?>  {
-        val allDiffs =
-            if (category == null) allDifficulties
-            else catsWithCounts
-                .first { it.first.id == category.id }
-                .difficultiesWithQuestions
-        val usedDiffs = settings.filter { it.category?.id == category?.id }.map { it.difficulty }
-        return allDiffs - usedDiffs
-    }
-
-    fun getMaxAmount(category: Category?, difficulty: Difficulty?): Int =
-        if (category == null) MAX_AMOUNT
-        else catsWithCounts
-            .first { it.first.id == category.id }
-            .second
-            .run {
-                when (difficulty) {
-                    Difficulty.EASY -> easy
-                    Difficulty.MEDIUM -> medium
-                    Difficulty.HARD -> hard
-                    else -> total
-                }
-            }
-            .coerceAtMost(MAX_AMOUNT)
-}
-
 @PreviewWindowSizes
 @Composable
 private fun SettingBeforePlayingPreview() {
@@ -665,7 +599,7 @@ private fun AddGameSettingDialogPreview() {
         AddGameSettingDialog(
             onDismissRequest = {},
             onAdd = {},
-            dialogChoiceGetter = DialogChoiceGetter(
+            gameSettingChoiceGetter = GameSettingChoiceGetter(
                 List(1) {
                     getCategory(it) to QuestionCount(1, 1, 0, 0)
                 },
