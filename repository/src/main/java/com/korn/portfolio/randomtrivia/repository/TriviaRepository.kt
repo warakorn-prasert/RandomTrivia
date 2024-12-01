@@ -170,7 +170,7 @@ class TriviaRepositoryImpl(
         game: Game,
         processLog: suspend (currentIdx: Int) -> Unit
     ): Pair<ResponseCode, Game> {
-        require(remoteCategories.value.isEmpty()) {
+        require(remoteCategories.value.isNotEmpty()) {
             "Must call fetchCategories() before fetchOnlineGame()."
         }
         // get token
