@@ -114,7 +114,7 @@ class GameSettingChoiceGetter(
             || settings.sumOf { it.amount } == totalQuestionCount.total
         ) emptyList()
 
-        else (listOf(null) + catsWithCounts)
+        else (catsWithCounts + null)
             .filter { catWithCount ->
                 val usedSettings = settings.filter { it.category?.id == catWithCount?.first?.id }
 
@@ -136,7 +136,7 @@ class GameSettingChoiceGetter(
             }
             .map { it?.first }
             .run {  // Sort and bring null in front
-                (if (contains(null)) listOf(null) else emptyList()) + filterNotNull().sortedBy { it.name }
+                filterNotNull().sortedBy { it.name } + (if (contains(null)) listOf(null) else emptyList())
             }
 
     // Exclude any difficulty that's in settings with random category. Also exclude random difficulty.
@@ -153,6 +153,10 @@ class GameSettingChoiceGetter(
             .let {
                 if (nullCatDiffs.isNotEmpty()) it.filterNotNull()
                 else it
+            }
+            .let {
+                if (null in it) it.filterNotNull().sortedBy { diff -> diff.ordinal } + null
+                else it.sortedBy { diff -> diff!!.ordinal }
             }
     }
 

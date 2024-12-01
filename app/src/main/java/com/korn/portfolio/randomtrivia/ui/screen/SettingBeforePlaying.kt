@@ -383,7 +383,16 @@ private fun AddGameSettingDialog(
             items = categories,
             toString = { it.displayName },
             label = { Text("Category") },
-            itemContent = { Text(it.displayName) }
+            itemContent = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (it == null)
+                        Icon(painterResource(R.drawable.ic_shuffle), "Icon of random category")
+                    Text(it.displayName)
+                }
+            }
         )
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -393,7 +402,16 @@ private fun AddGameSettingDialog(
                 items = difficulties,
                 toString = { it.displayName },
                 label = { Text("Difficulty") },
-                itemContent = { Text(it.displayName) }
+                itemContent = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (it == null)
+                            Icon(painterResource(R.drawable.ic_shuffle), "Icon of random difficulty")
+                        Text(it.displayName)
+                    }
+                }
             )
             val focusManager = LocalFocusManager.current
             OutlinedTextField(
