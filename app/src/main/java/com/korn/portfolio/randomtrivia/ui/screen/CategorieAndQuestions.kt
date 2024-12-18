@@ -2,6 +2,7 @@
 
 package com.korn.portfolio.randomtrivia.ui.screen
 
+import android.os.Parcelable
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
@@ -15,8 +16,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.database.model.entity.Question
+import com.korn.portfolio.randomtrivia.ui.common.CategoryParceler
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
+import com.korn.portfolio.randomtrivia.ui.common.QuestionParceler
 import com.korn.portfolio.randomtrivia.ui.viewmodel.CategoryDisplay
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.WriteWith
+
+// Can't use original CategoryWithQuestions because it's not parcelable.
+@Parcelize
+private data class ParcelableCategoryWithQuestions(
+    val category: @WriteWith<CategoryParceler> Category,
+    val question: List< @WriteWith<QuestionParceler> Question>
+) : Parcelable
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -28,7 +40,7 @@ fun CategoriesAndQuestions(
     onGetQuestionsRequest: (categoryId: Int, onDone: (List<Question>) -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val navigator = rememberListDetailPaneScaffoldNavigator<Pair<Category, List<Question>>>()
+    val navigator = rememberListDetailPaneScaffoldNavigator<ParcelableCategoryWithQuestions>()
 
     BackHandler(navigator.canNavigateBack()) {
         navigator.navigateBack()
@@ -51,7 +63,7 @@ fun CategoriesAndQuestions(
                         onRetryFetch = onRetryFetch,
                         onCategoryClick = { category ->
                             onGetQuestionsRequest(category.id) { questions ->
-                                navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, category to questions)
+                                navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, ParcelableCategoryWithQuestions(category, questions))
                             }
                         },
                         onAboutClick = onAboutClick

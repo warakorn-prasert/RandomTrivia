@@ -44,15 +44,15 @@ class TriviaRepositoryTest {
 
     @Test
     fun fetch_categories() = runBlocking {
-        assert(repo.remoteCategories.value!!.isNotEmpty())
+        assert(repo.remoteCategories.value.isNotEmpty())
         assert(repo.localCategories.first().isNotEmpty())
     }
 
     @Test
     fun fetch_question_count() = runBlocking {
-        val catId = repo.remoteCategories.value!!.first().first.id
+        val catId = repo.remoteCategories.value.first().first.id
         repo.fetchQuestionCount(catId)
-        val count = repo.remoteCategories.value!!.first { it.first.id == catId }.second
+        val count = repo.remoteCategories.value.first { it.first.id == catId }.second
         assert(count.total > 0)
     }
 

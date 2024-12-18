@@ -6,5 +6,5 @@
     <string name="trivia_by_license">(All data provided by the API is available under the Creative Commons Attribution-ShareAlike 4.0 International License.)</string>
     <string name="trivia_by_license_uri">https://creativecommons.org/licenses/by-sa/4.0/</string>
 
-    <string name="about_app">Random Trivia app lets you pull trivia questions directly from OPENDB.COM to play with. You can also mix questions from past games into a new game.</string>
+    <string name="about_app">Random Trivia app turns trivia questions from OPENDB.COM into a multiple choice game. You choose categories and difficulties before playing, or make them random. You can also play without internet connection by mixing questions from past games into a new game.</string>
 </resources>

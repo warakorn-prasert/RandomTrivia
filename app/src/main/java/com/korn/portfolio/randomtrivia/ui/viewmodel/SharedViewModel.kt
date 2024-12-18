@@ -13,6 +13,7 @@ import com.korn.portfolio.randomtrivia.TriviaApplication
 import com.korn.portfolio.randomtrivia.database.model.Game
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -24,7 +25,7 @@ class SharedViewModel(private val triviaRepository: TriviaRepository) : ViewMode
 
     init {
         // if never fetch
-        if (triviaRepository.remoteCategories.value.isNullOrEmpty())
+        if (triviaRepository.remoteCategories.value.isEmpty())
             fetchCategories()
     }
 
@@ -34,6 +35,13 @@ class SharedViewModel(private val triviaRepository: TriviaRepository) : ViewMode
             delay(1000L)  // make progress indicator not look flickering
             categoriesFetchStatus = try {
                 triviaRepository.fetchCategories()
+                coroutineScope {
+                    triviaRepository.remoteCategories.value.forEach {
+                        launch {
+                            triviaRepository.fetchQuestionCount(it.first.id)
+                        }
+                    }
+                }
                 FetchStatus.Success
             } catch (_: Exception) {
                 FetchStatus.Error("Failed to load new categories")

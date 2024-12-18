@@ -1,11 +1,10 @@
 package com.korn.portfolio.randomtrivia.ui.viewmodel
 
 import android.os.Parcelable
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
-import androidx.lifecycle.asFlow
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.korn.portfolio.randomtrivia.TriviaApplication
@@ -13,25 +12,20 @@ import com.korn.portfolio.randomtrivia.database.model.Difficulty
 import com.korn.portfolio.randomtrivia.database.model.entity.Category
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.repository.TriviaRepository
-import com.korn.portfolio.randomtrivia.ui.common.FetchStatus
+import com.korn.portfolio.randomtrivia.ui.common.CategoryParceler
 import com.korn.portfolio.randomtrivia.ui.common.GameSettingSerializer
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
-import kotlinx.parcelize.RawValue
+import kotlinx.parcelize.WriteWith
 import kotlinx.serialization.Serializable
-import kotlin.coroutines.cancellation.CancellationException
 
 @Parcelize  // For rememberSaveable
 @Serializable(with = GameSettingSerializer::class)  // For navigation argument
 data class GameSetting(
-    val category: @RawValue Category?,  // null = random
+    val category: @WriteWith<CategoryParceler> Category?,  // null = random
     val difficulty: Difficulty?,  // null = random
     val amount: Int
 ) : Parcelable {
@@ -41,14 +35,12 @@ data class GameSetting(
     }
 }
 
-class SettingBeforePlayingViewModel(
-    private val triviaRepository: TriviaRepository
-) : ViewModel() {
+class SettingBeforePlayingViewModel(triviaRepository: TriviaRepository) : ViewModel() {
+    // Can't use mutableListOf() because Compose can't snapshot it.
+    val settings = mutableStateListOf<GameSetting>()
+
     val onlineMode: StateFlow<Boolean> get() = mutableOnlineMode
-    private val mutableOnlineMode = MutableStateFlow(false).apply {
-        // value = !neverFetch
-        value = !triviaRepository.remoteCategories.value.isNullOrEmpty()
-    }
+    private val mutableOnlineMode = MutableStateFlow(triviaRepository.remoteCategories.value.isNotEmpty())
 
     fun changeOnlineMode(online: Boolean) {
         mutableOnlineMode.value = online
@@ -59,7 +51,7 @@ class SettingBeforePlayingViewModel(
     val categoriesWithQuestionCounts: Flow<List<Pair<Category, QuestionCount>>> =
         combine(
             onlineMode,
-            triviaRepository.remoteCategories.asFlow(),
+            triviaRepository.remoteCategories,
             triviaRepository.localCategories
         ) { online, remote, local ->
             (if (online) remote else local)
@@ -67,53 +59,147 @@ class SettingBeforePlayingViewModel(
                 .sortedBy { it.first.name }
         }
 
-    private var questionCountFetchJob: Job = Job().apply { complete() }
-    private class CancelToRestartException : CancellationException()
-    private class CancelToGoOfflineException : CancellationException()
-
-    fun fetchQuestionCountIfNotAlready(
-        categoryId: Int?,
-        onQuestionCountFetchStatusChange: (FetchStatus) -> Unit
-    ) {
-        viewModelScope.launch {
-            if (questionCountFetchJob.isActive) {
-                questionCountFetchJob.cancel(CancelToRestartException())
-                questionCountFetchJob.join()
-            }
-            questionCountFetchJob = viewModelScope.launch(viewModelScope.coroutineContext) {
-                onQuestionCountFetchStatusChange(
-                    try {
-                        val alreadyFetched = categoryId == null
-                                || categoriesWithQuestionCounts.first()
-                            .first { it.first.id == categoryId }
-                            .second.run {
-                                total == easy + medium + hard
-                            }
-                        if (categoryId != null && onlineMode.value && !alreadyFetched) {
-                            onQuestionCountFetchStatusChange(FetchStatus.Loading)
-                            delay(1000L)  // make progress indicator not look flickering
-                            triviaRepository.fetchQuestionCount(categoryId)
-                        }
-                        FetchStatus.Success
-                    } catch (_: CancelToRestartException) {
-                        FetchStatus.Loading
-                    } catch (_: CancelToGoOfflineException) {
-                        FetchStatus.Success
-                    } catch (_: Exception) {
-                        FetchStatus.Error("Failed to load.")
-                        // TODO : Handle "Unable to resolve host ..."
-                    }
-                )
-            }
-        }
-    }
-
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = this[APPLICATION_KEY] as TriviaApplication
                 SettingBeforePlayingViewModel(application.triviaRepository)
             }
+        }
+    }
+}
+
+/**
+ * Need to state in UI that,
+ * - After adding random category and random difficulty setting, categories becomes empty.
+ * - After adding random category and non-random difficulty setting,
+ *     - cannot add random category and random difficulty setting.
+ *     - that difficulty and random difficulty will be excluded from every category choice.
+ * - After adding non-random category and random difficulty setting, that category will be excluded.
+ *
+ * Therefore, recommended steps are,
+ * 1. Add non-random category and non-random difficulty settings.
+ * 2. Add non-random category and random difficulty settings.
+ * 3. Add random category and random difficulty setting, or random category and non-random difficulty settings.
+ */
+class GameSettingChoiceGetter(
+    private val catsWithCounts: List<Pair<Category, QuestionCount>>,
+    private val settings: List<GameSetting>
+) {
+    private val totalQuestionCount = run {
+        var easy = 0
+        var medium = 0
+        var hard = 0
+        catsWithCounts.forEach { (_, questionCount) ->
+            easy += questionCount.easy
+            medium += questionCount.medium
+            hard += questionCount.hard
+        }
+        QuestionCount(easy + medium + hard, easy, medium, hard)
+    }
+
+    @Suppress("RecursivePropertyAccessor")
+    private val QuestionCount?.difficultiesWithQuestions: List<Difficulty?>
+        get() =
+            if (this == null) totalQuestionCount.difficultiesWithQuestions
+            else mutableListOf<Difficulty?>().apply {
+                if (easy > 0) add(Difficulty.EASY)
+                if (medium > 0) add(Difficulty.MEDIUM)
+                if (hard > 0) add(Difficulty.HARD)
+                if (isNotEmpty()) add(0, null)
+            }
+
+    // Returns empty list when settings has random category with random difficulty.
+    // Also exclude any category in settings with random difficulty.
+    @Suppress("ConvertArgumentToSet")
+    val categories: List<Category?> =
+        if (
+            catsWithCounts.isEmpty()
+            || settings.any { it.category == null && it.difficulty == null }
+            || settings.sumOf { it.amount } == totalQuestionCount.total
+        ) emptyList()
+
+        else (catsWithCounts + null)
+            .filter { catWithCount ->
+                val usedSettings = settings.filter { it.category?.id == catWithCount?.first?.id }
+
+                // Exclude any category in settings with random difficulty.
+                if (usedSettings.any { it.difficulty == null }) return@filter false
+
+                val possibleDiffs = catWithCount?.second.difficultiesWithQuestions
+                val usedDiffs = usedSettings.map { it.difficulty }
+                val unusedDiffs = possibleDiffs - usedDiffs
+
+                // Exclude categories in settings whose all difficulties are used.
+                if (unusedDiffs.isEmpty()) return@filter false
+
+                // Or no more questions left to use.
+                // This is required when random difficulty is an option.
+                val usedAmount = usedSettings.sumOf { it.amount }
+                val maxAmount = catWithCount.let { it?.second ?: totalQuestionCount }.total
+                maxAmount > usedAmount
+            }
+            .map { it?.first }
+            .run {  // Sort and bring null in front
+                filterNotNull().sortedBy { it.name } + (if (contains(null)) listOf(null) else emptyList())
+            }
+
+    // Exclude any difficulty that's in settings with random category. Also exclude random difficulty.
+    @Suppress("ConvertArgumentToSet")
+    fun getDifficulties(category: Category?): List<Difficulty?>  {
+        val allDiffs = (catsWithCounts + null)
+            .first { it?.first?.id == category?.id }
+            ?.second
+            .difficultiesWithQuestions
+        val usedDiffs = settings.filter { it.category?.id == category?.id }.map { it.difficulty }
+        val nullCatDiffs = settings.filter { s -> s.category == null }.map { it.difficulty }
+        return (allDiffs - usedDiffs)
+            .filter { it !in nullCatDiffs }
+            .let {
+                if (nullCatDiffs.isNotEmpty()) it.filterNotNull()
+                else it
+            }
+            .let {
+                if (null in it) it.filterNotNull().sortedBy { diff -> diff.ordinal } + null
+                else it.sortedBy { diff -> diff!!.ordinal }
+            }
+    }
+
+    fun getMaxAmount(category: Category?, difficulty: Difficulty?): Int {
+        val maxAmount = (catsWithCounts + null)
+            .first { it?.first?.id == category?.id }
+            .let { it?.second ?: totalQuestionCount }
+            .run {
+                when (difficulty) {
+                    Difficulty.EASY -> easy
+                    Difficulty.MEDIUM -> medium
+                    Difficulty.HARD -> hard
+                    else -> total
+                }
+            }
+        val usedAmount: Int = when {
+            category == null && difficulty == null -> settings.sumOf { it.amount }
+            category == null && difficulty != null ->
+                when (difficulty) {
+                    Difficulty.EASY -> settings.filter { it.difficulty == Difficulty.EASY }.sumOf { it.amount }
+                    Difficulty.MEDIUM -> settings.filter { it.difficulty == Difficulty.MEDIUM }.sumOf { it.amount }
+                    Difficulty.HARD -> settings.filter { it.difficulty == Difficulty.HARD }.sumOf { it.amount }
+                }
+            category != null && difficulty == null ->
+                settings.filter { it.category?.id == category.id }.sumOf { it.amount }
+            else ->
+                settings
+                    .filter { it.category?.id == category!!.id && it.difficulty == difficulty }
+                    .sumOf { it.amount }
+        }
+        return (maxAmount - usedAmount).let { finalMaxAmount ->
+            // Fix: Having random category or random difficulty in settings doesn't decrease above usedAmount.
+            // This may be a better method than figuring out its exact logic.
+            val sumUsedAmount = settings.sumOf { it.amount }
+            if (finalMaxAmount + sumUsedAmount > totalQuestionCount.total)
+                totalQuestionCount.total - sumUsedAmount
+            else
+                finalMaxAmount
         }
     }
 }

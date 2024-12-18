@@ -122,13 +122,11 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     val catsWithCounts by viewModel.categoriesWithQuestionCounts.collectAsState(emptyList())
                     SettingBeforePlaying(
                         categoriesWithQuestionCounts = catsWithCounts,
+                        settings = viewModel.settings,
                         onlineMode = onlineMode,
                         onOnlineModeChange = { online -> viewModel.changeOnlineMode(online) },
                         categoriesFetchStatus = sharedViewModel.categoriesFetchStatus,
                         onFetchCategoriesRequest = { sharedViewModel.fetchCategories() },
-                        onFetchQuestionCountRequest = { categoryId, onFetchStatusChange ->
-                            viewModel.fetchQuestionCountIfNotAlready(categoryId, onFetchStatusChange)
-                        },
                         onSubmit = { settings ->
                             navController.navigate(TopLevelDestination.PrePlay.Loading(onlineMode, settings))
                         },

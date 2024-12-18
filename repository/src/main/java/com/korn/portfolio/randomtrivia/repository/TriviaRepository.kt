@@ -1,7 +1,5 @@
 package com.korn.portfolio.randomtrivia.repository
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import com.korn.portfolio.randomtrivia.database.dao.CategoryDao
 import com.korn.portfolio.randomtrivia.database.dao.GameDao
 import com.korn.portfolio.randomtrivia.database.dao.QuestionDao
@@ -15,11 +13,15 @@ import com.korn.portfolio.randomtrivia.database.model.entity.Question
 import com.korn.portfolio.randomtrivia.network.TriviaApiClient
 import com.korn.portfolio.randomtrivia.network.model.QuestionCount
 import com.korn.portfolio.randomtrivia.network.model.ResponseCode
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.newSingleThreadContext
 import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.UUID
@@ -37,7 +39,7 @@ import kotlin.time.measureTime
  */
 
 interface TriviaRepository {
-    val remoteCategories: LiveData<List<Pair<Category, QuestionCount>>>
+    val remoteCategories: StateFlow<List<Pair<Category, QuestionCount>>>
     val localCategories: Flow<List<Pair<Category, QuestionCount>>>
     val savedGames: Flow<List<Game>>
     suspend fun fetchCategories()
@@ -61,8 +63,9 @@ class TriviaRepositoryImpl(
     private val gameDao: GameDao,
     private val triviaApiClient: TriviaApiClient
 ) : TriviaRepository {
-    override val remoteCategories: LiveData<List<Pair<Category, QuestionCount>>>
+    override val remoteCategories: StateFlow<List<Pair<Category, QuestionCount>>>
         get() = _remoteCategories
+    private val _remoteCategories = MutableStateFlow<List<Pair<Category, QuestionCount>>>(emptyList())
 
     override val localCategories: Flow<List<Pair<Category, QuestionCount>>>
         get() = categoryDao.getCategoriesWithQuestions()
@@ -86,7 +89,7 @@ class TriviaRepositoryImpl(
     override suspend fun fetchCategories() {
         val remotes: List<Pair<Category, Int>> = triviaApiClient.getCategories().toList()
         // refresh remote
-        _remoteCategories.postValue(remotes.map { (category, total) ->
+        _remoteCategories.emit(remotes.map { (category, total) ->
             category to QuestionCount(total, 0, 0, 0)
         })
         // update local (3 cases)
@@ -123,15 +126,27 @@ class TriviaRepositoryImpl(
         }
     }
 
+    // In case of multiple asynchronous fetches
+    @OptIn(DelicateCoroutinesApi::class, ExperimentalCoroutinesApi::class)
+    private val fetchQuestionCountContext = newSingleThreadContext("fetchQuestionCount")
+
     override suspend fun fetchQuestionCount(categoryId: Int) {
-        if (remoteCategories.value.isNullOrEmpty()) fetchCategories()
-        val remote = remoteCategories.value?.toMutableList() ?: mutableListOf()
-        val idx = remote.indexOfFirst { it.first.id == categoryId }
+        require(remoteCategories.value.isNotEmpty()) {
+            "Must call fetchCategories() before fetchQuestionCount()."
+        }
+        require(remoteCategories.value.any { it.first.id == categoryId}) {
+            "Category ID must exist."
+        }
+        val idx = remoteCategories.value.indexOfFirst { it.first.id == categoryId }
         if (idx >= 0) {
             val questionCount = triviaApiClient.getQuestionCount(categoryId)
-            _remoteCategories.postValue(remote.apply {
-                set(idx, remote[idx].first to questionCount)
-            })
+            withContext(fetchQuestionCountContext) {
+                _remoteCategories.emit(
+                    remoteCategories.value.toMutableList().apply {
+                        set(idx, get(idx).first to questionCount)
+                    }
+                )
+            }
         }
     }
 
@@ -140,7 +155,6 @@ class TriviaRepositoryImpl(
         offline: Boolean,
         processLog: suspend (currentIdx: Int) -> Unit
     ): Pair<ResponseCode, Game> {
-        if (!offline && remoteCategories.value.isNullOrEmpty()) fetchCategories()
         val questions = mutableListOf<GameQuestion>()
         val game = Game(
             detail = GameDetail(timestamp = Date(), totalTimeSecond = 0),
@@ -156,12 +170,15 @@ class TriviaRepositoryImpl(
         game: Game,
         processLog: suspend (currentIdx: Int) -> Unit
     ): Pair<ResponseCode, Game> {
+        require(remoteCategories.value.isNotEmpty()) {
+            "Must call fetchCategories() before fetchOnlineGame()."
+        }
         // get token
         val (respCode1, token) = triviaApiClient.getToken()
         if (respCode1 != ResponseCode.SUCCESS) return respCode1 to game
         // get questions
         options.forEachIndexed { idx, option ->
-            withContext(Dispatchers.Main) { processLog(idx) }
+            processLog(idx)
             measureTime {
                 val (respCode2, fetchedQuestions) = triviaApiClient.getQuestions(
                     amount = option.amount,
@@ -206,7 +223,7 @@ class TriviaRepositoryImpl(
         processLog: suspend (currentIdx: Int) -> Unit
     ): Pair<ResponseCode, Game> {
         options.forEachIndexed { idx, option ->
-            withContext(Dispatchers.Main) { processLog(idx) }
+            processLog(idx)
             val fetchedQuestions = when {
                 option.category == null && option.difficulty == null ->
                     questionDao.getBy(
@@ -296,6 +313,4 @@ class TriviaRepositoryImpl(
             // assume category already exists, e.g., fetchCategories() before fetchOnlineGame()
         }
     }
-
-    private val _remoteCategories = MutableLiveData<List<Pair<Category, QuestionCount>>>(emptyList())
 }

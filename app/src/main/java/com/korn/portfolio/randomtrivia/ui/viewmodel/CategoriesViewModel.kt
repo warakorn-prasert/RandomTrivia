@@ -3,7 +3,6 @@ package com.korn.portfolio.randomtrivia.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
-import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -45,7 +44,7 @@ class CategoriesViewModel(private val triviaRepository: TriviaRepository) : View
         }
 
     val categories: Flow<List<CategoryDisplay>> =
-        combine(playedCategories, triviaRepository.remoteCategories.asFlow()) { played, remote ->
+        combine(playedCategories, triviaRepository.remoteCategories) { played, remote ->
             remote.map { r ->
                 val playedCat = played.firstOrNull { it.first.id == r.first.id }
                 r.asDisplay(playedQuestions = playedCat?.second?.total ?: 0)

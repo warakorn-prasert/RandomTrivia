@@ -78,7 +78,6 @@ fun AboutScreen(
                 .padding(horizontal = 16.dp)
         ) {
             Credits(Modifier.padding(vertical = 8.dp))
-            Spacer(Modifier.height(24.dp))
             if (windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT) {
                 Row(
                     modifier = Modifier.weight(1f),
@@ -93,6 +92,7 @@ fun AboutScreen(
                     )
                 }
             } else {
+                Spacer(Modifier.height(24.dp))
                 AppDescription()
                 Box(
                     modifier = Modifier.fillMaxWidth().weight(1f),
