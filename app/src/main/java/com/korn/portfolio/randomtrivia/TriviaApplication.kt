@@ -7,16 +7,20 @@ import com.korn.portfolio.randomtrivia.repository.TriviaRepository
 import com.korn.portfolio.randomtrivia.repository.TriviaRepositoryImpl
 
 class TriviaApplication : Application() {
-    private val triviaDatabase by lazy { TriviaDatabase.getDatabase(applicationContext) }
+    private val triviaDatabase by lazy {
+        TriviaDatabase.getDatabase(this)
+    }
+    private val triviaApiClient by lazy {
+        TriviaApiClient()
+    }
     lateinit var triviaRepository: TriviaRepository
-        private set
     override fun onCreate() {
         super.onCreate()
         triviaRepository = TriviaRepositoryImpl(
-            categoryDao = triviaDatabase.categoryDao(),
-            questionDao = triviaDatabase.questionDao(),
-            gameDao = triviaDatabase.gameDao(),
-            triviaApiClient = TriviaApiClient()
+            triviaDatabase.categoryDao(),
+            triviaDatabase.questionDao(),
+            triviaDatabase.gameDao(),
+            triviaApiClient
         )
     }
 }
